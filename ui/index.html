@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Vouch — Check it. Chase it. | Medicine Verification for Nigeria</title>
+<meta name="description" content="Verify medicines against the NAFDAC registry, spot counterfeit and expired packs, and follow through with regulator reports." />
+<style>
+  :root{
+    --ink:#0d1b1e; --ink-2:#1a2f33; --ink-3:#4a5f63;
+    --paper:#f7f5f0; --card:#ffffff; --line:#e4dfd6;
+    --green:#0f6b4f; --green-bg:#e8f5ef;
+    --amber:#b8860b; --amber-bg:#fef7e6;
+    --red:#b71c1c; --red-bg:#fdf0ef;
+    --grey:#6b7c80; --grey-bg:#f0f2ed;
+    --accent:#0f6b4f;
+    --radius:16px; --radius-sm:12px; --shadow:0 1px 2px rgba(13,27,30,.04),0 4px 12px rgba(13,27,30,.06),0 12px 40px rgba(13,27,30,.08);
+    --shadow-hover:0 2px 4px rgba(13,27,30,.06),0 8px 20px rgba(13,27,30,.1),0 20px 60px rgba(13,27,30,.12);
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(ellipse at top, rgba(15,107,79,0.03) 0%, transparent 50%), var(--paper); color:var(--ink);
+    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+
+  header.top{
+    background:linear-gradient(90deg, #0d1b1e 0%, #0f2a2f 100%); color:#f6f4ef; position:sticky; top:0; z-index:30;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(12px) saturate(180%);
+    -webkit-backdrop-filter:blur(12px) saturate(180%);
+  }
+  .top-in{display:flex;align-items:center;gap:20px;height:64px}
+  .brand{display:flex;align-items:baseline;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:22px}
+  .brand .logo-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg, #22c55e 0%, #16a34a 100%);box-shadow:0 0 0 4px rgba(34,197,94,0.15), 0 0 20px rgba(34,197,94,0.4)}
+  .brand small{font-weight:500;font-size:12px;opacity:.7;letter-spacing:.02em;text-transform:uppercase}
+  nav.tabs{display:flex;gap:6px;margin-left:auto;background:rgba(255,255,255,0.05);padding:4px;border-radius:12px}
+  nav.tabs button{
+    background:transparent;border:0;color:#b8c5c8;padding:8px 18px;border-radius:9px;
+    font-size:14px;font-weight:600;letter-spacing:.01em;transition:all .2s ease
+  }
+  nav.tabs button:hover{color:#f6f4ef;background:rgba(255,255,255,0.08)}
+  nav.tabs button[aria-selected="true"]{background:#f6f4ef;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:7px;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
+  .dot.off{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.6)}
+
+  main{padding:32px 0 100px}
+  .hero{margin-bottom:32px;text-align:center}
+  .hero h1{font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.04em;line-height:1.1;margin:0 0 12px;background:linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hero p{font-size:18px;color:var(--ink-3);margin:0;max-width:600px;margin:0 auto}
+  .hero .tagline{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:8px 16px;background:var(--green-bg);color:var(--green);border-radius:999px;font-size:13px;font-weight:600}
+  .grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:28px;align-items:start}
+  @media (max-width:960px){ .grid{grid-template-columns:1fr} .hero{text-align:left} .hero p{margin:0}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);transition:box-shadow .3s ease, border-color .3s ease;overflow:hidden}
+  .card:hover{box-shadow:var(--shadow-hover);border-color:#d4cfc5}
+  .card .hd{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;background:linear-gradient(90deg, rgba(15,107,79,0.02) 0%, transparent 100%)}
+  .card .hd h2{margin:0;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .card .hd .hd-icon{width:32px;height:32px;border-radius:10px;background:var(--green-bg);color:var(--green);display:grid;place-items:center}
+  .card .bd{padding:22px}
+
+  label.f{display:block;margin:0 0 16px}
+  label.f span{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  input,select,textarea{
+    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+    background:#fdfcfa;color:var(--ink);font-size:15px;outline:none;transition:all .2s ease;font-family:inherit
+  }
+  input:hover,select:hover,textarea:hover{border-color:#c4bfb3}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(15,107,79,0.08);background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:13px;color:var(--ink-3);margin:-6px 0 16px;line-height:1.6}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    padding:12px 20px;border-radius:11px;border:1.5px solid var(--ink);
+    background:linear-gradient(135deg, var(--ink) 0%, #1a2f33 100%);color:#f6f4ef;font-weight:700;font-size:15px;
+    transition:all .25s ease;box-shadow:0 2px 8px rgba(13,27,30,0.2)
+  }
+  .btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 16px rgba(13,27,30,0.3);opacity:1}
+  .btn:active:not(:disabled){transform:translateY(0)}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);box-shadow:none}
+  .btn.ghost:hover:not(:disabled){background:#f1efe9;border-color:#c4bfb3;box-shadow:0 2px 8px rgba(13,27,30,0.06);transform:translateY(-1px)}
+  .btn.sm{padding:9px 14px;font-size:14px;border-radius:9px;font-weight:600}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn.wide{width:100%}
+  .btn.accent{background:linear-gradient(135deg, var(--accent) 0%, #0d5a42 100%);border-color:var(--accent)}
+
+  .demos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .chip{
+    border:1.5px solid var(--line);background:#fdfcfa;border-radius:999px;padding:8px 16px;
+    font-size:13px;font-weight:600;color:var(--ink-2);transition:all .2s ease;display:inline-flex;align-items:center;gap:8px
+  }
+  .chip:hover{border-color:var(--accent);background:var(--green-bg);color:var(--green);transform:translateY(-1px);box-shadow:0 2px 8px rgba(15,107,79,0.1)}
+  .chip:active{transform:translateY(0)}
+  .chip .b{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,0.8)}
+
+  /* verdict */
+  .band{border-radius:var(--radius);padding:24px 28px;border:1.5px solid;margin-bottom:24px;position:relative;overflow:hidden}
+  .band::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%}
+  .band h1{margin:0 0 6px;font-size:24px;letter-spacing:-.02em;line-height:1.3;font-weight:800}
+  .band p{margin:0;font-size:14px;opacity:.9}
+  .band .tag{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.5)}
+  .band.clear{background:linear-gradient(135deg, var(--green-bg) 0%, #f0f9f6 100%);border-color:#b8d9c8;color:var(--green)}
+  .band.clear::before{background:linear-gradient(180deg, #22c55e 0%, var(--green) 100%)}
+  .band.review{background:linear-gradient(135deg, var(--amber-bg) 0%, #fefaf0 100%);border-color:#f0d98c;color:var(--amber)}
+  .band.review::before{background:linear-gradient(180deg, #f59e0b 0%, var(--amber) 100%)}
+  .band.high_risk{background:linear-gradient(135deg, var(--red-bg) 0%, #fef6f5 100%);border-color:#f0c4c0;color:var(--red)}
+  .band.high_risk::before{background:linear-gradient(180deg, #ef4444 0%, var(--red) 100%)}
+  .band.incomplete{background:linear-gradient(135deg, var(--grey-bg) 0%, #f6f7f4 100%);border-color:#d4d9d0;color:var(--grey)}
+  .band.incomplete::before{background:linear-gradient(180deg, #9ca3af 0%, var(--grey) 100%)}
+
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 4px rgba(13,27,30,0.02)}
+  .compare>div{padding:16px 18px}
+  .compare>div:first-child{border-right:1.5px solid var(--line);background:linear-gradient(180deg, #fdfcfa 0%, #f9f7f3 100%)}
+  .compare>div:last-child{background:#fff}
+  .compare h3{margin:0 0 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:800;display:flex;align-items:center;gap:8px}
+  .compare h3::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .kv{display:flex;justify-content:space-between;gap:14px;padding:6px 0;font-size:14px;border-bottom:1px dotted #e7e3da}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--ink-3);white-space:nowrap;font-size:13px}
+  .kv .v{text-align:right;font-weight:600;word-break:break-word;color:var(--ink)}
+  .kv .v.em{color:var(--red);font-weight:700}
+
+  .checks{display:flex;flex-direction:column;gap:10px}
+  .chk{border:1.5px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;transition:all .2s ease}
+  .chk:hover{border-color:#c4bfb3;box-shadow:0 2px 8px rgba(13,27,30,0.04)}
+  .chk[open]{border-color:#b8d9c8;box-shadow:0 4px 16px rgba(15,107,79,0.06)}
+  .chk summary{
+    list-style:none;cursor:pointer;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:background .2s ease
+  }
+  .chk summary:hover{background:#fdfcfa}
+  .chk summary::-webkit-details-marker{display:none}
+  .chk .ico{
+    flex:0 0 24px;height:24px;border-radius:50%;display:grid;place-items:center;
+    font-size:13px;font-weight:900;color:#fff;margin-top:1px;box-shadow:0 2px 8px rgba(0,0,0,0.15)
+  }
+  .chk.verified .ico{background:linear-gradient(135deg, #22c55e 0%, var(--green) 100%)}
+  .chk.attention .ico{background:linear-gradient(135deg, #f59e0b 0%, var(--amber) 100%)}
+  .chk.high_risk .ico{background:linear-gradient(135deg, #ef4444 0%, var(--red) 100%)}
+  .chk.unverifiable .ico{background:linear-gradient(135deg, #9ca3af 0%, var(--grey) 100%)}
+  .chk.not_applicable .ico{background:#c8cfc9}
+  .chk .t{flex:1;min-width:0}
+  .chk .t b{display:block;font-size:15px;letter-spacing:-.01em;font-weight:700}
+  .chk .t i{display:block;font-style:normal;color:var(--ink-2);font-size:13px;margin-top:3px;line-height:1.6}
+  .chk .more{padding:0 16px 16px 52px;font-size:14px;color:var(--ink-2);line-height:1.7}
+  .chk .more p{margin:0 0 10px}
+  .chk .more .lbl{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:3px}
+  .src{font-family:var(--mono);font-size:11px;color:var(--ink-3);background:var(--grey-bg);padding:2px 6px;border-radius:4px}
+
+  .todo{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .todo li{display:flex;gap:12px;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;background:linear-gradient(90deg, #fdfcfa 0%, #fff 100%);transition:all .2s ease;align-items:flex-start}
+  .todo li:hover{border-color:#c4bfb3;background:#fdfcfa;transform:translateX(4px)}
+  .todo .n{flex:0 0 26px;height:26px;border-radius:8px;background:linear-gradient(135deg, var(--ink) 0%, #1a2f33 100%);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:900;box-shadow:0 2px 8px rgba(13,27,30,0.2)}
+  .todo b{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .todo small{color:var(--ink-2);font-size:13px;line-height:1.6;display:block;margin-top:2px}
+
+  .disclose{margin-top:16px;padding:12px 14px;border-left:3px solid var(--line);background:#faf9f5;border-radius:0 9px 9px 0;font-size:12.5px;color:var(--ink-2)}
+
+  /* AI explanation */
+  .ai{border:1.5px solid #cfe3d9;border-radius:var(--radius);background:linear-gradient(180deg, #fbfdfc 0%, #fff 55%);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+  .ai .hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:linear-gradient(90deg, rgba(15,107,79,.06) 0%, transparent 70%)}
+  .ai .hd h2{margin:0;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .ai .who{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);background:var(--grey-bg);padding:3px 8px;border-radius:999px;white-space:nowrap}
+  .ai .bd{padding:20px}
+  .ai .txt{white-space:pre-wrap;font-size:14.5px;line-height:1.75;color:var(--ink);min-height:2.6em}
+  .ai .caret{display:inline-block;width:7px;height:15px;background:var(--accent);vertical-align:-2px;margin-left:2px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .ask{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .ask input{flex:1;padding:10px 13px;font-size:14px}
+  .ask .btn{padding:10px 16px;font-size:14px;border-radius:10px}
+  .railrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+  .badge{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:#eef2ef;color:#3c5a4e;border:1px solid #d9e3dd}
+  .badge.rail{background:#eaf1f8;color:#2f5578;border-color:#cfdded}
+
+  .docbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+
+  /* cases */
+  .qitem{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:#fdfcfa;margin-bottom:8px}
+  .qitem.over{border-color:#eec4c0;background:var(--red-bg)}
+  .qitem.today{border-color:#e8d4a6;background:var(--amber-bg)}
+  .qmain{min-width:0;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .qmain b{font-size:14px;flex-basis:100%}
+  .qmain small{font-size:13px;color:var(--ink-2);flex-basis:100%}
+  .qmeta{font-size:11.5px;color:var(--ink-3);font-family:var(--mono);flex-basis:100%}
+  .qbtns{display:flex;gap:6px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}
+  .lbl2{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
+  @media (max-width:640px){ .qitem{flex-direction:column} .qbtns{justify-content:flex-start} }
+
+  .caseitem{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;margin-bottom:10px;cursor:pointer}
+  .caseitem:hover{border-color:var(--ink-2)}
+  .caseitem .top{display:flex;align-items:center;gap:10px}
+  .caseitem .id{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .caseitem h3{margin:5px 0 3px;font-size:15px;letter-spacing:-.01em}
+  .caseitem p{margin:0;font-size:13px;color:var(--ink-2)}
+  .pill{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+  .pill.clear{background:var(--green-bg);color:var(--green)}
+  .pill.review{background:var(--amber-bg);color:var(--amber)}
+  .pill.high_risk{background:var(--red-bg);color:var(--red)}
+  .pill.incomplete{background:var(--grey-bg);color:var(--grey)}
+  .pill.overdue{background:#fbe7e5;color:var(--red);margin-left:auto}
+  .pill.open{background:#e9efec;color:#2f5d4c;margin-left:auto}
+
+  .timeline{list-style:none;margin:0;padding:0}
+  .timeline li{padding:8px 0 8px 18px;border-left:2px solid var(--line);position:relative;font-size:13px}
+  .timeline li:before{content:"";position:absolute;left:-5px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+  .timeline li.done{opacity:.5;border-left-color:var(--green)}
+  .timeline li.done:before{background:var(--green)}
+  .timeline li.over{border-left-color:var(--red)}
+  .timeline li.over:before{background:var(--red)}
+  .timeline time{font-family:var(--mono);font-size:11px;color:var(--ink-3);display:block}
+
+  .pre{white-space:pre-wrap;font-family:var(--mono);font-size:12px;line-height:1.5;background:#0d1b1e;color:#e8ede9;padding:16px;border-radius:11px;overflow:auto;max-height:420px}
+
+  .cluster{
+    border:1px solid #e8d4a6;background:var(--amber-bg);color:var(--amber);
+    border-radius:11px;padding:12px 14px;font-size:13px;margin-bottom:14px;line-height:1.5
+  }
+  .cluster .lbl{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.65;margin-bottom:3px}
+
+  .empty{padding:40px 20px;text-align:center;color:var(--ink-3);font-size:13.5px}  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg, var(--ink) 0%, #1a2f33 100%);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.3s ease;z-index:60;box-shadow:0 8px 32px rgba(13,27,30,0.4)}
+  .toast.on{opacity:1;bottom:32px}
+  .spin{display:inline-block;width:14px;height:14px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .stats{display:flex;gap:28px;margin:0 0 24px;flex-wrap:wrap}
+  .stat{padding:16px 20px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:120px}
+  .stat b{display:block;font-size:28px;letter-spacing:-.03em;font-weight:800;background:linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .stat span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-top:4px;display:block}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand"><span class="logo-dot"></span> Vouch <small>Check it. Chase it.</small></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="check">🔍 Check a Product</button>
+      <button role="tab" aria-selected="false" data-tab="cases">📋 My Cases <span id="caseCount"></span></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <h1>Protect Yourself From Fake &amp; Expired Medicines</h1>
+    <p>Verify against the live NAFDAC registry, spot red flags, and follow through with regulator reports — all in one place.</p>
+    <div class="tagline">
+      <span>✓</span> Live NAFDAC Greenbook • Evidence-Based • No Guesswork
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:28px;max-width:900px;margin-left:auto;margin-right:auto">
+    <div class="bd" style="padding:20px 28px;display:flex;gap:32px;align-items:center;flex-wrap:wrap;justify-content:center">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--green-bg);color:var(--green);display:grid;place-items:center;font-weight:800">1</div>
+        <div><div style="font-weight:700">Check</div><div style="font-size:13px;color:var(--ink-3)">Scan or enter details</div></div>
+      </div>
+      <div style="color:var(--line);font-size:24px">→</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--amber-bg);color:var(--amber);display:grid;place-items:center;font-weight:800">2</div>
+        <div><div style="font-weight:700">Verify</div><div style="font-size:13px;color:var(--ink-3)">Against NAFDAC registry</div></div>
+      </div>
+      <div style="color:var(--line);font-size:24px">→</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--red-bg);color:var(--red);display:grid;place-items:center;font-weight:800">3</div>
+        <div><div style="font-weight:700">Chase</div><div style="font-size:13px;color:var(--ink-3)">Report, demand, escalate</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECK -->
+  <section id="tab-check">
+    <div class="grid">
+
+      <div>
+        <div class="card" style="margin-bottom:24px">
+          <div class="hd">
+            <div class="hd-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <h2>Try a Demo Scenario</h2>
+          </div>
+          <div class="bd">
+            <div class="demos" id="demos"></div>
+            <p class="hint" style="margin:14px 0 0">See how Vouch catches copied numbers, expired stock, lapsed registrations, and more.</p>
+            <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+              <div class="lbl2">Food, drink &amp; everyday products — checked by barcode</div>
+              <div class="demos" id="foodDemos">
+                <span class="hint" style="margin:0">Loading…</span>
+              </div>
+              <p class="hint" style="margin:10px 0 0">NAFDAC regulates food and cosmetics but does not publish
+                those registrations in the open register, so Vouch checks the code on the pack instead —
+                and says exactly what that does and does not prove.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="hd">
+            <div class="hd-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <h2>Enter Pack Details</h2>
+          </div>
+          <div class="bd">
+            <div class="row2">
+              <button class="btn ghost sm" id="btnPhoto">Upload photo</button>
+              <button class="btn ghost sm" id="btnPaste">Paste label text</button>
+            </div>
+            <div style="margin-top:12px">
+              <div class="lbl2">No pack on the table? Try a sample photo</div>
+              <div class="demos" id="samples">
+                <button class="chip" data-sample="sample-genuine.png">Genuine pack</button>
+                <button class="chip" data-sample="sample-expired.png">Expired pack</button>
+                <button class="chip" data-sample="sample-copied.png">Copied number</button>
+              </div>
+              <p class="hint" style="margin:7px 0 0">Rendered labels, read by the same OCR path as a camera photo.</p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" class="hidden" />
+            <div id="photoNotes" class="hidden" style="margin-top:10px;font-size:12px;color:var(--amber);background:var(--amber-bg);border:1px solid #e8d4a6;border-radius:9px;padding:9px 11px"></div>
+            <textarea id="pasteBox" class="hidden" rows="7" placeholder="Paste the text printed on the pack…" style="margin-top:12px"></textarea>
+            <div id="pasteActions" class="hidden" style="margin-top:9px">
+              <button class="btn sm" id="btnExtract">Extract fields</button>
+            </div>
+
+            <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
+
+            <form id="form">
+              <input type="hidden" name="strength" />
+              <input type="hidden" name="pack_size" />
+              <label class="f"><span>NAFDAC Registration Number *</span>
+                <input name="nafdac_number" placeholder="e.g. A11-0551 or 04-0271" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
+              <label class="f"><span>Barcode <em style="font-style:normal;color:var(--ink-3);text-transform:none;letter-spacing:0">— food, drink, cosmetics &amp; household</em></span>
+                <input name="barcode" placeholder="e.g. 5010162000164" inputmode="numeric" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
+              <label class="f"><span>Product Name on Pack</span>
+                <input name="product_name" placeholder="e.g. AC-Drex Tablet" /></label>
+              <label class="f"><span>Manufacturer on Pack</span>
+                <input name="manufacturer" placeholder="As printed on the packaging" /></label>
+              <div class="row2">
+                <label class="f"><span>Batch / lot</span><input name="batch" placeholder="e.g. ACD2401" /></label>
+                <label class="f"><span>Expiry</span><input name="exp_date" placeholder="e.g. EXP 06/2028" /></label>
+              </div>
+              <div class="row2">
+                <label class="f"><span>Manufactured</span><input name="mfg_date" placeholder="optional" /></label>
+                <label class="f"><span>Price paid</span><input name="price" placeholder="optional" /></label>
+              </div>
+              <div class="row2">
+                <label class="f"><span>Seller</span><input name="seller" placeholder="optional" /></label>
+                <label class="f"><span>Location</span><input name="location" placeholder="optional" /></label>
+              </div>
+
+              <details style="margin:2px 0 14px">
+                <summary style="cursor:pointer;font-size:12.5px;color:var(--ink-2);font-weight:600">What can you see wrong with the pack?</summary>
+                <div id="flags" style="margin-top:10px;display:grid;gap:7px"></div>
+              </details>
+
+              <button class="btn wide accent" id="btnCheck" type="submit">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                Verify This Pack
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="result">
+        <div class="card">
+          <div class="bd empty">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 16px;display:block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            <p style="font-size:16px;color:var(--ink-2);max-width:50ch;margin:0 auto;line-height:1.7">
+              <strong>Check it. Chase it.</strong><br/>
+              Vouch verifies your medicine against the live NAFDAC Greenbook, inspects dates and batches, spots red flags, and helps you take action if something's wrong.
+            </p>
+            <p style="margin-top:16px;color:var(--ink-3);font-size:14px">Pick a demo scenario above, or enter the details from a real pack.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CASES -->
+  <section id="tab-cases" class="hidden">
+    <div id="queueList"></div>
+    <div class="stats" id="caseStats"></div>
+    <div id="caseList"></div>
+    <div id="caseDetail"></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const FLAGS = {
+  no_expiry:"No expiry date visible",
+  expiry_overprint:"Expiry printed over something else",
+  sticker_over_print:"A sticker covers printed text",
+  seal_broken:"Seal or tamper band broken",
+  hologram_missing:"Expected hologram missing",
+  misspelling:"Spelling or logo error",
+  poor_print:"Print quality poor or blurred",
+  different_batch_print:"Batch and expiry in different print styles",
+  loose_tablets:"Tablets loose or damaged",
+  no_leaflet:"No leaflet in the carton"
+};
+
+const BAND = {
+  clear:{label:"Clear", tag:"Checks passed"},
+  review:{label:"Check further", tag:"Worth a closer look"},
+  high_risk:{label:"High-risk signals", tag:"Act now"},
+  incomplete:{label:"Not enough to go on", tag:"Needs more detail"}
+};
+
+let state = { assessment:null, caseId:null, packs:[] };
+
+/* ---------- helpers ---------- */
+async function api(path, opts={}) {
+  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts});
+  const text = await r.text();
+  let body; try { body = text ? JSON.parse(text) : {}; } catch { body = {detail:text}; }
+  if (!r.ok) throw new Error(body.detail || `HTTP ${r.status}`);
+  return body;
+}
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('on'), 2600);
+}
+function when(iso){
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+}
+function formData(){
+  const fd = new FormData($('#form'));
+  const o = {};
+  for (const [k,v] of fd.entries()) o[k] = String(v).trim();
+  o.flags = $$('#flags input:checked').map(i=>i.value);
+  return o;
+}
+function fillForm(f={}){  for (const k of ['nafdac_number','barcode','product_name','manufacturer','batch','exp_date','mfg_date','price','seller','location','strength','pack_size']) {
+    const el = $(`#form [name="${k}"]`); if (el) el.value = f[k] || "";
+  }
+}
+
+/* ---------- tabs ---------- */
+$$('nav.tabs button').forEach(b => b.onclick = () => {
+  $$('nav.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b));
+  $('#tab-check').classList.toggle('hidden', b.dataset.tab!=='check');
+  $('#tab-cases').classList.toggle('hidden', b.dataset.tab!=='cases');
+  if (b.dataset.tab==='cases') loadCases();
+});
+
+/* ---------- flags ---------- */
+$('#flags').innerHTML = Object.entries(FLAGS).map(([k,v]) =>
+  `<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink-2)">
+     <input type="checkbox" value="${k}" style="width:auto;margin-top:2px" /> ${esc(v)}</label>`).join('');
+
+/* ---------- demos ---------- */
+async function loadDemos(){
+  try {
+    const {packs} = await api('/api/demo/packs');
+    state.packs = packs;
+    $('#demos').innerHTML = packs.map(p => {
+      const col = p.scenario==='high' ? '#b4403a'
+                : p.scenario==='review' ? '#c08a1e'
+                : p.scenario==='clear' ? '#2c7a5b' : '#8a9a94';
+      return `<button class="chip" data-pack="${esc(p.key)}" title="${esc(p.description)}">
+        <span class="b" style="background:${col}"></span>${esc(p.chip || p.title)}</button>`;
+    }).join('');
+    $$('#demos .chip').forEach(c => c.onclick = () => runDemo(c.dataset.pack));
+  } catch(e){ toast('Could not load demo packs'); }
+  await loadFoodDemos();
+}
+
+async function loadFoodDemos(){
+  try {
+    const {demos} = await api('/api/barcodes');
+    $('#foodDemos').innerHTML = demos.map(d => {
+      const col = d.expect==='high_risk' ? '#b4403a'
+                : d.expect==='review' ? '#c08a1e' : '#2c7a5b';
+      return `<button class="chip" data-bdemo="${esc(d.key)}" title="${esc(d.note||'')}">
+        <span class="b" style="background:${col}"></span>${esc(d.chip)}</button>`;
+    }).join('');
+    $$('#foodDemos .chip').forEach(c => c.onclick = () => runBarcodeDemo(c.dataset.bdemo, c));
+  } catch(e){ $('#foodDemos').innerHTML = '<span class="hint" style="margin:0">Barcode demos unavailable.</span>'; }
+}
+
+async function runBarcodeDemo(key, btn){
+  if (btn) btn.disabled = true;
+  try {
+    const out = await api('/api/demo/barcode', {method:'POST', body:JSON.stringify({key})});
+    state.assessment = out.assessment;
+    fillForm(out.pack);
+    $$('#flags input').forEach(i => i.checked = false);
+    renderAssessment(out.assessment, out.demo);
+  } catch(e){ toast(e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+async function runDemo(key){
+  const btn = event?.target?.closest('.chip');
+  if (btn) btn.disabled = true;
+  try {
+    const out = await api('/api/demo/run', {method:'POST', body:JSON.stringify({key})});
+    state.assessment = out.assessment;
+    fillForm(out.pack.fields);
+    $$('#flags input').forEach(i => i.checked = (out.pack.flags||[]).includes(i.value));
+    renderAssessment(out.assessment, out.pack);
+  } catch(e){ toast(e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+/* ---------- form ---------- */
+$('#form').onsubmit = async (ev) => {
+  ev.preventDefault();
+  const b = $('#btnCheck');
+  const label = b.innerHTML;
+  b.disabled = true; b.innerHTML = '<span class="spin"></span> Checking';
+  try {
+    const a = await api('/api/check', {method:'POST', body:JSON.stringify(formData())});
+    state.assessment = a; state.caseId = null;
+    renderAssessment(a);
+  } catch(e){ toast(e.message); }
+  finally { b.disabled = false; b.innerHTML = label; }
+};
+
+$('#btnPhoto').onclick = () => $('#fileInput').click();
+$('#fileInput').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  await readPhoto(f);
+  e.target.value = '';
+};
+
+async function readPhoto(fileOrBlob, name){
+  const fd = new FormData();
+  fd.append('file', fileOrBlob, name || 'pack.jpg');
+  toast('Reading the pack…');
+  try {
+    const r = await fetch('/api/extract/image', {method:'POST', body:fd});
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.detail || 'Could not read the image');
+    fillForm(body.extraction);
+    const warns = body.extraction.warnings || [];
+    toast(`Read by ${body.extraction.provider} — check the fields`);
+    const box = $('#photoNotes');
+    if (box && warns.length) {
+      box.classList.remove('hidden');
+      box.innerHTML = warns.map(w=>`<p style="margin:0 0 4px">• ${esc(w)}</p>`).join('');
+    }
+    // Fill then check in one gesture: the point is the verdict, not the form.
+    $('#form').requestSubmit();
+  } catch(err){
+    toast(err.message);
+    $('#pasteBox').classList.remove('hidden'); $('#pasteActions').classList.remove('hidden');
+  }
+}
+
+$$('#samples .chip').forEach(b => b.onclick = async () => {
+  b.disabled = true;
+  try {
+    const r = await fetch(`/samples/${b.dataset.sample}`);
+    if (!r.ok) throw new Error('Sample photo missing');
+    await readPhoto(await r.blob(), b.dataset.sample);
+  } catch(e){ toast(e.message); }
+  finally { b.disabled = false; }
+});
+$('#btnPaste').onclick = () => {
+  $('#pasteBox').classList.toggle('hidden');
+  $('#pasteActions').classList.toggle('hidden');
+};
+$('#btnExtract').onclick = async () => {
+  try {
+    const {extraction} = await api('/api/extract/text', {method:'POST', body:JSON.stringify({text:$('#pasteBox').value})});
+    fillForm(extraction);
+    toast('Extracted ' + (extraction.warnings.length ? 'with ' + extraction.warnings.length + ' warning(s)' : 'cleanly'));
+  } catch(e){ toast(e.message); }
+};
+
+/* ---------- render assessment ---------- */
+function kv(k, v, em){
+  return `<div class="kv"><span class="k">${esc(k)}</span><span class="v${em?' em':''}">${esc(v||'—')}</span></div>`;
+}
+
+const KIND = {
+  medicine:'Medicine', vaccine:'Vaccine', herbal:'Herbal product',
+  device:'Medical device', veterinary:'Veterinary', disinfectant:'Disinfectant',
+  food:'Food', beverage:'Drink', water:'Water', cosmetic:'Cosmetic',
+  household:'Household product', product:'Product'
+};
+
+function renderAssessment(a, packMeta){
+  const band = BAND[a.band] || BAND.incomplete;
+  const c = a.counts || {};
+  const reg = a.registry || {};
+  const port = a.input || {};
+  const bar = a.barcode || {};
+  const soft = ['food','beverage','water'].includes(a.kind);
+  const dateLabel = soft ? 'Best before' : 'Expiry date';
+
+  const compare = (reg.nafdac || port.nafdac_number) ? `
+    <div class="compare">
+      <div>
+        <h3>On the pack</h3>
+        ${kv('Product', port.product_name)}
+        ${kv('Number', port.nafdac_number)}
+        ${kv('Maker', port.manufacturer)}
+        ${kv(dateLabel, port.exp_date)}
+        ${kv('Batch', port.batch)}
+      </div>
+      <div>
+        <h3>In the NAFDAC registry</h3>
+        ${kv('Product', reg.product_name)}
+        ${kv('Number', reg.nafdac)}
+        ${kv('Holder', reg.manufacturer)}
+        ${kv('Reg. expiry', reg.registration_expiry)}
+        ${kv('Status', reg.status)}
+      </div>
+    </div>` : (bar.code ? `
+    <div class="compare">
+      <div>
+        <h3>On the pack</h3>
+        ${kv('Product', port.product_name)}
+        ${kv('Barcode', port.barcode || bar.code)}
+        ${kv('Maker', port.manufacturer)}
+        ${kv(dateLabel, port.exp_date)}
+        ${kv('Batch', port.batch)}
+      </div>
+      <div>
+        <h3>In the product database</h3>
+        ${bar.found === false
+          ? kv('Product', 'No record of this barcode')
+          : `${kv('Product', bar.name)}${kv('Brand', bar.brand)}${kv('Category', bar.categories)}${kv('Origin', bar.countries)}${kv('Source', bar.source)}`}
+        ${bar.image ? `<img src="${esc(bar.image)}" alt="" loading="lazy" style="width:76px;height:76px;object-fit:contain;float:right;margin:4px 0 0 10px;border-radius:8px;background:#fff;border:1px solid var(--line)"/>` : ''}
+      </div>
+    </div>` : '');
+
+  const checks = a.checks.filter(x=>x.state!=='not_applicable').map(ch => {
+    const icon = {verified:'✓', attention:'!', high_risk:'!', unverifiable:'?'}[ch.state] || '·';
+    return `<details class="chk ${ch.state}">
+      <summary>
+        <span class="ico">${icon}</span>
+        <span class="t"><b>${esc(ch.label)}</b><i>${esc(ch.evidence)}</i></span>
+      </summary>
+      <div class="more">
+        <p><span class="lbl">What this shows</span>${esc(ch.proves)}</p>
+        <p><span class="lbl">What it does not show</span>${esc(ch.does_not_prove)}</p>
+        ${ch.detail?.length ? `<p><span class="lbl">Notes</span>${ch.detail.map(esc).join('<br>')}</p>` : ''}
+        <p><span class="lbl">Source</span><span class="src">${esc(ch.source)}</span></p>
+      </div>
+    </details>`;
+  }).join('');
+
+  const todo = (a.actions||[]).map((x,i) => `
+    <li><span class="n">${i+1}</span><div><b>${esc(x.label)}</b><small>${esc(x.why)}</small></div></li>`).join('');
+
+  const counts = `<div class="stats" style="margin-bottom:16px">
+      <div class="stat"><b>${c.high_risk||0}</b><span>high-risk</span></div>
+      <div class="stat"><b>${c.attention||0}</b><span>to check</span></div>
+      <div class="stat"><b>${c.verified||0}</b><span>checked</span></div>
+      <div class="stat"><b>${c.unverifiable||0}</b><span>unknown</span></div>
+    </div>`;
+
+  $('#result').innerHTML = `
+    ${packMeta ? `<p style="font-size:13px;color:var(--ink-3);margin:0 0 8px">Demo — <b style="color:var(--ink-2)">${esc(packMeta.title)}</b></p>` : ''}
+    <div class="band ${a.band}">
+      <div class="railrow">
+        <span class="badge">${esc(KIND[a.kind] || 'Product')}</span>
+        <span class="badge rail">${a.rail === 'barcode' ? 'Barcode rail' : 'NAFDAC register'}</span>
+        <span class="badge">${a.checks.filter(x=>x.state!=='not_applicable').length} checks</span>
+      </div>
+      <span class="tag">${esc(band.tag)}</span>
+      <h1>${esc(a.headline)}</h1>
+      <p>${esc(band.label)} · ${a.checks.filter(x=>x.state!=='not_applicable').length} checks run</p>
+    </div>
+
+    <div class="ai">
+      <div class="hd">
+        <div class="hd-icon" style="width:26px;height:26px;border-radius:8px;background:var(--green-bg);color:var(--green);display:grid;place-items:center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"></path></svg>
+        </div>
+        <h2>Vouch AI</h2>
+        <span class="who" id="aiWho">thinking…</span>
+        <button class="btn ghost sm" id="btnRe" type="button" style="padding:5px 10px;font-size:12px">Re-explain</button>
+      </div>
+      <div class="bd">
+        <div class="txt"><span id="aiBody"></span><span class="caret" id="aiCaret"></span></div>
+        <form class="ask" id="askForm">
+          <input id="askInput" placeholder="Ask about this result — e.g. is it fake? can I use it? who do I report to?" autocomplete="off" />
+          <button class="btn accent" type="submit">Ask</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="bd">
+        ${counts}
+        ${compare}
+        <div id="clusterNote"></div>
+        <div class="checks">${checks}</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="hd"><h2>What to do next</h2></div>
+      <div class="bd"><ul class="todo">${todo || '<li>No action needed.</li>'}</ul></div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h2>Turn this into a case</h2></div>
+      <div class="bd">
+        <p style="margin:0 0 12px;font-size:13.5px;color:var(--ink-2)">
+          A case keeps the evidence, generates the letters, and sets the dates you
+          have to chase. Without it, this is just a screenshot.</p>
+        <div class="docbtns">
+          <button class="btn" id="btnCase">Open a case</button>
+        </div>
+        <div class="disclose">${esc(a.disclosure)}</div>
+      </div>
+    </div>`;
+
+  $('#btnCase').onclick = () => openCase(formData());
+
+  // Network signal: has anyone else reported this number or batch? This is the
+  // only check that gets stronger the more people use the product.
+  const naf = port.nafdac_number || reg.nafdac || '';
+  if (naf || port.batch) {
+    api(`/api/cluster?nafdac=${encodeURIComponent(naf)}&batch=${encodeURIComponent(port.batch||'')}`)
+      .then(cl => {
+        const n = cl.number_reports?.c || 0;
+        const b = cl.batch_reports?.c || 0;
+        const el = $('#clusterNote');
+        if (!el || (n < 2 && b < 2)) return;
+        el.innerHTML = `<div class="cluster">
+          <span class="lbl">Across all Vouch reports</span>
+          ${n >= 2 ? `<b>${n} reports cite this NAFDAC number.</b> ` : ''}
+          ${b >= 2 ? `<b>${b} cite batch ${esc(port.batch)}</b>${cl.batch_reports?.locs ? `, in ${cl.batch_reports.l} location${cl.batch_reports.l>1?'s':''}` : ''}. ` : ''}
+          A repeated batch is how an anecdote becomes a recall signal.
+        </div>`;
+      })
+      .catch(()=>{});
+  }
+}
+
+/* ---------- cases ---------- */
+async function openCase(fields){
+  const b = $('#btnCase'); if (b){ b.disabled = true; b.innerHTML = '<span class="spin"></span> Opening'; }
+  try {
+    const out = await api('/api/cases', {method:'POST', body:JSON.stringify(fields)});
+    state.caseId = out.case_id;
+    toast('Case ' + out.case_id + ' opened');
+    $$('nav.tabs button')[1].setAttribute('aria-selected','true');
+    $$('nav.tabs button')[0].setAttribute('aria-selected','false');
+    $('#tab-check').classList.add('hidden'); $('#tab-cases').classList.remove('hidden');
+    await loadCases(out.case_id);
+  } catch(e){ toast(e.message); if(b) b.disabled=false; }
+}
+
+async function loadQueue(){
+  try {
+    const {queue, stats} = await api('/api/queue');
+    const due = queue.filter(q => q.overdue || q.due_today);
+    const later = queue.filter(q => !q.overdue && !q.due_today);
+    const row = q => `
+      <div class="qitem ${q.overdue ? 'over' : q.due_today ? 'today' : ''}">
+        <div class="qmain">
+          <span class="pill ${esc(q.band)}">${esc((BAND[q.band]||{}).label||q.band)}</span>
+          ${q.overdue ? '<span class="pill overdue">overdue</span>'
+            : q.due_today ? '<span class="pill open">due today</span>' : ''}
+          <b>${esc(q.product || 'Unnamed product')}</b>
+          <small>${esc(q.step?.action || 'Nothing scheduled')}</small>
+          <span class="qmeta">${esc(q.id)} · ${esc(q.nafdac || 'no number')} · next ${esc(q.next_action_at || '—')} · ${q.steps_left} step${q.steps_left===1?'':'s'} left</span>
+        </div>
+        <div class="qbtns">
+          <button class="btn ghost sm" data-open="${esc(q.id)}">Open</button>
+          ${q.step ? `<button class="btn sm" data-done="${esc(q.id)}|${q.step.day}">Mark done</button>` : ''}
+          <button class="btn ghost sm" data-snooze="${esc(q.id)}">+3 days</button>
+        </div>
+      </div>`;
+
+    let html = `<div class="card" style="margin-bottom:18px">
+      <div class="hd"><h2>Due now${due.length ? ` — ${due.length}` : ''}</h2>
+        <button class="btn ghost sm" style="margin-left:auto" id="btnSeed"
+          title="Creates three aged rehearsal cases so you can see the follow-up screen">
+          Seed demo cases</button></div>
+      <div class="bd">`;
+    if (!stats.open) {
+      html += `<div class="empty" style="padding:14px 0">No open cases. Check a pack and open one — this is where the chasing lives.<br>
+        <span style="font-size:12px">Or seed three aged rehearsal cases to see it immediately.</span></div>`;
+    } else if (!due.length) {
+      html += `<div class="empty" style="padding:14px 0">Nothing is due today. That is the point: the case is still being watched, and you will be told the day it needs you.</div>`;
+    } else {
+      html += due.map(row).join('');
+    }
+    if (later.length) {
+      html += `<div style="margin-top:14px">
+        <div class="lbl2">Scheduled later</div>
+        ${later.map(row).join('')}</div>`;
+    }
+    html += `</div></div>`;
+    $('#queueList').innerHTML = html;
+
+    $$('#queueList [data-open]').forEach(b => b.onclick = () => showCase(b.dataset.open));    const seed = $('#btnSeed');
+    if (seed) seed.onclick = async () => {
+      seed.disabled = true; seed.innerHTML = '<span class="spin" style="border-color:rgba(0,0,0,.2);border-top-color:#0d1b1e"></span> Seeding';
+      try {
+        const r = await api('/api/demo/seed', {method:'POST'});
+        toast(`${r.cases.length} rehearsal cases created`);
+        loadCases();
+      } catch(e){ toast(e.message); seed.disabled = false; seed.textContent = 'Seed demo cases'; }
+    };
+
+    $$('#queueList [data-done]').forEach(b => b.onclick = async () => {
+      const [id, day] = b.dataset.done.split('|');
+      try {
+        await api(`/api/cases/${id}/steps/${day}`, {method:'POST', body:JSON.stringify({note:'done from queue'})});
+        toast('Step recorded'); loadCases();
+      } catch(e){ toast(e.message); }
+    });
+    $$('#queueList [data-snooze]').forEach(b => b.onclick = async () => {
+      try { await api(`/api/cases/${b.dataset.snooze}/snooze?days=3`, {method:'POST'});
+        toast('Pushed out three days'); loadCases();
+      } catch(e){ toast(e.message); }
+    });
+  } catch(e){ toast(e.message); }
+}
+
+async function loadCases(openId){
+  try {
+    const {cases, stats} = await api('/api/cases');
+    $('#caseCount').textContent = stats.open ? `(${stats.open})` : '';
+    $('#caseStats').innerHTML = `
+      <div class="stat"><b>${stats.cases}</b><span>cases</span></div>
+      <div class="stat"><b>${stats.open}</b><span>open</span></div>
+      <div class="stat"><b>${stats.high_risk}</b><span>high-risk</span></div>
+      <div class="stat"><b>${stats.overdue}</b><span>overdue</span></div>`;
+
+    await loadQueue();
+
+    if (!cases.length) {
+      $('#caseList').innerHTML = `<div class="card"><div class="bd empty">No cases yet. Check a pack and open one.</div></div>`;
+      return;
+    }
+    $('#caseList').innerHTML = cases.map(c => `
+      <div class="caseitem" data-case="${esc(c.id)}">
+        <div class="top">
+          <span class="id">${esc(c.id)}</span>
+          <span class="pill ${esc(c.band)}">${esc((BAND[c.band]||{}).label||c.band)}</span>
+          <span class="pill ${c.status==='open'?'open':'clear'}">${esc(c.status)}</span>
+          ${c.overdue?'<span class="pill overdue">overdue</span>':''}
+        </div>
+        <h3>${esc(c.product || 'Unnamed product')}</h3>
+        <p>${esc(c.headline)}</p>
+        <p style="margin-top:6px;font-size:12px;color:var(--ink-3)">
+          ${esc(c.nafdac||'no number')} · ${esc(c.batch||'no batch')}
+          ${c.next_action_at?` · next ${esc(c.next_action_at)}`:''}</p>
+      </div>`).join('');
+    $$('#caseList .caseitem').forEach(el => el.onclick = () => showCase(el.dataset.case));
+    if (openId) showCase(openId);
+  } catch(e){ toast(e.message); }
+}
+
+async function showCase(id){
+  try {
+    const c = await api('/api/cases/'+id);
+    const a = c.assessment || {};
+    const cur = c.current;
+    const steps = (c.steps||[]).filter(s=>s.day>0).map(s => `
+      <li class="${s.done?'done':''}${s.overdue?' over':''}">
+        <time>${esc(s.due)}${s.done?' · done':s.overdue?' · overdue':''}</time>
+        ${esc(s.action)}
+        <br><small style="color:var(--ink-3)">${esc(s.why)}</small>
+        ${(!s.done && cur && s.day===cur.day)
+          ? `<div class="docbtns"><button class="btn sm" data-step="${s.day}">Mark done</button></div>` : ''}
+      </li>`).join('');
+    $('#caseDetail').innerHTML = `
+      <div class="card" style="margin-top:18px">
+        <div class="hd"><h2>Case ${esc(c.id)}</h2>
+          <button class="btn ghost sm" style="margin-left:auto" id="btnBack">Back to list</button></div>
+        <div class="bd">
+          <div class="band ${esc(c.band)}" style="margin-bottom:16px">
+            <span class="tag">${esc((BAND[c.band]||{}).tag||'')}</span>
+            <h1 style="font-size:18px">${esc(c.headline||'')}</h1>
+          </div>
+
+          <h3 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">Generated documents</h3>
+          <div class="docbtns">
+            ${['seller_demand','nafdac_report','fccpc_complaint'].map(k=>{
+              const has = (c.documents||[]).some(d=>d.kind===k);
+              const label = {seller_demand:'Refund demand',nafdac_report:'NAFDAC report',fccpc_complaint:'FCCPC complaint'}[k];
+              return has
+                ? `<button class="btn ghost sm" data-doc="${k}">View ${label}</button>`
+                : `<button class="btn ghost sm" data-make="${k}">${label}</button>`;
+            }).join('')}
+          </div>
+
+          <h3 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:20px">Deadlines set by Vouch</h3>
+          <ul class="timeline">${steps}</ul>
+
+          <h3 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:20px">History</h3>
+          <ul class="timeline">${(c.events||[]).map(e=>
+            `<li><time>${esc(when(e.at))}</time>${esc(e.kind.replace(/^step:/,'step done — day '))} ${esc(e.note||'')}</li>`).join('')}</ul>
+
+          <div class="docbtns">
+            ${c.status==='open'
+              ? `<button class="btn ghost sm" id="btnSnooze">Push 3 days</button>
+                 <button class="btn ghost sm" id="btnClose">Close this case</button>`
+              : `<span class="pill clear">closed</span>`}
+          </div>
+
+          <div id="docView"></div>
+        </div>
+      </div>`;
+    $('#btnBack').onclick = () => { $('#caseDetail').innerHTML=''; };
+    $$('[data-step]').forEach(b => b.onclick = async () => {
+      try {
+        await api(`/api/cases/${c.id}/steps/${b.dataset.step}`,
+                  {method:'POST', body:JSON.stringify({note:'done'})});
+        toast('Step recorded'); showCase(c.id); loadQueue();
+      } catch(e){ toast(e.message); }
+    });
+    $$('[data-doc]').forEach(b => b.onclick = () => viewDoc(c.id, b.dataset.doc));
+    $$('[data-make]').forEach(b => b.onclick = async () => {
+      try { await api(`/api/cases/${c.id}/documents/${b.dataset.make}`, {method:'POST'}); toast('Document generated'); showCase(c.id); }
+      catch(e){ toast(e.message); }
+    });
+    const bs = $('#btnSnooze');
+    if (bs) bs.onclick = async () => {
+      try { await api(`/api/cases/${c.id}/snooze?days=3`, {method:'POST'});
+        toast('Pushed out three days'); showCase(c.id); loadQueue();
+      } catch(e){ toast(e.message); }
+    };
+    const bc = $('#btnClose');
+    if (bc) bc.onclick = async () => {
+      const outcome = prompt('What happened? (e.g. seller refunded, regulator reference received)');
+      if (!outcome) return;
+      try { await api(`/api/cases/${c.id}/close`, {method:'POST', body:JSON.stringify({outcome})}); toast('Case closed'); showCase(c.id); loadCases(); }
+      catch(e){ toast(e.message); }
+    };
+  } catch(e){ toast(e.message); }
+}
+
+async function viewDoc(caseId, kind){
+  const r = await fetch(`/api/cases/${caseId}/documents/${kind}`);
+  const txt = await r.text();
+  $('#docView').innerHTML = `<h3 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:20px">${esc(kind.replace(/_/g,' '))}</h3>
+    <div class="pre">${esc(txt)}</div>
+    <div class="docbtns"><button class="btn ghost sm" id="btnCopy">Copy</button>
+    <button class="btn ghost sm" id="btnDl">Download</button></div>`;
+  $('#btnCopy').onclick = () => { navigator.clipboard.writeText(txt); toast('Copied'); };
+  $('#btnDl').onclick = () => {
+    const blob = new Blob([txt], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `${kind}-${caseId}.txt`; a.click();
+  };
+}
+
+/* ---------- boot ---------- */
+(async () => {
+  await loadDemos();
+  try {
+    const h = await api('/api/health');
+    $('#caseCount').textContent = h.stats.open ? `(${h.stats.open})` : '';
+    if (!h.vision.meta_vision) {
+      const d = document.createElement('div');
+      d.className = 'disclose';
+      d.style.margin = '0 0 16px';
+      d.innerHTML = h.vision.windows_ocr
+        ? '<b>Reading photos offline.</b> No model key is set, so the pack is transcribed by the OCR engine built into Windows. Nothing leaves this device. Set <span class="src">MODEL_API_KEY</span> to hand the job to a vision model instead.'
+        : '<b>No photo reader on this machine.</b> Paste the label text or use a demo pack. Set <span class="src">MODEL_API_KEY</span> to enable photos.';
+      $('#tab-check').prepend(d);
+    }
+  } catch(e){ /* server still usable */ }
+})();
+</script>
+</body>
+</html>

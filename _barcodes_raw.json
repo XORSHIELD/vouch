@@ -1,0 +1,107 @@
+{
+ "5010162000164": {
+  "allergens": "",
+  "brands": "Malta Guinness",
+  "categories": "Malt",
+  "code": "5010162000164",
+  "countries": "France, Nigeria, United Kingdom",
+  "generic_name": "",
+  "image_front_small_url": "https://images.openfoodfacts.org/images/products/501/016/200/0164/front_fr.30.200.jpg",
+  "ingredients_text": "NUTRITION INFORMATION Typical Value Per 100ml Energy 3kJ/",
+  "labels": "Green Dot",
+  "manufacturing_places": "",
+  "nutriscore_grade": "unknown",
+  "product_name": "Malta Gold Non-alcoholic Can 330ml",
+  "quantity": ""
+ },
+ "6151100034823": {
+  "allergens": "",
+  "brands": "Nestlé",
+  "categories": "Instant chocolate powders",
+  "code": "6151100034823",
+  "countries": "Nigeria",
+  "image_front_small_url": "https://images.openfoodfacts.org/images/products/615/110/003/4823/front_en.3.200.jpg",
+  "nutriscore_grade": "unknown",
+  "product_name": "Nestle Milo Sachet",
+  "quantity": "20g"
+ },
+ "6156000261201": {
+  "allergens": "",
+  "categories": "Waters",
+  "code": "6156000261201",
+  "countries": "Nigeria",
+  "image_front_small_url": "https://images.openfoodfacts.org/images/products/615/600/026/1201/front_en.12.200.jpg",
+  "nutriscore_grade": "b",
+  "product_name": "Cway"
+ },
+ "10340006": {
+  "allergens": "",
+  "brands": "Dew",
+  "code": "10340006",
+  "countries": "Ghana, Nigeria",
+  "ecoscore_tags": [
+   "unknown"
+  ],
+  "image_front_small_url": "https://images.openfoodfacts.org/images/products/000/001/034/0006/front_en.8.200.jpg",
+  "ingredients_text": "carbonated water, sugar, citric acid, sodium benzoate, caffeine, gum arabic, sodium citrate, tartrazine, flavor. for best before-see bottle shoulder. bottled by seven-up bottling company plc. 247, moshood abiola way, ijora, lagos, nigeria. under authority of pepsico inc. purchase ny. consumer information call: 08056900900 / 08066900900 store in a cool place. s",
+  "nutriscore_grade": "unknown",
+  "product_name": "Indo Mie",
+  "quantity": "50 cl"
+ },
+ "8710447362945": {
+  "allergens": "",
+  "brands": "Dove, Baby Dove",
+  "categories": "fr:Lotions, fr:Lotions corporelles",
+  "code": "8710447362945",
+  "countries": "France, Nigeria",
+  "ecoscore_tags": [
+   "unknown"
+  ],
+  "generic_name": "",
+  "image_front_small_url": "https://images.openbeautyfacts.org/images/products/871/044/736/2945/front_en.15.200.jpg",
+  "ingredients_text": "Aqua, Glycerin, Petrolatum, Stearic Acid, Glycol Stearate, Dimethicone, Isopropyl Isostearate, Caprylyl Glycol, Carbomer, Cetearyl Alcohol, Disodium EDTA, Glyceryl Stearate, Magnesium Aluminum Silicate, Parfum, Phenoxyethanol, Stearamide AMP, Tapioca Starch, Triethanolamine.",
+  "labels": "Green Dot, No artificial colors, National Eczema Association accepted, PETA approved, paediatrically tested",
+  "manufacturing_places": "Pologne",
+  "product_name": "Sensitive Skin Care Lotion",
+  "quantity": "400 ml"
+ },
+ "4005900376978": {
+  "allergens": "",
+  "brands": "NIVEA",
+  "code": "4005900376978",
+  "countries": "Nigeria",
+  "ecoscore_tags": [
+   "unknown"
+  ],
+  "image_front_small_url": "https://images.openbeautyfacts.org/images/products/400/590/037/6978/front_en.7.200.jpg",
+  "ingredients_text": "Aqua, Aluminum Chlorohydrate, PPG-15 Stearyl Ether, Steareth-2, Steareth-21, Parfum, Trisodium EDTA, Persea Gratissima Oil, Hydrolyzed Pearl, Tocopherol",
+  "product_name": "Pearl & Beauty"
+ },
+ "8710908777769": {
+  "allergens": "",
+  "brands": "Dove",
+  "categories": "non-food-products, open-beauty-facts",
+  "code": "8710908777769",
+  "countries": "Nigeria",
+  "ecoscore_tags": [
+   "unknown"
+  ],
+  "image_front_small_url": "https://images.openbeautyfacts.org/images/products/871/090/877/7769/front_en.5.200.jpg",
+  "labels": "Triman"
+ },
+ "0110800126258": {
+  "allergens": "",
+  "brands": "",
+  "categories": "Instant noodles, Plant base food and beverages",
+  "code": "0110800126258",
+  "countries": "Nigeria",
+  "generic_name": "",
+  "image_front_small_url": "https://images.openfoodfacts.org/images/products/011/080/012/6258/front_en.7.200.jpg",
+  "ingredients_text": "wheat flour cassava flour vegetable oil",
+  "labels": "Halal",
+  "manufacturing_places": "",
+  "nutriscore_grade": "unknown",
+  "product_name": "Indomie noodles",
+  "quantity": "75g"
+ }
+}

@@ -1,0 +1,140 @@
+[
+  {
+    "key": "genuine",
+    "title": "Genuine pack, everything reconciles",
+    "scenario": "clear",
+    "description": "A registered product, correct manufacturer, well-formed batch, comfortably in date. This is the control: Vouch must not manufacture suspicion.",
+    "flags": [],
+    "fields": {
+      "product_name": "AC-Drex Tablet",
+      "nafdac_number": "A11-0551",
+      "manufacturer": "A.C. Drugs Ltd",
+      "batch": "ACD2401",
+      "exp_date": "EXP 06/2028",
+      "mfg_date": "MFG 06/2025",
+      "strength": "500 mg",
+      "pack_size": "10 x 10's"
+    },
+    "label_text": "AC-Drex Tablet\nParacetamol 500 mg / Caffeine 30 mg\nNAFDAC REG NO: A11-0551\nBATCH NO: ACD2401\nMFG 06/2025  EXP 06/2028\nManufactured by A.C. Drugs Ltd, Lagos, Nigeria\n10 x 10's",
+    "chip": "Looks clean"
+  },
+  {
+    "key": "copied_number",
+    "title": "The number is real. The company is not.",
+    "scenario": "high",
+    "description": "The NAFDAC number is valid and active, but it belongs to a different company. This is the copied-number pattern, and it is invisible to a lookup that only checks whether the number exists.",
+    "flags": [],
+    "fields": {
+      "product_name": "AC-Drex Tablet",
+      "nafdac_number": "A11-0551",
+      "manufacturer": "Emzor Pharmaceutical Industries Ltd",
+      "batch": "EMZ7781",
+      "exp_date": "EXP 09/2027",
+      "mfg_date": "MFG 09/2024",
+      "strength": "500 mg",
+      "pack_size": "10 x 10's"
+    },
+    "label_text": "AC-Drex Tablet\nParacetamol 500 mg / Caffeine 30 mg\nNAFDAC REG NO: A11-0551\nBATCH NO: EMZ7781\nMFG 09/2024  EXP 09/2027\nManufactured by Emzor Pharmaceutical Industries Ltd, Lagos\n10 x 10's",
+    "chip": "Copied number"
+  },
+  {
+    "key": "expired",
+    "title": "Expired stock still on the shelf",
+    "scenario": "high",
+    "description": "Correct registration, correct manufacturer, but the pack expired months ago. Expired is provable and needs no argument about authenticity.",
+    "flags": [
+      "expiry_overprint"
+    ],
+    "fields": {
+      "product_name": "AC-Drex Tablet",
+      "nafdac_number": "A11-0551",
+      "manufacturer": "A.C. Drugs Ltd",
+      "batch": "ACD1902",
+      "exp_date": "EXP 01/2026",
+      "mfg_date": "MFG 01/2023",
+      "strength": "500 mg",
+      "pack_size": "10 x 10's"
+    },
+    "label_text": "AC-Drex Tablet\nParacetamol 500 mg / Caffeine 30 mg\nNAFDAC REG NO: A11-0551\nBATCH NO: ACD1902\nMFG 01/2023  EXP 01/2026\nManufactured by A.C. Drugs Ltd, Lagos\n10 x 10's",
+    "chip": "Expired stock"
+  },
+  {
+    "key": "unregistered",
+    "title": "A number that does not exist",
+    "scenario": "high",
+    "description": "The printed number appears in no registry record, in any known format. The pack also has a spelling error on the brand name.",
+    "flags": [
+      "misspelling",
+      "poor_print"
+    ],
+    "fields": {
+      "product_name": "Malaria Guard Plus",
+      "nafdac_number": "A99-9999",
+      "manufacturer": "Global Health Labs",
+      "batch": "GH-0091",
+      "exp_date": "EXP 11/2027",
+      "mfg_date": "MFG 11/2024",
+      "strength": "80/480 mg",
+      "pack_size": "1 x 6's"
+    },
+    "label_text": "Malaria Guard Plus\nArtemether 80 mg / Lumefantrine 480 mg\nNAFDAC REG NO: A99-9999\nBATCH NO: GH-0091\nMFG 11/2024  EXP 11/2027\nManufactured by Global Health Labs\n1 x 6's",
+    "chip": "No such number"
+  },
+  {
+    "key": "window",
+    "title": "Shelf life beyond the approval window",
+    "scenario": "review",
+    "description": "The number is registered and the manufacturer matches, but the pack claims an expiry date years after the registration lapsed. No consumer lookup surfaces this.",
+    "flags": [],
+    "fields": {
+      "product_name": "AC-Drex Tablet",
+      "nafdac_number": "A11-0551",
+      "manufacturer": "A.C. Drugs Ltd",
+      "batch": "ACD2507",
+      "exp_date": "EXP 01/2030",
+      "mfg_date": "MFG 01/2025",
+      "strength": "500 mg",
+      "pack_size": "10 x 10's"
+    },
+    "label_text": "AC-Drex Tablet\nParacetamol 500 mg / Caffeine 30 mg\nNAFDAC REG NO: A11-0551\nBATCH NO: ACD2507\nMFG 01/2025  EXP 01/2030\nManufactured by A.C. Drugs Ltd, Lagos\n10 x 10's",
+    "chip": "Outlives approval"
+  },
+  {
+    "key": "inactive",
+    "title": "A real product, a lapsed registration",
+    "scenario": "review",
+    "description": "Coartem is a well-known Novartis product, but all three of its registrations show Inactive. Vouch must say 'check this', not 'this is fake'.",
+    "flags": [],
+    "fields": {
+      "product_name": "Coartem 80/480 Tablets",
+      "nafdac_number": "B4-0262",
+      "manufacturer": "Novartis Nigeria Limited",
+      "batch": "F4451",
+      "exp_date": "EXP 01/2027",
+      "mfg_date": "MFG 01/2024",
+      "strength": "80/480 mg",
+      "pack_size": "1 x 6's"
+    },
+    "label_text": "Coartem 80/480 Tablets\nArtemether 80 mg / Lumefantrine 480 mg\nNAFDAC REG NO: B4-0262\nBATCH NO: F4451\nMFG 01/2024  EXP 01/2027\nManufactured by Novartis Nigeria Limited\n1 x 6's",
+    "chip": "Lapsed registration"
+  },
+  {
+    "key": "incomplete",
+    "title": "The photo was not good enough",
+    "scenario": "incomplete",
+    "description": "Only the front of the pack is legible. Vouch should ask for the back panel instead of inventing an answer.",
+    "flags": [],
+    "fields": {
+      "product_name": "AC-Drex Tablet",
+      "nafdac_number": "",
+      "manufacturer": "",
+      "batch": "",
+      "exp_date": "",
+      "mfg_date": "",
+      "strength": "500 mg",
+      "pack_size": ""
+    },
+    "label_text": "AC-Drex Tablet\nParacetamol 500 mg",
+    "chip": "Poor photo"
+  }
+]

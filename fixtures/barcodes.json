@@ -1,0 +1,215 @@
+{
+  "_note": "Products below are real records from Open Food Facts / Open Beauty Facts, trimmed. Demo packs are labelled rehearsals: the barcode is real, the pack text around it is constructed.",
+  "products": {
+    "5010162000164": {
+      "product_name": "Malta Gold Non-alcoholic Can 330ml",
+      "generic_name": "",
+      "brands": "Malta Guinness",
+      "categories": "Malt",
+      "quantity": "",
+      "ingredients_text": "NUTRITION INFORMATION Typical Value Per 100ml Energy 3kJ/",
+      "allergens": "",
+      "countries": "France, Nigeria, United Kingdom",
+      "image_front_small_url": "https://images.openfoodfacts.org/images/products/501/016/200/0164/front_fr.30.200.jpg",
+      "labels": "Green Dot",
+      "manufacturing_places": "",
+      "nutriscore_grade": "unknown",
+      "_source": "openfoodfacts",
+      "_base": "https://world.openfoodfacts.org"
+    },
+    "6151100034823": {
+      "product_name": "Nestle Milo Sachet",
+      "generic_name": "",
+      "brands": "Nestlé",
+      "categories": "Instant chocolate powders",
+      "quantity": "20g",
+      "ingredients_text": "",
+      "allergens": "",
+      "countries": "Nigeria",
+      "image_front_small_url": "https://images.openfoodfacts.org/images/products/615/110/003/4823/front_en.3.200.jpg",
+      "labels": "",
+      "manufacturing_places": "",
+      "nutriscore_grade": "unknown",
+      "_source": "openfoodfacts",
+      "_base": "https://world.openfoodfacts.org"
+    },
+    "6156000261201": {
+      "product_name": "Cway",
+      "generic_name": "",
+      "brands": "",
+      "categories": "Waters",
+      "quantity": "",
+      "ingredients_text": "",
+      "allergens": "",
+      "countries": "Nigeria",
+      "image_front_small_url": "https://images.openfoodfacts.org/images/products/615/600/026/1201/front_en.12.200.jpg",
+      "labels": "",
+      "manufacturing_places": "",
+      "nutriscore_grade": "b",
+      "_source": "openfoodfacts",
+      "_base": "https://world.openfoodfacts.org"
+    },
+    "0110800126258": {
+      "product_name": "Indomie noodles",
+      "generic_name": "",
+      "brands": "",
+      "categories": "Instant noodles, Plant base food and beverages",
+      "quantity": "75g",
+      "ingredients_text": "wheat flour cassava flour vegetable oil",
+      "allergens": "",
+      "countries": "Nigeria",
+      "image_front_small_url": "https://images.openfoodfacts.org/images/products/011/080/012/6258/front_en.7.200.jpg",
+      "labels": "Halal",
+      "manufacturing_places": "",
+      "nutriscore_grade": "unknown",
+      "_source": "openfoodfacts",
+      "_base": "https://world.openfoodfacts.org"
+    },
+    "4005900376978": {
+      "product_name": "Pearl & Beauty",
+      "generic_name": "",
+      "brands": "NIVEA",
+      "categories": "",
+      "quantity": "",
+      "ingredients_text": "Aqua, Aluminum Chlorohydrate, PPG-15 Stearyl Ether, Steareth-2, Steareth-21, Parfum, Trisodium EDTA, Persea Gratissima Oil, Hydrolyzed Pearl, Tocopherol",
+      "allergens": "",
+      "countries": "Nigeria",
+      "image_front_small_url": "https://images.openbeautyfacts.org/images/products/400/590/037/6978/front_en.7.200.jpg",
+      "labels": "",
+      "manufacturing_places": "",
+      "nutriscore_grade": "",
+      "_source": "openbeautyfacts",
+      "_base": "https://world.openbeautyfacts.org"
+    }
+  },
+  "demos": [
+    {
+      "key": "drink",
+      "chip": "A malt drink",
+      "barcode": "5010162000164",
+      "title": "A can of malt drink",
+      "note": "The barcode resolves to the product on the can. Food and drink are not in the NAFDAC public register, so the barcode is the identity check.",
+      "pack": {
+        "barcode": "5010162000164",
+        "product_name": "Malta Gold Non-alcoholic Can 330ml",
+        "manufacturer": "Malta Guinness",
+        "batch": "MG2401A",
+        "exp_date": "EXP 06/2027",
+        "mfg_date": "MFG 06/2026"
+      },
+      "expect": "clear"
+    },
+    {
+      "key": "noodles",
+      "chip": "Instant noodles",
+      "barcode": "0110800126258",
+      "title": "A pack of instant noodles",
+      "note": "Same rail, a different category. The check is the same shape: does the code on the pack resolve to the thing on the pack?",
+      "pack": {
+        "barcode": "0110800126258",
+        "product_name": "Indomie Instant Noodles",
+        "manufacturer": "",
+        "batch": "IND2409",
+        "exp_date": "EXP 03/2027",
+        "mfg_date": "MFG 09/2025"
+      },
+      "expect": "clear"
+    },
+    {
+      "key": "water",
+      "chip": "Sachet water",
+      "barcode": "6156000261201",
+      "title": "A bottle of water",
+      "note": "Short product names are where naive string matching accuses honest packs. Vouch treats a name contained in the pack's name as a match.",
+      "pack": {
+        "barcode": "6156000261201",
+        "product_name": "Cway Drinking Water",
+        "manufacturer": "Cway",
+        "batch": "CW2406",
+        "exp_date": "EXP 06/2027",
+        "mfg_date": "MFG 06/2026"
+      },
+      "expect": "clear"
+    },
+    {
+      "key": "cosmetic",
+      "chip": "A body lotion",
+      "barcode": "4005900376978",
+      "title": "A cosmetic pack",
+      "note": "Cosmetics run through Open Beauty Facts. NAFDAC regulates them; this is what can be checked without a public register.",
+      "pack": {
+        "barcode": "4005900376978",
+        "product_name": "NIVEA Pearl & Beauty Antiperspirant",
+        "manufacturer": "NIVEA",
+        "batch": "NPB2403",
+        "exp_date": "EXP 09/2029",
+        "mfg_date": "MFG 09/2026"
+      },
+      "expect": "clear"
+    },
+    {
+      "key": "copied_barcode",
+      "chip": "The code is for another product",
+      "barcode": "6151100034823",
+      "title": "A pack whose barcode belongs to something else",
+      "note": "The drink equivalent of a copied NAFDAC number: the barcode on the pack resolves to a different product entirely.",
+      "pack": {
+        "barcode": "6151100034823",
+        "product_name": "Malta Guinness Malt Drink",
+        "manufacturer": "Malta Guinness",
+        "batch": "MG2401A",
+        "exp_date": "EXP 06/2027",
+        "mfg_date": "MFG 06/2026"
+      },
+      "expect": "high_risk"
+    },
+    {
+      "key": "unknown_barcode",
+      "chip": "A code nobody has seen",
+      "barcode": "6151100099990",
+      "title": "A valid barcode that is in no database",
+      "note": "A valid check digit, no record. That is not proof of anything: a new product, a shop's own repack and a falsified pack all look like this.",
+      "pack": {
+        "barcode": "6151100099990",
+        "product_name": "Golden Penny Semovita",
+        "manufacturer": "Golden Penny",
+        "batch": "GP2405",
+        "exp_date": "EXP 02/2027",
+        "mfg_date": "MFG 08/2025"
+      },
+      "expect": "review"
+    },
+    {
+      "key": "bad_barcode",
+      "chip": "A barcode that cannot exist",
+      "barcode": "6151100099997",
+      "title": "A barcode whose own check digit fails",
+      "note": "EAN/UPC codes carry their own arithmetic. If the check digit fails, the number as printed cannot be a real barcode — most often it is a mistyped digit.",
+      "pack": {
+        "barcode": "6151100099997",
+        "product_name": "Cway Drinking Water",
+        "manufacturer": "Cway",
+        "batch": "CW2406",
+        "exp_date": "EXP 06/2027",
+        "mfg_date": "MFG 06/2026"
+      },
+      "expect": "review"
+    },
+    {
+      "key": "expired_drink",
+      "chip": "A drink past its date",
+      "barcode": "5010162000164",
+      "title": "A drink whose best-before has passed",
+      "note": "The same expiry arithmetic applies to a drink. It is its own finding and needs no claim about what is inside.",
+      "pack": {
+        "barcode": "5010162000164",
+        "product_name": "Malta Gold Non-alcoholic Can 330ml",
+        "manufacturer": "Malta Guinness",
+        "batch": "MG1902A",
+        "exp_date": "EXP 01/2026",
+        "mfg_date": "MFG 01/2025"
+      },
+      "expect": "high_risk"
+    }
+  ]
+}
