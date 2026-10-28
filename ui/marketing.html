@@ -1,217 +1,1194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Vouch — Real Products. Real Dates. Real Safety.</title>
-  <meta name="description" content="Verify medicines, foods, beverages and everyday consumables against the NAFDAC registry and trusted product databases." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z' fill='%23126B45'/%3E%3Cpath d='M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z' fill='white'/%3E%3C/svg%3E">
-  <style>
-    :root{
-      --primary:#126B45; --deep:#073B2E; --bg:#F7F8F5; --card:#FFFFFF;
-      --ink:#202923; --ink-3:#66736B; --sage:#DFF3E5; --line:#E5E9E4;
-      --warn:#B7791F; --warn-bg:#FFF4D6; --err:#C62828; --err-bg:#FDECEC; --ok:#18794E; --ok-bg:#E5F5EA;
-      --radius:14px; --shadow:0 1px 1px rgba(32,41,35,.02),0 6px 18px rgba(32,41,35,.05);
-      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-    a{color:inherit;text-decoration:none}
-    button{font:inherit}
-    .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
-    header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.98);backdrop-filter:saturate(180%) blur(8px);border-bottom:1px solid var(--line)}
-    .nav{display:flex;align-items:center;gap:18px;height:72px}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:20px}
-    .brand-mark{display:flex;align-items:center;gap:9px}
-    .shield{width:22px;height:22px}
-    .brand small{margin-left:8px;color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
-    .nav-links{display:flex;gap:18px;margin-left:auto;align-items:center}
-    .nav-links a{color:var(--ink-3);font-weight:600;font-size:14px}
-    .nav-links a:hover{color:var(--ink)}
-    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px;border:1px solid transparent;background:var(--primary);color:#fff}
-    .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
-    .btn.sm{padding:8px 14px}
-    .hero{padding:64px 0 36px}
-    .hero-grid{display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:36px;align-items:center}
-    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--sage);color:var(--primary);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.12em}
-    h1{font-size:clamp(42px,7vw,76px);line-height:1.01;letter-spacing:-.06em;margin:18px 0 16px}
-    .lead{font-size:18px;color:var(--ink-3);max-width:620px}
-    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
-    .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:26px 0 70px}
-    .step{background:var(--card);padding:18px 22px;display:flex;align-items:center;gap:14px}
-    .num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--sage);color:var(--primary);font-weight:800}
-    .section{padding:70px 0}
-    .section.alt{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:center}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px}
-    .feat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-    .feat{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:var(--card)}
-    .shot{border:1px solid var(--line);border-radius:calc(var(--radius)+4px);overflow:hidden;box-shadow:var(--shadow)}
-    .shot img{display:block;width:100%;height:auto}
-    footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--ink-3)}
-    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:28px}
-    .muted{color:var(--ink-3)}
-    @media(max-width:1080px){.hero-grid,.grid-2{grid-template-columns:1fr}.feat-grid,.steps{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vouch — Real Products. Real Dates. Real Safety.</title>
+<meta name="description" content="Vouch helps consumers, retailers and inspectors check expiry dates, batch numbers, barcodes and NAFDAC registration records before a product is bought, sold or consumed." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z' fill='%23126B45'/%3E%3Cpath d='M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --primary:#126B45; --deep:#073B2E; --bg:#F7F8F5; --card:#FFFFFF;
+    --ink:#202923; --muted:#66736B; --sage:#DFF3E5; --line:#E5E9E4;
+    --warn:#B7791F; --warn-bg:#FFF4D6; --err:#C62828; --err-bg:#FDECEC;
+    --ok:#18794E; --ok-bg:#E5F5EA;
+    --radius:12px; --radius-lg:16px;
+    --shadow:0 1px 2px rgba(32,41,35,.04), 0 8px 24px rgba(32,41,35,.05);
+    --shadow-lg:0 2px 4px rgba(32,41,35,.04), 0 18px 50px rgba(32,41,35,.10);
+    --wrap:1160px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  button{font:inherit}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+  h1,h2,h3,h4{color:var(--ink);letter-spacing:-.03em;line-height:1.15;margin:0}
+  h1{font-size:clamp(38px,5.4vw,64px);font-weight:800;letter-spacing:-.055em;line-height:1.02}
+  h2{font-size:clamp(28px,3.6vw,42px);font-weight:800}
+  h3{font-size:19px;font-weight:700}
+  p{margin:0}
+  .lead{font-size:18px;color:var(--muted);line-height:1.65}
+  .small{font-size:13.5px;color:var(--muted);line-height:1.65}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--primary)}
+  .eyebrow::before{content:"";width:18px;height:2px;background:var(--primary);display:inline-block}
+
+  /* header */
+  header.site{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:22px;height:72px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:21px;letter-spacing:-.035em}
+  .logo svg{width:26px;height:26px;flex:0 0 26px}
+  .logo small{display:block;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+  .navlinks{display:flex;align-items:center;gap:4px;margin-left:auto}
+  .navlinks a{font-size:14px;font-weight:600;color:var(--muted);padding:9px 13px;border-radius:8px;transition:.15s}
+  .navlinks a:hover{color:var(--ink);background:var(--bg)}
+  .navlinks a.active{color:var(--primary)}
+  .nav-cta{display:flex;align-items:center;gap:8px;margin-left:8px}
+  .burger{display:none;margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:9px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--ink)}
+  .mobile{display:none;border-top:1px solid var(--line);background:#fff;padding:10px 24px 18px}
+  .mobile a{display:block;padding:11px 4px;font-size:15px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--line)}
+  .mobile .btn{margin-top:12px;width:100%}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid transparent;background:var(--primary);color:#fff;font-weight:700;font-size:14.5px;padding:11px 18px;border-radius:9px;cursor:pointer;transition:.15s}
+  .btn:hover{background:#0f5c3b}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--sage);border-color:transparent;color:var(--primary)}
+  .btn.dark{background:#fff;color:var(--deep);border-color:#fff}
+  .btn.dark:hover{background:var(--sage);color:var(--deep)}
+  .btn.outline-light{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+  .btn.outline-light:hover{background:rgba(255,255,255,.1)}
+  .btn.block{width:100%}
+  .btn.sm{padding:8px 13px;font-size:13.5px}
+  .btn[disabled]{opacity:.55;cursor:not-allowed}
+
+  /* hero */
+  .hero{background:linear-gradient(170deg,#073B2E 0%,#0a4a38 60%,#0d5741 100%);color:#fff;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;inset:auto -10% -40% 45%;height:70%;background:radial-gradient(closest-side,rgba(223,243,229,.16),transparent);pointer-events:none}
+  .hero .wrap{position:relative;z-index:1}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:48px;align-items:center;padding:78px 0 64px}
+  .hero .eyebrow{color:#b9e3c9}
+  .hero .eyebrow::before{background:#b9e3c9}
+  .hero h1{color:#fff;margin:18px 0 20px;max-width:14ch}
+  .hero .lead{color:#d3e6da;max-width:54ch}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
+  .hero-note{display:flex;align-items:flex-start;gap:9px;margin-top:22px;font-size:12.5px;color:#b9cec1;max-width:52ch;line-height:1.6}
+  .hero-note svg{flex:0 0 15px;margin-top:2px;opacity:.8}
+  .browser{border:1px solid rgba(255,255,255,.16);border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);background:#fff}
+  .browser .bar{display:flex;align-items:center;gap:6px;padding:9px 12px;background:#f1f3ef;border-bottom:1px solid #e3e7e0}
+  .browser .bar i{width:8px;height:8px;border-radius:50%;background:#cfd6cf;display:inline-block}
+  .browser .url{margin-left:8px;font-size:10.5px;color:#8a978f;background:#fff;border:1px solid #e3e7e0;border-radius:5px;padding:2px 8px;flex:1;text-align:center}
+
+  .trust{border-top:1px solid rgba(255,255,255,.12);padding:18px 0 22px;display:flex;gap:26px;flex-wrap:wrap;align-items:center;font-size:12px;color:#b9cec1;letter-spacing:.02em}
+  .trust b{color:#fff;font-weight:700}
+
+  /* steps strip */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);margin:32px auto 0;position:relative;z-index:2;overflow:hidden}
+  .step{padding:22px 24px;display:flex;gap:14px;align-items:flex-start}
+  .step + .step{border-left:1px solid var(--line)}
+  .step .n{flex:0 0 30px;height:30px;border-radius:8px;background:var(--sage);color:var(--primary);display:grid;place-items:center;font-weight:800;font-size:13px}
+  .step h3{font-size:14.5px;margin-bottom:3px}
+  .step p{font-size:13px;color:var(--muted);line-height:1.55}
+
+  section{padding:76px 0}
+  section.tight{padding:56px 0}
+  section.white{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .head{max-width:720px;margin-bottom:34px}
+  .head p{margin-top:14px}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .card h3{margin-bottom:8px;font-size:16.5px}
+  .card p{font-size:14px;color:var(--muted);line-height:1.65}
+  .icon{width:36px;height:36px;border-radius:9px;background:var(--sage);color:var(--primary);display:grid;place-items:center;margin-bottom:14px}
+  .icon svg{width:18px;height:18px}
+
+  .shot{border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;background:#fff;box-shadow:var(--shadow-lg)}
+  .shot img{width:100%;height:auto}
+  .shot figcaption{padding:10px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);background:#fbfcfa}
+
+  .rail{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .rail .card{padding:26px}
+  .rail .tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--sage);color:var(--primary);margin-bottom:12px}
+  .rail .tag.alt{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+  .rail ul{margin:12px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted);line-height:1.8}
+
+  .states{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .state{border:1px solid var(--line);border-radius:var(--radius);padding:18px;background:#fff}
+  .state .bar{height:3px;border-radius:2px;margin-bottom:12px}
+  .state b{display:block;font-size:14px;margin-bottom:4px}
+  .state p{font-size:12.5px;color:var(--muted);line-height:1.6}
+  .state.clear .bar{background:var(--ok)}
+  .state.review .bar{background:var(--warn)}
+  .state.risk .bar{background:var(--err)}
+  .state.unknown .bar{background:#9aa6a0}
+
+  .audience{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .audience .card{padding:22px}
+  .audience h3{font-size:15px}
+  .audience p{font-size:13px}
+
+  .cta-band{background:var(--deep);color:#fff;border-radius:var(--radius-lg);padding:44px;display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap}
+  .cta-band h2{color:#fff;max-width:22ch}
+  .cta-band p{color:#c9dccf;margin-top:10px;max-width:52ch;font-size:14.5px}
+
+  .faq{display:grid;gap:10px;max-width:860px}
+  details.q{border:1px solid var(--line);border-radius:var(--radius);background:#fff;overflow:hidden}
+  details.q summary{cursor:pointer;padding:16px 18px;font-weight:600;font-size:14.5px;display:flex;align-items:center;justify-content:space-between;gap:16px;list-style:none}
+  details.q summary::-webkit-details-marker{display:none}
+  details.q summary::after{content:"+";font-size:20px;color:var(--muted);line-height:1;font-weight:400}
+  details.q[open] summary::after{content:"–"}
+  details.q .a{padding:0 18px 18px;font-size:14px;color:var(--muted);line-height:1.7}
+
+  .list-check{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  .list-check li{display:flex;gap:10px;font-size:14.5px;line-height:1.6}
+  .list-check svg{flex:0 0 18px;margin-top:3px;color:var(--primary)}
+  .list-plain{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:14.5px}
+  .list-plain li{padding-left:16px;position:relative;color:var(--muted)}
+  .list-plain li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--primary)}
+
+  .note{border-left:3px solid var(--line);background:#fbfcfa;padding:14px 16px;font-size:13px;color:var(--muted);border-radius:0 8px 8px 0;line-height:1.65}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-bg);color:#7a5412}
+
+  /* forms */
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  input,select,textarea{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:inherit;font-size:14.5px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(18,107,69,.1)}
+  textarea{resize:vertical;min-height:110px}
+  .hint{font-size:12px;color:var(--muted);margin-top:5px}
+  .err{font-size:12.5px;color:var(--err);margin-top:5px;display:none}
+  .field.bad input,.field.bad select,.field.bad textarea{border-color:var(--err)}
+  .field.bad .err{display:block}
+  .form-ok{display:none;border:1px solid #cfe7d8;background:var(--ok-bg);color:#0f5c3b;border-radius:8px;padding:12px 14px;font-size:13.5px;margin-top:14px}
+  .form-ok.show{display:block}
+  .pw{position:relative}
+  .pw input{padding-right:56px}
+  .pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;padding:6px}
+
+  .auth-shell{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 72px)}
+  .auth-aside{background:var(--deep);color:#fff;padding:56px 48px;display:flex;flex-direction:column;justify-content:space-between}
+  .auth-aside h2{color:#fff;font-size:32px;max-width:16ch}
+  .auth-aside p{color:#b9cec1;font-size:14px;margin-top:14px;max-width:40ch}
+  .auth-main{display:flex;align-items:center;justify-content:center;padding:56px 24px;background:#fff}
+  .auth-card{width:100%;max-width:420px}
+  .auth-card h1{font-size:30px;letter-spacing:-.04em;margin-bottom:8px}
+  .auth-card .sub{color:var(--muted);font-size:14px;margin-bottom:26px}
+  .auth-foot{font-size:13.5px;color:var(--muted);margin-top:18px}
+  .auth-foot a{color:var(--primary);font-weight:600}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;margin:20px 0}
+  .divider::before,.divider::after{content:"";height:1px;background:var(--line);flex:1}
+
+  /* footer */
+  footer.site{background:var(--deep);color:#c9dccf;padding:56px 0 30px}
+  .foot-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px}
+  .foot-brand .logo{color:#fff}
+  .foot-brand .logo small{color:#9db5a6}
+  .foot-brand p{font-size:13px;color:#a8c1b1;margin-top:14px;max-width:34ch;line-height:1.7}
+  .foot-col h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8fae9b;margin-bottom:12px;font-weight:800}
+  .foot-col a{display:block;font-size:13.5px;color:#c9dccf;padding:5px 0}
+  .foot-col a:hover{color:#fff}
+  .foot-base{border-top:1px solid rgba(255,255,255,.12);margin-top:40px;padding-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:#8fae9b}
+
+  .crumbs{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .crumbs a{color:var(--primary);font-weight:600}
+  .page-hero{background:#fff;border-bottom:1px solid var(--line);padding:52px 0}
+  .page-hero h1{font-size:clamp(32px,4.4vw,50px);max-width:20ch}
+  .page-hero p{margin-top:14px;max-width:62ch}
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:start}
+
+  .modal{position:fixed;inset:0;z-index:90;background:rgba(7,59,46,.5);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .modal-card{background:#fff;border-radius:14px;width:min(560px,100%);max-height:90vh;overflow:auto;box-shadow:0 40px 100px rgba(0,0,0,.35)}
+  .modal-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .modal-head h3{font-size:17px}
+  .modal-head button{margin-left:auto;border:0;background:transparent;font-size:22px;color:var(--muted);cursor:pointer;line-height:1}
+  .modal-body{padding:22px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:100;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:calc(100% - 40px);text-align:center}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  .mock{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .mock .cell{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fff}
+  .mock .cell span{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;display:block;margin-bottom:5px}
+  .mock .cell b{font-size:14px}
+  .mock .cell em{font-style:normal;font-size:11.5px;color:var(--muted);display:block;margin-top:3px}
+  .statusline{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .statusline.ok{background:var(--ok-bg);color:var(--ok)}
+  .statusline.warn{background:var(--warn-bg);color:var(--warn)}
+  .statusline.bad{background:var(--err-bg);color:var(--err)}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+
+  @media(max-width:1020px){
+    .hero-grid,.grid-2,.split,.auth-shell{grid-template-columns:1fr}
+    .grid-3,.grid-4,.states,.audience,.rail{grid-template-columns:1fr 1fr}
+    .steps{grid-template-columns:1fr}
+    .step + .step{border-left:0;border-top:1px solid var(--line)}
+    .foot-grid{grid-template-columns:1fr 1fr}
+    .auth-aside{display:none}
+    .navlinks{display:none}
+    .burger{display:inline-flex}
+    .nav-cta{margin-left:0}
+    .hero-grid{padding:52px 0 56px;gap:32px}
+  }
+  @media(max-width:680px){
+    section{padding:56px 0}
+    .grid-3,.grid-4,.states,.audience,.rail,.mock{grid-template-columns:1fr}
+    .foot-grid{grid-template-columns:1fr}
+    .cta-band{padding:30px 24px}
+    .hero-actions .btn{width:100%}
+    .nav-cta .btn{display:none}
+    .page-hero{padding:36px 0}
+  }
+</style>
 </head>
 <body>
-  <header>
-    <div class="wrap nav">
-      <div class="brand">
-        <span class="brand-mark">
-          <svg class="shield" viewBox="0 0 24 24"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="var(--primary)"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#fff"/></svg>
-          <span>Vouch</span>
-        </span>
-        <small>Check it. Chase it.</small>
-      </div>
-      <nav class="nav-links">
-        <a href="#how">How It Works</a>
-        <a href="#features">Features</a>
-        <a href="#business">For Business</a>
-        <a href="#resources">Safety Resources</a>
-        <a href="#about">About</a>
-        <a href="/">Sign In</a>
-        <a class="btn" href="/">Get Started</a>
-      </nav>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="/" data-link>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="#126B45"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#fff"/></svg>
+      <span>Vouch<small>Check it. Chase it.</small></span>
+    </a>
+    <nav class="navlinks" aria-label="Main">
+      <a href="/" data-link data-nav="home">Home</a>
+      <a href="/how-it-works" data-link data-nav="how">How it works</a>
+      <a href="/features" data-link data-nav="features">Features</a>
+      <a href="/business" data-link data-nav="business">For business</a>
+      <a href="/resources" data-link data-nav="resources">Safety resources</a>
+      <a href="/about" data-link data-nav="about">About</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn ghost sm" href="/signin" data-link>Sign in</a>
+      <a class="btn sm" href="/signup" data-link>Get started</a>
     </div>
-  </header>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
+    </button>
+  </div>
+  <div class="mobile" id="mobileMenu">
+    <a href="/" data-link>Home</a>
+    <a href="/how-it-works" data-link>How it works</a>
+    <a href="/features" data-link>Features</a>
+    <a href="/business" data-link>For business</a>
+    <a href="/resources" data-link>Safety resources</a>
+    <a href="/about" data-link>About</a>
+    <a href="/signin" data-link>Sign in</a>
+    <a class="btn" href="/signup" data-link>Get started</a>
+  </div>
+</header>
 
-  <main>
-    <section class="hero">
-      <div class="wrap hero-grid">
+<main id="view">
+
+<!-- ============================ HOME ============================ -->
+<div data-page="home">
+  <section class="hero" style="padding:0">
+    <div class="wrap">
+      <div class="hero-grid">
         <div>
-          <span class="eyebrow">Consumer Safety Platform</span>
+          <span class="eyebrow">Consumer product verification</span>
           <h1>Real Products. Real Dates. Real Safety.</h1>
-          <p class="lead">Check expiry dates, inspect suspicious labels, and verify product information before you buy, sell, or consume everyday products. Evidence-based verification for medicines, foods, beverages and consumables.</p>
+          <p class="lead">Check expiry dates, inspect suspicious labels, and verify product information before you buy, sell or consume everyday products.</p>
           <div class="hero-actions">
-            <a class="btn" href="/">Check a Product</a>
-            <a class="btn ghost" href="#how">How It Works</a>
+            <a class="btn dark" href="/app">Check a product</a>
+            <a class="btn outline-light" href="/how-it-works" data-link>How it works</a>
+          </div>
+          <div class="hero-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>No binary “fake or genuine” verdicts. Vouch shows what was checked, what the evidence supports, and what remains unknown.</span>
           </div>
         </div>
-        <div class="panel">
-          <div class="shot">
-            <img src="/assets/vouch-dashboard-showcase.png" alt="Vouch product verification dashboard" loading="lazy">
-          </div>
-        </div>
-      </div>
-      <div class="wrap">
-        <div class="steps">
-          <div class="step"><div class="num">1</div><div><strong>Scan</strong><div class="muted">Capture the pack, label, expiry or barcode</div></div></div>
-          <div class="step"><div class="num">2</div><div><strong>Verify</strong><div class="muted">Check against registries and available references</div></div></div>
-          <div class="step"><div class="num">3</div><div><strong>Make an Informed Decision</strong><div class="muted">Review evidence, limits and next steps</div></div></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section alt" id="how">
-      <div class="wrap grid-2">
         <div>
-          <span class="eyebrow">How It Works</span>
-          <h2 style="font-size:clamp(32px,4vw,54px);letter-spacing:-.05em;margin:16px 0 12px">Clarity without guesswork</h2>
-          <p class="lead">Vouch separates evidence from conclusions. If something cannot be verified, it says so. Results are risk-based with plain explanations.</p>
-          <div class="card" style="margin-top:22px">
-            <ol style="margin:0;padding-left:18px;display:grid;gap:10px">
-              <li><strong>Capture</strong> — image, pasted text, or barcode</li>
-              <li><strong>Extract</strong> — dates, batch, NAFDAC number</li>
-              <li><strong>Inspect</strong> — labels and available indicators</li>
-              <li><strong>Cross-check</strong> — NAFDAC register or product databases</li>
-              <li><strong>Report</strong> — findings with evidence and limitations</li>
-            </ol>
+          <div class="browser">
+            <div class="bar"><i></i><i></i><i></i><span class="url">vouch — product verification</span></div>
+            <img src="/assets/vouch-dashboard-showcase.png" alt="Vouch verification dashboard showing a product result with evidence and next steps" width="1200" height="800" />
           </div>
         </div>
-        <div class="shot">
-          <img src="/assets/vouch-app-showcase.png" alt="Vouch mobile app verification" loading="lazy">
+      </div>
+      <div class="trust">
+        <span>Checked against <b>the NAFDAC Greenbook</b></span>
+        <span>and <b>Open Food Facts · Open Beauty Facts · Open Products Facts</b></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <div><h3>Scan</h3><p>Capture the pack, label, expiry date or barcode with a phone or laptop camera.</p></div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div><h3>Verify</h3><p>Cross-check dates, batch, barcode and registration against available records.</p></div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div><h3>Make an informed decision</h3><p>Read the evidence, the limits of each check, and the next step that fits.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap grid-2">
+      <div>
+        <span class="eyebrow">The gap we work in</span>
+        <h2 style="margin:16px 0 0">The rules exist. The last metre is missing.</h2>
+        <p class="lead" style="margin-top:16px">A registration number on a pack is not a check. An expiry date printed in a different ink is not a check. Most people have no practical way to look anything up while standing in a shop — and no clear path if the answer is wrong.</p>
+        <p class="lead" style="margin-top:14px">Vouch closes that gap with two honest rails and one follow-through.</p>
+        <div style="margin-top:24px">
+          <a class="btn" href="/app">Try a live check</a>
         </div>
       </div>
-    </section>
-
-    <section class="section" id="features">
-      <div class="wrap">
-        <span class="eyebrow">Features</span>
-        <h2 style="font-size:clamp(32px,4vw,54px);letter-spacing:-.05em;margin:16px 0 12px">Pragmatic checks that matter</h2>
-        <p class="lead">Focus on what a phone can actually do today, with honest boundaries.</p>
-        <div class="feat-grid" style="margin-top:26px">
-          <div class="feat"><strong>Expiry &amp; Best-before</strong><p class="muted">Read and interpret dates with end-of-month rules.</p></div>
-          <div class="feat"><strong>Batch &amp; NAFDAC</strong><p class="muted">Extract and check against the NAFDAC register where published.</p></div>
-          <div class="feat"><strong>Barcode &amp; QR</strong><p class="muted">Lookup across Open Food Facts, Open Beauty Facts and Open Products Facts.</p></div>
-          <div class="feat"><strong>Label inspection</strong><p class="muted">Surface visible irregularities with evidence.</p></div>
-          <div class="feat"><strong>Follow-through</strong><p class="muted">Generate NAFDAC/FCCPC reports and track cases with deadlines.</p></div>
-          <div class="feat"><strong>AI explanations</strong><p class="muted">Grounded, streaming answers with guardrails — no binary fake/genuine verdicts.</p></div>
+      <div class="card" style="padding:28px">
+        <div class="mock" style="margin-bottom:16px">
+          <div class="cell"><span>Printed number</span><b>A11-0551</b><em>On the carton</em></div>
+          <div class="cell"><span>Registry record</span><b>AC-Drex Tablet</b><em>A.C. Drugs Ltd</em></div>
+          <div class="cell"><span>Expiry</span><b>06 / 2028</b><em>Within registration window</em></div>
+          <div class="cell"><span>Batch</span><b>ACD2401</b><em>Well-formed</em></div>
         </div>
-        <div class="shot" style="margin-top:26px">
-          <img src="/assets/vouch-app-showcase-1.png" alt="Vouch app verification flow" loading="lazy">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="statusline ok"><span class="dot"></span>Checks passed</span>
+          <span class="small">Every result shows the evidence behind it.</span>
         </div>
+        <div class="note" style="margin-top:16px">This is a demonstration of the result format. Run a real check in the app to see live register data.</div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section alt" id="business">
-      <div class="wrap grid-2">
-        <div>
-          <span class="eyebrow">For Business</span>
-          <h2 style="font-size:clamp(32px,4vw,54px);letter-spacing:-.05em;margin:16px 0 12px">Incoming stock checks with an audit trail</h2>
-          <p class="lead">For supermarkets, wholesalers, distributors and inspection teams. Keep records, share reports and stay ahead of risks.</p>
-          <div class="hero-actions" style="margin-top:22px">
-            <a class="btn" href="/">Request a Business Demo</a>
-            <a class="btn ghost" href="/">Explore Business Features</a>
-          </div>
+  <section class="white">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">What Vouch checks</span>
+        <h2 style="margin-top:14px">Practical checks a phone can actually do</h2>
+        <p class="lead">Not spectroscopy. Not a lab in your pocket. The checks that catch the mistakes and tampering people meet most often.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div>
+          <h3>Expiry-date reading</h3>
+          <p>Reads printed dates and applies end-of-month rules, then separates an expired product from a suspicious one.</p>
         </div>
         <div class="card">
-          <ul style="margin:0;padding-left:18px;display:grid;gap:10px">
-            <li>Incoming-stock verification</li>
-            <li>Batch-level inspection records</li>
-            <li>Product-risk summaries</li>
-            <li>Exportable reports</li>
-            <li>Team access and permissions</li>
-            <li>Audit history</li>
-          </ul>
-          <p class="muted" style="margin:14px 0 0;font-size:14px">No regulatory certification or official endorsement is claimed.</p>
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <h3>Pack and label indicators</h3>
+          <p>Records what you can see: a sticker over print, a second date, a broken seal, a missing hologram, inconsistent print.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10M7 5v14M11 7v10M15 5v14M19 7v10"/></svg></div>
+          <h3>Barcode and QR lookup</h3>
+          <p>Checks food, drink, water, cosmetics and household products across public product databases.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+          <h3>Product reference match</h3>
+          <p>Compares the number, product name and manufacturer printed on the pack with the registration record.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 16h5"/></svg></div>
+          <h3>Evidence, not adjectives</h3>
+          <p>Each finding has a source and a plain explanation of what it does and does not establish.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8M8 13h5"/></svg></div>
+          <h3>Follow-through with deadlines</h3>
+          <p>Turns a finding into a report, a refund demand or a regulator complaint — with dates to chase.</p>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer id="about">
-    <div class="wrap footer-grid">
-      <div>
-        <div class="brand" style="margin-bottom:10px">
-          <svg class="shield" viewBox="0 0 24 24"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="var(--primary)"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#fff"/></svg>
-          <span>Vouch</span>
-        </div>
-        <p class="muted">Real Products. Real Dates. Real Safety.</p>
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Two rails</span>
+        <h2 style="margin-top:14px">Every product on the shelf is not the same problem</h2>
+        <p class="lead">Medicines are regulated through a public register. Food and cosmetics are regulated too, but their registrations are not published the same way. Vouch says which rail it is on.</p>
       </div>
-      <div>
-        <strong>Product</strong>
-        <div style="display:grid;gap:8px;margin-top:10px">
-          <a class="muted" href="#how">How It Works</a>
-          <a class="muted" href="#features">Features</a>
-          <a class="muted" href="#business">For Business</a>
+      <div class="rail">
+        <div class="card">
+          <span class="tag">Rail one · NAFDAC register</span>
+          <h3>Medicines, devices, vaccines, herbals, veterinary</h3>
+          <p style="margin-top:8px">The printed registration number is resolved against the live NAFDAC Greenbook, including the numbering variants and OCR confusions that make genuine packs look unregistered.</p>
+          <ul>
+            <li>Registration status and expiry</li>
+            <li>Product name and manufacturer comparison</li>
+            <li>Inactive registrations kept distinct from falsified packs</li>
+          </ul>
         </div>
-      </div>
-      <div>
-        <strong>Resources</strong>
-        <div style="display:grid;gap:8px;margin-top:10px">
-          <a class="muted" href="#resources">Safety Resources</a>
-          <a class="muted" href="/">Product Guide</a>
-          <a class="muted" href="/">Report a Problem</a>
-        </div>
-      </div>
-      <div>
-        <strong>Legal</strong>
-        <div style="display:grid;gap:8px;margin-top:10px">
-          <a class="muted" href="/">Privacy Policy</a>
-          <a class="muted" href="/">Terms of Service</a>
-          <a class="muted" href="#about">About</a>
+        <div class="card">
+          <span class="tag alt">Rail two · Product databases</span>
+          <h3>Food, drink, water, cosmetics, household</h3>
+          <p style="margin-top:8px">The barcode is checked against open product databases, with check-digit validation before any lookup. The record tells you what the product claims to be — not who made the pack in your hand.</p>
+          <ul>
+            <li>EAN-8, UPC, EAN-13 and GTIN-14 validation</li>
+            <li>Open Food Facts, Open Beauty Facts, Open Products Facts</li>
+            <li>Clear language when a code is not found</li>
+          </ul>
         </div>
       </div>
     </div>
-    <div class="wrap" style="margin-top:26px">
-      <small class="muted">© 2026 Vouch. Not a substitute for NAFDAC inspection or laboratory testing.</small>
+  </section>
+
+  <section class="white">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">How results read</span>
+        <h2 style="margin-top:14px">Four states. No false certainty.</h2>
+        <p class="lead">A product is not “verified” because a page loaded. The state reflects what the checks actually support.</p>
+      </div>
+      <div class="states">
+        <div class="state clear"><div class="bar"></div><b>Clear</b><p>The checks that could run passed. Limits are still stated.</p></div>
+        <div class="state review"><div class="bar"></div><b>Check further</b><p>Something needs a closer look, or evidence is incomplete.</p></div>
+        <div class="state risk"><div class="bar"></div><b>High-risk signals</b><p>Expired, mismatched or unregistered, with the evidence named.</p></div>
+        <div class="state unknown"><div class="bar"></div><b>Inconclusive</b><p>The information needed to decide is not available.</p></div>
+      </div>
     </div>
-  </footer>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Who it is for</span>
+        <h2 style="margin-top:14px">One check, four kinds of user</h2>
+      </div>
+      <div class="audience">
+        <div class="card"><h3>Consumers</h3><p>Check a pack in the aisle, keep the evidence, and know who to tell.</p></div>
+        <div class="card"><h3>Retailers</h3><p>Screen incoming stock and keep a record of what was checked and when.</p></div>
+        <div class="card"><h3>Distributors</h3><p>Inspect batches, spot repeated complaints, and export a record for partners.</p></div>
+        <div class="card"><h3>Inspection teams</h3><p>Standardise field notes and carry evidence into an enforcement workflow.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="white">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Product preview</span>
+        <h2 style="margin-top:14px">Built for a phone in one hand</h2>
+        <p class="lead">The same workflow on a laptop at a stockroom desk. Demo screens below; every check in the app runs against live data.</p>
+      </div>
+      <div class="grid-2" style="gap:20px">
+        <figure class="shot" style="margin:0">
+          <img src="/assets/vouch-app-showcase.png" alt="Vouch mobile app screen showing a product check" loading="lazy" />
+          <figcaption>Scan, review the extracted fields, and correct anything OCR misread.</figcaption>
+        </figure>
+        <figure class="shot" style="margin:0">
+          <img src="/assets/vouch-app-showcase-1.png" alt="Vouch mobile app result screen with evidence" loading="lazy" />
+          <figcaption>Results separate what was checked from what could not be checked.</figcaption>
+        </figure>
+      </div>
+      <div class="note" style="margin-top:18px">Screens show demonstration data. Live results depend on the registry and databases being reachable; when they are not, Vouch says so instead of guessing.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Safety education</span>
+        <h2 style="margin-top:14px">Know what to look at before you need us</h2>
+      </div>
+      <div class="grid-3">
+        <div class="card"><h3>Where the date hides</h3><p>Crimps, bottle bases, sachet seals and carton flaps. Tilt the pack to the light; the stamp is often the same colour as the box.</p><a class="small" href="/resources" data-link style="color:var(--primary);font-weight:700;display:inline-block;margin-top:12px">Read the guide →</a></div>
+        <div class="card"><h3>Best-before is not use-by</h3><p>One is about quality, one is about safety. Treating them the same wastes food or risks health.</p><a class="small" href="/resources" data-link style="color:var(--primary);font-weight:700;display:inline-block;margin-top:12px">Read the guide →</a></div>
+        <div class="card"><h3>When a pack looks wrong</h3><p>Keep it, photograph it, and do not hand over the only evidence before you have a record.</p><a class="small" href="/resources" data-link style="color:var(--primary);font-weight:700;display:inline-block;margin-top:12px">Read the guide →</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="white">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Questions</span>
+        <h2 style="margin-top:14px">Straight answers</h2>
+      </div>
+      <div class="faq">
+        <details class="q"><summary>Does a match prove the product is genuine?</summary><div class="a">No. A registration record or barcode match identifies a product or licence; it does not prove that a specific pack was made by that manufacturer. Vouch separates “the record exists and the details agree” from “this pack is authentic”, and never claims the second from a lookup alone.</div></details>
+        <details class="q"><summary>Can Vouch tell me if a medicine is fake?</summary><div class="a">It can tell you whether the printed number resolves to a registration, whether the product and manufacturer names agree, whether the registration is active, and whether the pack is expired. Those are strong signals. Chemical content and true provenance need laboratory work or a regulator inspection.</div></details>
+        <details class="q"><summary>What happens if the registry is down?</summary><div class="a">Vouch says the register could not be reached and marks the affected check as unverifiable. It does not convert an outage into “not registered”, because absence of an answer is not evidence of falsification.</div></details>
+        <details class="q"><summary>Does my photo leave my device?</summary><div class="a">In this build, photos are processed by the OCR engine on the machine running Vouch. No model key is configured by default. If you add one, the configured provider receives the image; the app states which reader was used on every extraction.</div></details>
+        <details class="q"><summary>Is Vouch approved by NAFDAC or FCCPC?</summary><div class="a">No. Vouch is independent. It reads publicly available data and helps you prepare a report; it does not act for, or carry the endorsement of, any regulator.</div></details>
+        <details class="q"><summary>What is actually built today?</summary><div class="a">Scanning (camera or upload), OCR extraction with manual correction, expiry logic, NAFDAC number resolution, barcode lookup, evidence-backed results, case tracking with deadlines, generated report drafts, and a voice agent with a typed fallback. Handheld hardware and spectroscopic analysis are research directions, not features.</div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="tight">
+    <div class="wrap">
+      <div class="cta-band">
+        <div>
+          <h2>Check the pack in your hand.</h2>
+          <p>Use the app now — a demo pack if you have nothing nearby, or a real one if you do.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn dark" href="/app">Open Vouch</a>
+          <a class="btn outline-light" href="/business" data-link>For business</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============================ HOW IT WORKS ============================ -->
+<div data-page="how" hidden>
+  <div class="page-hero">
+    <div class="wrap">
+      <div class="crumbs"><a href="/" data-link>Home</a> / How it works</div>
+      <h1>What happens between a photo and a decision</h1>
+      <p class="lead">Six steps. Each one is bounded, and each one states its limit. The aim is not a dramatic verdict — it is a decision you can defend.</p>
+    </div>
+  </div>
+  <section>
+    <div class="wrap split">
+      <div>
+        <div style="display:grid;gap:14px">
+          <div class="card"><h3>1 · Capture</h3><p>Photograph the front of the pack, the batch and expiry area, and any barcode. Or paste the label text, or enter the fields by hand when the light is bad.</p></div>
+          <div class="card"><h3>2 · Extract</h3><p>OCR reads the visible text. Vouch pulls out the registration number, product name, manufacturer, batch, manufacture date and expiry. You can correct any field before checking.</p></div>
+          <div class="card"><h3>3 · Inspect the label</h3><p>You record what you can see: a sticker over print, a second date, a broken seal, a missing hologram, inconsistent typography. These are indicators, not proof.</p></div>
+          <div class="card"><h3>4 · Check the reference</h3><p>The registration number is resolved against the NAFDAC register, including numbering variants and likely OCR confusions. Barcodes are validated and looked up in product databases.</p></div>
+          <div class="card"><h3>5 · Compare the details</h3><p>Product name, manufacturer and registration status are compared with the pack. A number that resolves to a different product is treated as a serious mismatch.</p></div>
+          <div class="card"><h3>6 · Present the findings</h3><p>Each check appears with its evidence, its source, what it proves and what it does not. Actions follow from the findings, not from a score alone.</p></div>
+        </div>
+      </div>
+      <div>
+        <figure class="shot" style="margin:0 0 18px">
+          <img src="/assets/vouch-dashboard-showcase.png" alt="Vouch verification result with checks and evidence" loading="lazy" />
+          <figcaption>The result screen keeps checks, evidence and next steps together.</figcaption>
+        </figure>
+        <div class="note warn"><b>What no photo can establish.</b> A photograph cannot confirm chemical content, the true manufacturing site, or whether a genuine pack was refilled. Those require laboratory analysis or a regulator inspection. Vouch will not pretend otherwise.</div>
+      </div>
+    </div>
+  </section>
+  <section class="white">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Boundaries</span><h2 style="margin-top:14px">Limits, stated up front</h2></div>
+      <div class="grid-3">
+        <div class="card"><h3>A registration is not a pack</h3><p>The register confirms that a licence exists. It cannot confirm that the pack in your hand was produced under it.</p></div>
+        <div class="card"><h3>A barcode is copyable</h3><p>Printing the same code on a fake is trivial. A database match is a lookup, not a chain of custody.</p></div>
+        <div class="card"><h3>OCR can misread</h3><p>0 and O, 1 and I, 5 and S, 8 and B. Vouch shows the extracted text and asks you to confirm it before drawing conclusions.</p></div>
+        <div class="card"><h3>Public data has gaps</h3><p>Food and cosmetic registrations are not published in the same register as medicines. Small producers may be missing from barcode databases entirely.</p></div>
+        <div class="card"><h3>Absence is not guilt</h3><p>“No record found” produces a reason to escalate, not an accusation. Sellers are not labelled fraudulent from an automated result.</p></div>
+        <div class="card"><h3>Dates can be altered</h3><p>A printed date is evidence of what is printed, not of when the pack was filled. That is why label indicators sit beside the date check.</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="tight"><div class="wrap"><div class="cta-band"><div><h2>See it on a real pack.</h2><p>Open the app and run the demonstration scenarios, then try one of your own.</p></div><a class="btn dark" href="/app">Open Vouch</a></div></div></section>
+</div>
+
+<!-- ============================ FEATURES ============================ -->
+<div data-page="features" hidden>
+  <div class="page-hero">
+    <div class="wrap">
+      <div class="crumbs"><a href="/" data-link>Home</a> / Features</div>
+      <h1>Available today, and what is still ahead</h1>
+      <p class="lead">We would rather ship six things that work than twelve that look impressive in a slide.</p>
+    </div>
+  </div>
+  <section>
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Available now</span><h2 style="margin-top:14px">In the working build</h2></div>
+      <div class="grid-3">
+        <div class="card"><h3>Expiry-date reading</h3><p>Reads printed dates from text or OCR, applies end-of-month rules, and flags the pack when the date has passed.</p></div>
+        <div class="card"><h3>Batch extraction</h3><p>Pulls batch and lot numbers from the label and checks they are well formed and consistent with the printed date style.</p></div>
+        <div class="card"><h3>NAFDAC number resolution</h3><p>Resolves the printed number against the live register, repairs punctuation and OCR noise without crossing numbering series, and compares names.</p></div>
+        <div class="card"><h3>Barcode and QR lookup</h3><p>Validates check digits, then searches open product databases for food, drink, water, cosmetics and household goods.</p></div>
+        <div class="card"><h3>Label-tampering indicators</h3><p>Records what you observe and explains why it matters — without calling it proof of fraud.</p></div>
+        <div class="card"><h3>Evidence and limitations</h3><p>Every check carries its source, its confidence and an explicit statement of what it does not prove.</p></div>
+        <div class="card"><h3>Scan history</h3><p>Keeps your checks in the browser with filters and one-tap re-check against current data.</p></div>
+        <div class="card"><h3>Cases and deadlines</h3><p>Turns a result into a tracked case with scheduled follow-ups, so the complaint does not die in a notes app.</p></div>
+        <div class="card"><h3>Report drafts</h3><p>Generates a seller demand, a NAFDAC report and an FCCPC complaint from the same evidence.</p></div>
+        <div class="card"><h3>Voice agent</h3><p>Press the mic and ask about the result, what to do next, or say “open a case”. Speech recognition and playback are provided by your browser; Vouch does not record or store audio, and a typed box does the same job if the mic is blocked.</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="white">
+    <div class="wrap split">
+      <div>
+        <span class="eyebrow">Planned</span>
+        <h2 style="margin-top:14px">On the roadmap, labelled honestly</h2>
+        <ul class="list-plain" style="margin-top:20px">
+          <li>Accounts and role-based access — today the app runs in local demo mode.</li>
+          <li>Business workspaces with team permissions and audit history.</li>
+          <li>Server-side storage for evidence images and reports.</li>
+          <li>Multilingual guidance: Pidgin, Hausa, Igbo and Yorùbá.</li>
+          <li>An API for distributors and inspection systems.</li>
+          <li>Handheld scanner research, including enclosed-chamber imaging.</li>
+        </ul>
+      </div>
+      <div>
+        <span class="eyebrow">Research only</span>
+        <h2 style="margin-top:14px">Not a feature. Not yet.</h2>
+        <ul class="list-plain" style="margin-top:20px">
+          <li>Spectroscopic or chemical content analysis.</li>
+          <li>Machine-learning authenticity scoring trained on confirmed seizures.</li>
+          <li>Any claim of laboratory equivalence.</li>
+        </ul>
+        <div class="note warn" style="margin-top:20px">These appear on the roadmap because users ask for them. They are not in the product, and the interface will not imply that they are.</div>
+      </div>
+    </div>
+  </section>
+  <section class="tight"><div class="wrap"><div class="cta-band"><div><h2>Try the built features.</h2><p>The app is live. No account is needed in this build.</p></div><a class="btn dark" href="/app">Open Vouch</a></div></div></section>
+</div>
+
+<!-- ============================ BUSINESS ============================ -->
+<div data-page="business" hidden>
+  <div class="page-hero">
+    <div class="wrap">
+      <div class="crumbs"><a href="/" data-link>Home</a> / For business</div>
+      <h1>Incoming-stock checks with a record behind them</h1>
+      <p class="lead">For supermarkets, pharmacies, wholesalers, distributors and inspection teams that need more than a screenshot.</p>
+    </div>
+  </div>
+  <section>
+    <div class="wrap split">
+      <div>
+        <div class="grid-2" style="gap:14px">
+          <div class="card"><h3>Receiving checks</h3><p>Scan a delivery batch and keep the result against the batch number.</p></div>
+          <div class="card"><h3>Batch-level records</h3><p>Group checks by batch, supplier and date instead of loose images.</p></div>
+          <div class="card"><h3>Risk summaries</h3><p>See which checks need attention before stock reaches a shelf.</p></div>
+          <div class="card"><h3>Exportable reports</h3><p>Generate a plain-text or JSON record for a supplier or auditor.</p></div>
+          <div class="card"><h3>Shared evidence</h3><p>Keep the photo, extracted fields and findings together.</p></div>
+          <div class="card"><h3>Audit history</h3><p>Every action is timestamped in the case timeline.</p></div>
+        </div>
+        <div class="note" style="margin-top:18px">Team permissions, organisation accounts and the business API are planned. They are not available in this build, and the app will not pretend to offer them.</div>
+      </div>
+      <div class="card" style="padding:28px">
+        <span class="eyebrow">Request a demo</span>
+        <h2 style="font-size:26px;margin:12px 0 8px">Tell us what you receive</h2>
+        <p class="small" style="margin-bottom:20px">This form stores your request in this browser only — there is no sales inbox behind it in the demo build. It shows the intended flow.</p>
+        <form id="bizForm" novalidate>
+          <div class="field" id="f-bizName"><label for="bizName">Company</label><input id="bizName" name="company" autocomplete="organization" /><div class="err">Enter your company name.</div></div>
+          <div class="field" id="f-bizEmail"><label for="bizEmail">Work email</label><input id="bizEmail" name="email" type="email" autocomplete="email" /><div class="err">Enter a valid email address.</div></div>
+          <div class="field"><label for="bizType">Business type</label>
+            <select id="bizType" name="type">
+              <option>Supermarket or pharmacy</option>
+              <option>Wholesaler or distributor</option>
+              <option>Food and beverage company</option>
+              <option>Inspection organisation</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field"><label for="bizNotes">What do you want to check?</label><textarea id="bizNotes" name="notes" placeholder="e.g. 200 SKUs a week across three stores"></textarea></div>
+          <button class="btn block" type="submit">Request a demo</button>
+          <div class="form-ok" id="bizOk"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+  <section class="white">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Fit</span><h2 style="margin-top:14px">Where this saves time</h2></div>
+      <div class="grid-3">
+        <div class="card"><h3>Goods-in</h3><p>Catch an expired or mismatched batch before it is shelved, and attach the evidence to the delivery note.</p></div>
+        <div class="card"><h3>Supplier conversations</h3><p>Send a specific, evidenced demand instead of a general complaint.</p></div>
+        <div class="card"><h3>Regulator requests</h3><p>Produce a dated record of what was found, when, and by whom.</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="tight"><div class="wrap"><div class="cta-band"><div><h2>Start with one batch.</h2><p>Open the app, run the checks, and see whether the result format fits your process.</p></div><a class="btn dark" href="/app">Open Vouch</a></div></div></section>
+</div>
+
+<!-- ============================ RESOURCES ============================ -->
+<div data-page="resources" hidden>
+  <div class="page-hero">
+    <div class="wrap">
+      <div class="crumbs"><a href="/" data-link>Home</a> / Safety resources</div>
+      <h1>Practical guidance, no fear tactics</h1>
+      <p class="lead">Short, usable notes for reading a pack. Written for a shelf, not a classroom.</p>
+    </div>
+  </div>
+  <section>
+    <div class="wrap">
+      <div class="grid-3">
+        <div class="card"><h3>Finding the expiry date</h3><p>Tube crimps, bottle bases, sachet seals, carton flaps. Tilt the pack towards the light — the stamp is often the same colour as the surface.</p><p style="margin-top:10px"><b>Formats:</b> EXP 06/2028 · 06 2028 · 2028-06 · JUN 28. Without a day, assume the last day of the month.</p></div>
+        <div class="card"><h3>Best-before vs use-by</h3><p><b>Use-by</b> is a safety limit: do not use after it. <b>Best-before</b> is a quality limit: the product may still be safe, but may have changed. Medicines use an expiry date, which is both.</p></div>
+        <div class="card"><h3>Reading a batch number</h3><p>Usually 4–10 characters near the date, often after LOT, BATCH or BN. It links a pack to a production run — which is how a recall finds you.</p></div>
+        <div class="card"><h3>Packaging red flags</h3><p>A sticker over print. A second date under the first. A broken tamper band. A missing hologram where the brand normally has one. Blurred print. A misspelt brand. Loose tablets.</p><p style="margin-top:10px">Each is an indicator. Vouch records it as such and says what it does not prove.</p></div>
+        <div class="card"><h3>What a barcode proves</h3><p>It identifies a product record. It does not identify a specific pack, and it is easy to copy. A missing record may mean a small producer, not a fake product.</p></div>
+        <div class="card"><h3>If you suspect a product</h3><p>Stop using it. Keep the pack and receipt. Photograph everything before handing anything back. Report to NAFDAC or FCCPC and keep the reference number.</p></div>
+      </div>
+      <div class="note warn" style="margin-top:22px"><b>Do not test a suspect medicine on yourself.</b> If you have already taken it and feel unwell, seek medical care and take the pack with you.</div>
+    </div>
+  </section>
+  <section class="white">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Common questions</span><h2 style="margin-top:14px">Short answers</h2></div>
+      <div class="faq">
+        <details class="q"><summary>Is an expired medicine always dangerous?</summary><div class="a">Not always, but its potency and safety can no longer be assured. The further past expiry, the less reliable it is — and liquid medicines, injectables and eye drops carry more risk than a dry tablet.</div></details>
+        <details class="q"><summary>Can a genuine product have a registration number that does not resolve?</summary><div class="a">Yes. Punctuation variants, OCR noise and register search quirks can all cause a miss. That is why Vouch tries safe variants and separates “no record in any known format” from “could not ask”.</div></details>
+        <details class="q"><summary>What does an inactive registration mean?</summary><div class="a">The licence is no longer active. It does not automatically mean the product is counterfeit; it may be old stock. It is still a reason to stop and ask the seller or the manufacturer.</div></details>
+        <details class="q"><summary>Where do I report a problem?</summary><div class="a">NAFDAC for regulated products, and the FCCPC for consumer protection issues. Vouch can draft both from the same evidence and track the deadlines.</div></details>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============================ ABOUT ============================ -->
+<div data-page="about" hidden>
+  <div class="page-hero">
+    <div class="wrap">
+      <div class="crumbs"><a href="/" data-link>Home</a> / About</div>
+      <h1>A verification tool that is honest about its limits</h1>
+      <p class="lead">Vouch began with a simple observation: the information needed to protect a shopper often exists, but not where the shopper is standing.</p>
+    </div>
+  </div>
+  <section>
+    <div class="wrap split">
+      <div>
+        <h2>Why we built it</h2>
+        <p class="lead" style="margin-top:14px">Counterfeit and expired products are usually discussed as a laboratory problem. In practice, most people meet them as a practical one: a pack in a shop, a number they cannot check, and no clear next step if something is wrong.</p>
+        <p class="lead" style="margin-top:14px">Vouch joins the check to the follow-through. The result is not the end of the workflow; it is the evidence for the report, the refund demand and the reminder that keeps the case alive.</p>
+        <h2 style="margin-top:34px">Principles</h2>
+        <ul class="list-check" style="margin-top:16px">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg><span><b>No false certainty.</b> Four states, explicit evidence, stated limits.</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg><span><b>Absence is not guilt.</b> A missing record is a reason to escalate, not to accuse.</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg><span><b>The person is not the product.</b> Sellers are not labelled fraudulent from an automated result.</span></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg><span><b>Say what is not built.</b> Planned and research features are labelled as such.</span></li>
+        </ul>
+      </div>
+      <div class="card" style="padding:28px">
+        <h3>What exists today</h3>
+        <ul class="list-plain" style="margin-top:14px">
+          <li>Working web application and marketing site</li>
+          <li>Camera and photo scanning with on-device OCR</li>
+          <li>Live NAFDAC register lookups</li>
+          <li>Barcode lookups across three open databases</li>
+          <li>Case tracking with follow-up deadlines</li>
+          <li>Draft reports for sellers and regulators</li>
+        </ul>
+        <h3 style="margin-top:24px">What does not</h3>
+        <ul class="list-plain" style="margin-top:14px">
+          <li>User accounts or cloud storage</li>
+          <li>Business team workspaces</li>
+          <li>Chemical or spectroscopic analysis</li>
+          <li>Any regulatory endorsement</li>
+        </ul>
+        <div class="note" style="margin-top:20px">Vouch is an independent project. NAFDAC, FCCPC and the open product databases are data sources, not partners or endorsers.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============================ PRIVACY ============================ -->
+<div data-page="privacy" hidden>
+  <div class="page-hero"><div class="wrap"><div class="crumbs"><a href="/" data-link>Home</a> / Privacy</div><h1>Privacy, in plain language</h1><p class="lead">What this build stores, where, and what it does not do.</p></div></div>
+  <section><div class="wrap" style="max-width:820px">
+    <div class="card" style="padding:30px">
+      <h3>Scan history</h3><p style="margin-top:8px">Checks you run are stored in your browser’s local storage on this device. They are not uploaded to an account, because this build has no accounts. Clearing your browser data removes them.</p>
+      <h3 style="margin-top:24px">Photos</h3><p style="margin-top:8px">Photos are sent to the Vouch server running on your machine for OCR. If a vision model key is configured, the image is sent to that provider; the app names the reader used on every extraction. Without a key, the Windows OCR engine handles it locally.</p>
+      <h3 style="margin-top:24px">Cases</h3><p style="margin-top:8px">Cases are stored in a local database on the Vouch server. Resetting demo cases deletes them permanently.</p>
+      <h3 style="margin-top:24px">What we do not do</h3><p style="margin-top:8px">No advertising trackers. No selling of data. No public case pages. No third-party analytics in this build.</p>
+      <h3 style="margin-top:24px">Your controls</h3><p style="margin-top:8px">Clear history and export your data from Settings in the app.</p>
+      <p class="small" style="margin-top:24px">This is a demonstration build. A production deployment would add accounts, server-side retention rules and an explicit data-processing agreement.</p>
+    </div>
+  </div></section>
+</div>
+
+<!-- ============================ TERMS ============================ -->
+<div data-page="terms" hidden>
+  <div class="page-hero"><div class="wrap"><div class="crumbs"><a href="/" data-link>Home</a> / Terms</div><h1>Terms of use</h1><p class="lead">The short version: Vouch is a decision aid, not an authority.</p></div></div>
+  <section><div class="wrap" style="max-width:820px">
+    <div class="card" style="padding:30px">
+      <h3>1 · What Vouch is</h3><p style="margin-top:8px">Vouch is an informational tool that compares product details against public registers and databases and helps you prepare reports. It is not a laboratory, a regulator, or a substitute for a NAFDAC inspection.</p>
+      <h3 style="margin-top:24px">2 · Results are not verdicts</h3><p style="margin-top:8px">A result describes what the available checks support. “Clear” does not mean authentic. “High-risk signals” does not mean counterfeit. “Inconclusive” means the evidence was insufficient.</p>
+      <h3 style="margin-top:24px">3 · Your responsibility</h3><p style="margin-top:8px">Do not use Vouch to accuse a person or business of a crime. Reports should be filed with the appropriate regulator, based on your own observations and evidence.</p>
+      <h3 style="margin-top:24px">4 · Data accuracy</h3><p style="margin-top:8px">Register and database records can be incomplete, delayed or wrong. Vouch reports what the source returned and when.</p>
+      <h3 style="margin-top:24px">5 · Demonstration build</h3><p style="margin-top:8px">This build runs locally, without accounts or warranties. Use it for evaluation, not as the sole basis for a medical or commercial decision.</p>
+    </div>
+  </div></section>
+</div>
+
+<!-- ============================ REPORT ============================ -->
+<div data-page="report" hidden>
+  <div class="page-hero"><div class="wrap"><div class="crumbs"><a href="/" data-link>Home</a> / Report a problem</div><h1>Report a problem</h1><p class="lead">A good report is specific, dated and evidenced. Vouch can help you build one.</p></div></div>
+  <section><div class="wrap split">
+    <div class="card" style="padding:28px">
+      <form id="reportForm" novalidate>
+        <div class="field" id="f-repProduct"><label for="repProduct">Product</label><input id="repProduct" placeholder="Name as printed on the pack" /><div class="err">Enter the product name.</div></div>
+        <div class="field"><label for="repWhere">Where you bought it</label><input id="repWhere" placeholder="Shop, market, street, city" /></div>
+        <div class="field"><label for="repWhat">What is wrong</label><textarea id="repWhat" placeholder="Expired, altered date, copied number, damaged seal…"></textarea></div>
+        <div class="field" id="f-repEmail"><label for="repEmail">Email (optional)</label><input id="repEmail" type="email" placeholder="For a reply, if you want one" /><div class="err">Enter a valid email or leave it blank.</div></div>
+        <button class="btn block" type="submit">Save the report locally</button>
+        <div class="form-ok" id="repOk"></div>
+      </form>
+      <p class="small" style="margin-top:14px">This build has no reporting inbox. The form saves a copy in your browser so the flow is testable. For a real report, use the case workflow in the app, which drafts a NAFDAC report and an FCCPC complaint.</p>
+    </div>
+    <div>
+      <h2 style="font-size:24px">The stronger route</h2>
+      <ol style="margin:16px 0 0;padding-left:20px;color:var(--muted);font-size:14.5px;line-height:1.9">
+        <li>Check the pack in the app and keep the result.</li>
+        <li>Open a case so the evidence and dates are recorded.</li>
+        <li>Generate the seller demand, NAFDAC report or FCCPC complaint.</li>
+        <li>Submit it and keep the reference number in the case.</li>
+      </ol>
+      <a class="btn" href="/app" style="margin-top:22px">Open Vouch</a>
+    </div>
+  </div></section>
+</div>
+
+<!-- ============================ AUTH ============================ -->
+<div data-page="signin" hidden>
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <div>
+        <div class="logo" style="color:#fff"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="#DFF3E5"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#073B2E"/></svg><span>Vouch</span></div>
+        <h2 style="margin-top:36px">Pick up where your checks left off.</h2>
+        <p>History, cases and report drafts stay together, so a finding becomes a follow-up instead of a forgotten screenshot.</p>
+      </div>
+      <div class="small" style="color:#8fae9b">Demo access · no account is created on a server</div>
+    </aside>
+    <div class="auth-main">
+      <div class="auth-card">
+        <h1>Sign in</h1>
+        <p class="sub">Use any email and password to enter the local demo.</p>
+        <form id="signinForm" novalidate>
+          <div class="field" id="f-siEmail"><label for="siEmail">Email</label><input id="siEmail" type="email" autocomplete="email" /><div class="err">Enter a valid email address.</div></div>
+          <div class="field" id="f-siPass"><label for="siPass">Password</label>
+            <div class="pw"><input id="siPass" type="password" autocomplete="current-password" /><button type="button" data-pw="siPass">Show</button></div>
+            <div class="err">Enter at least 8 characters.</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="siRemember" style="width:auto" /> Keep me signed in</label>
+            <a class="small" href="/forgot" data-link style="color:var(--primary);font-weight:600">Forgot password?</a>
+          </div>
+          <button class="btn block" type="submit" id="siBtn">Sign in</button>
+          <div class="form-ok" id="siOk"></div>
+        </form>
+        <div class="divider">or</div>
+        <a class="btn ghost block" href="/signup" data-link>Create a local account</a>
+        <p class="auth-foot">No account yet? <a href="/signup" data-link>Get started</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div data-page="signup" hidden>
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <div>
+        <div class="logo" style="color:#fff"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="#DFF3E5"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#073B2E"/></svg><span>Vouch</span></div>
+        <h2 style="margin-top:36px">Start with one pack.</h2>
+        <p>Consumers check what they buy. Businesses check what they receive. The same evidence format serves both.</p>
+      </div>
+      <div class="small" style="color:#8fae9b">Demo access · no account is created on a server</div>
+    </aside>
+    <div class="auth-main">
+      <div class="auth-card">
+        <h1>Create your account</h1>
+        <p class="sub">This build stores the profile in your browser only.</p>
+        <form id="signupForm" novalidate>
+          <div class="field" id="f-suName"><label for="suName">Full name</label><input id="suName" autocomplete="name" /><div class="err">Enter your name.</div></div>
+          <div class="field" id="f-suEmail"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" /><div class="err">Enter a valid email address.</div></div>
+          <div class="field"><label for="suRole">I am a</label><select id="suRole"><option value="consumer">Consumer</option><option value="retailer">Retailer</option><option value="distributor">Distributor</option><option value="inspector">Inspection team</option></select></div>
+          <div class="field" id="f-suPass"><label for="suPass">Password</label>
+            <div class="pw"><input id="suPass" type="password" autocomplete="new-password" /><button type="button" data-pw="suPass">Show</button></div>
+            <div class="err">Use at least 8 characters.</div>
+            <div class="hint">Stored only in this browser. Do not reuse a real password.</div>
+          </div>
+          <div class="field" id="f-suTerms">
+            <label style="display:flex;gap:9px;align-items:flex-start;text-transform:none;letter-spacing:0;font-size:13px;color:var(--muted);font-weight:500">
+              <input type="checkbox" id="suTerms" style="width:auto;margin-top:3px" />
+              <span>I understand Vouch is a decision aid and does not replace a regulator or laboratory.</span>
+            </label>
+            <div class="err">Please confirm to continue.</div>
+          </div>
+          <button class="btn block" type="submit" id="suBtn">Create account</button>
+          <div class="form-ok" id="suOk"></div>
+        </form>
+        <p class="auth-foot">Already have an account? <a href="/signin" data-link>Sign in</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div data-page="forgot" hidden>
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <div>
+        <div class="logo" style="color:#fff"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="#DFF3E5"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#073B2E"/></svg><span>Vouch</span></div>
+        <h2 style="margin-top:36px">Locked out?</h2>
+        <p>There is no password server in this build, so nothing can be reset by email. The screen shows the intended flow.</p>
+      </div>
+      <div class="small" style="color:#8fae9b">Demo access · no account is created on a server</div>
+    </aside>
+    <div class="auth-main">
+      <div class="auth-card">
+        <h1>Reset your password</h1>
+        <p class="sub">Enter the email you would use. In a production build, a single-use link would follow.</p>
+        <form id="forgotForm" novalidate>
+          <div class="field" id="f-foEmail"><label for="foEmail">Email</label><input id="foEmail" type="email" autocomplete="email" /><div class="err">Enter a valid email address.</div></div>
+          <button class="btn block" type="submit">Send reset instructions</button>
+          <div class="form-ok" id="foOk"></div>
+        </form>
+        <p class="auth-foot"><a href="/signin" data-link>Back to sign in</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="logo"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="#DFF3E5"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#073B2E"/></svg><span>Vouch<small>Check it. Chase it.</small></span></div>
+        <p>Product verification for the last metre of consumer protection. Independent, evidence-first, and clear about what it cannot do.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Product</h4>
+        <a href="/how-it-works" data-link>How it works</a>
+        <a href="/features" data-link>Features</a>
+        <a href="/business" data-link>For business</a>
+        <a href="/app">Open the app</a>
+      </div>
+      <div class="foot-col">
+        <h4>Resources</h4>
+        <a href="/resources" data-link>Safety resources</a>
+        <a href="/report" data-link>Report a problem</a>
+        <a href="/about" data-link>About</a>
+        <a href="/app">Product guide</a>
+      </div>
+      <div class="foot-col">
+        <h4>Company</h4>
+        <a href="/privacy" data-link>Privacy</a>
+        <a href="/terms" data-link>Terms</a>
+        <a href="/signin" data-link>Sign in</a>
+        <a href="mailto:hello@vouch.example">Contact</a>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>© 2026 Vouch. Not a substitute for NAFDAC inspection or laboratory testing.</span>
+      <span>Built in Nigeria · Independent project</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const pageFor = {
+    "/": "home", "/how-it-works": "how", "/features": "features",
+    "/business": "business", "/resources": "resources", "/about": "about",
+    "/privacy": "privacy", "/terms": "terms", "/report": "report",
+    "/signin": "signin", "/signup": "signup", "/forgot": "forgot"
+  };
+  const titleFor = {
+    home: "Vouch — Real Products. Real Dates. Real Safety.",
+    how: "How it works — Vouch",
+    features: "Features — Vouch",
+    business: "For business — Vouch",
+    resources: "Safety resources — Vouch",
+    about: "About — Vouch",
+    privacy: "Privacy — Vouch",
+    terms: "Terms — Vouch",
+    report: "Report a problem — Vouch",
+    signin: "Sign in — Vouch",
+    signup: "Get started — Vouch",
+    forgot: "Reset password — Vouch"
+  };
+
+  function toast(msg){
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove("on"), 2800);
+  }
+
+  function show(name, opts){
+    const page = pageFor[name] || (pageFor["/" + name.replace(/^\//, "")]) || "home";
+    $$("[data-page]").forEach(el => { el.hidden = el.dataset.page !== page; });
+    document.title = titleFor[page] || titleFor.home;
+    $$(".navlinks a").forEach(a => a.classList.toggle("active", a.dataset.nav === page));
+    closeMenu();
+    if (!opts || !opts.keepScroll) window.scrollTo({top: 0, behavior: "instant" in window ? "instant" : "auto"});
+  }
+
+  function navigate(path, hash){
+    const clean = path.replace(/\/+$/, "") || "/";
+    history.pushState({}, "", clean + (hash ? "#" + hash : ""));
+    show(clean);
+    if (hash){
+      const el = document.getElementById(hash);
+      if (el) setTimeout(() => el.scrollIntoView({behavior:"smooth", block:"start"}), 30);
+    }
+  }
+
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-link]");
+    if (!a) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    navigate(a.getAttribute("href"));
+  });
+
+  window.addEventListener("popstate", () => show(location.pathname));
+
+  function closeMenu(){
+    const m = $("#mobileMenu"); if (!m) return;
+    m.style.display = "none";
+    const b = $("#burger"); if (b) b.setAttribute("aria-expanded", "false");
+  }
+  const burger = $("#burger");
+  if (burger) burger.onclick = () => {
+    const m = $("#mobileMenu");
+    const open = m.style.display === "block";
+    m.style.display = open ? "none" : "block";
+    burger.setAttribute("aria-expanded", String(!open));
+  };
+
+  /* password visibility */
+  $$("[data-pw]").forEach(b => b.onclick = () => {
+    const input = document.getElementById(b.dataset.pw);
+    if (!input) return;
+    const showIt = input.type === "password";
+    input.type = showIt ? "text" : "password";
+    b.textContent = showIt ? "Hide" : "Show";
+    b.setAttribute("aria-label", showIt ? "Hide password" : "Show password");
+  });
+
+  /* validation helpers */
+  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  function setBad(id, bad){
+    const f = document.getElementById(id);
+    if (f) f.classList.toggle("bad", !!bad);
+  }
+
+  /* sign in */
+  const siForm = $("#signinForm");
+  if (siForm) siForm.onsubmit = (e) => {
+    e.preventDefault();
+    const email = $("#siEmail").value.trim();
+    const pass = $("#siPass").value;
+    const badEmail = !isEmail(email);
+    const badPass = pass.length < 8;
+    setBad("f-siEmail", badEmail);
+    setBad("f-siPass", badPass);
+    if (badEmail || badPass) return;
+    const btn = $("#siBtn");
+    btn.disabled = true;
+    btn.textContent = "Signing in…";
+    try {
+      const prior = JSON.parse(localStorage.getItem("vouch.prefs.v1") || "{}");
+      localStorage.setItem("vouch.prefs.v1", JSON.stringify(Object.assign(prior, {email: email, name: prior.name || email.split("@")[0]})));
+    } catch {}
+    const ok = $("#siOk");
+    ok.textContent = "Signed in to the local demo. Opening Vouch…";
+    ok.classList.add("show");
+    setTimeout(() => { window.location.href = "/app"; }, 700);
+  };
+
+  /* sign up */
+  const suForm = $("#signupForm");
+  if (suForm) suForm.onsubmit = (e) => {
+    e.preventDefault();
+    const name = $("#suName").value.trim();
+    const email = $("#suEmail").value.trim();
+    const pass = $("#suPass").value;
+    const terms = $("#suTerms").checked;
+    setBad("f-suName", name.length < 2);
+    setBad("f-suEmail", !isEmail(email));
+    setBad("f-suPass", pass.length < 8);
+    setBad("f-suTerms", !terms);
+    if (name.length < 2 || !isEmail(email) || pass.length < 8 || !terms) return;
+    const btn = $("#suBtn");
+    btn.disabled = true;
+    btn.textContent = "Creating…";
+    try {
+      localStorage.setItem("vouch.prefs.v1", JSON.stringify({
+        name: name, email: email, role: $("#suRole").value,
+        reminders: true, summary: true, lang: "en"
+      }));
+    } catch {}
+    const ok = $("#suOk");
+    ok.textContent = "Local account created. Opening Vouch…";
+    ok.classList.add("show");
+    setTimeout(() => { window.location.href = "/app"; }, 700);
+  };
+
+  /* forgot */
+  const foForm = $("#forgotForm");
+  if (foForm) foForm.onsubmit = (e) => {
+    e.preventDefault();
+    const email = $("#foEmail").value.trim();
+    const bad = !isEmail(email);
+    setBad("f-foEmail", bad);
+    if (bad) return;
+    const ok = $("#foOk");
+    ok.textContent = "If an account existed, reset instructions would be sent to " + email + ". This demo has no mail server, so no email was sent.";
+    ok.classList.add("show");
+  };
+
+  /* business demo */
+  const bizForm = $("#bizForm");
+  if (bizForm) bizForm.onsubmit = (e) => {
+    e.preventDefault();
+    const name = $("#bizName").value.trim();
+    const email = $("#bizEmail").value.trim();
+    const badName = name.length < 2;
+    const badEmail = !isEmail(email);
+    setBad("f-bizName", badName);
+    setBad("f-bizEmail", badEmail);
+    if (badName || badEmail) return;
+    const ref = "VD-" + Date.now().toString(36).toUpperCase().slice(-6);
+    try {
+      const list = JSON.parse(localStorage.getItem("vouch.demoRequests") || "[]");
+      list.unshift({ref: ref, company: name, email: email, type: $("#bizType").value, notes: $("#bizNotes").value.trim(), at: new Date().toISOString()});
+      localStorage.setItem("vouch.demoRequests", JSON.stringify(list.slice(0, 20)));
+    } catch {}
+    const ok = $("#bizOk");
+    ok.textContent = "Request saved locally as " + ref + ". No sales inbox exists in this demo build.";
+    ok.classList.add("show");
+    bizForm.querySelector("button[type=submit]").textContent = "Request saved";
+  };
+
+  /* problem report */
+  const repForm = $("#reportForm");
+  if (repForm) repForm.onsubmit = (e) => {
+    e.preventDefault();
+    const product = $("#repProduct").value.trim();
+    const email = $("#repEmail").value.trim();
+    const badProduct = product.length < 2;
+    const badEmail = email.length > 0 && !isEmail(email);
+    setBad("f-repProduct", badProduct);
+    setBad("f-repEmail", badEmail);
+    if (badProduct || badEmail) return;
+    try {
+      const list = JSON.parse(localStorage.getItem("vouch.reports") || "[]");
+      list.unshift({product: product, where: $("#repWhere").value.trim(), what: $("#repWhat").value.trim(), email: email, at: new Date().toISOString()});
+      localStorage.setItem("vouch.reports", JSON.stringify(list.slice(0, 20)));
+    } catch {}
+    const ok = $("#repOk");
+    ok.textContent = "Saved in this browser. For a report with deadlines attached, open a case in the app.";
+    ok.classList.add("show");
+  };
+
+  /* boot */
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  show(path === "/index.html" ? "home" : path);
+  if (location.hash){
+    const el = document.getElementById(location.hash.slice(1));
+    if (el) setTimeout(() => el.scrollIntoView({behavior:"smooth"}), 50);
+  }
+})();
+</script>
 </body>
 </html>

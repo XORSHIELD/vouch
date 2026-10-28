@@ -343,7 +343,20 @@ def _barcode_checks(pack: PackInput, bar: B.Result, kind: str) -> list[Check]:
     who = " ".join(x for x in (item.brand, item.name) if x).strip() or code
     idm = B.identity(pack.product_name, pack.manufacturer, item)
 
-    if idm["verdict"] == "different":
+    if idm["verdict"] == "unknown":
+        out.append(Check(
+            id="barcode", label="Barcode identity", state=UNKNOWN, severity=0,
+            evidence=(f"Barcode {code} resolves to '{item.name}'"
+                      f"{' by ' + item.brand if item.brand else ''} in "
+                      f"{item.source}. No product name from the pack was "
+                      f"entered, so there is nothing to compare it with yet."),
+            proves="The code is a real product record.",
+            does_not_prove="That the product in your hand is that product. "
+                           "Add the name printed on the pack to compare.",
+            source=item.source,
+            detail=["Re-scan the label, or type the product name, then check again."],
+        ))
+    elif idm["verdict"] == "different":
         out.append(Check(
             id="barcode", label="Barcode identity", state=HIGH, severity=3.0,
             evidence=(f"Barcode {code} resolves to '{item.name}'"
@@ -646,20 +659,21 @@ def assess(
     # something worth acting on.
     hard = any(c.state == HIGH for c in checks)
 
-    if not (pack.nafdac_number or pack.exp_date):
-        band = BAND_INCOMPLETE
-    elif hard or score >= 5.0:
+    if hard or score >= 5.0:
         # A single hard finding, or so many independent moderate findings that
-        # one of them is likely real. We do not reach this band on one soft
-        # signal: over-flagging is its own kind of failure.
+        # one of them is likely real. This outranks "incomplete": a red finding
+        # must never sit inside a grey banner. We do not reach this band on one
+        # soft signal: over-flagging is its own kind of failure.
         band = BAND_HIGH
+    elif not (pack.nafdac_number or pack.exp_date):
+        band = BAND_INCOMPLETE
     elif score >= 1.5:
         band = BAND_REVIEW
     else:
         band = BAND_CLEAR
 
     actions = _actions_for(band, checks, pack, reg, exp_assess, kind)
-    headline = _headline(band, checks, score)
+    headline = _headline(band, checks, score, kind)
 
     return Assessment(
         band=band,
@@ -679,7 +693,8 @@ def assess(
     )
 
 
-def _headline(band: str, checks: list[Check], score: float) -> str:
+def _headline(band: str, checks: list[Check], score: float,
+              kind: str = "medicine") -> str:
     high = [c for c in checks if c.state == HIGH]
     att = [c for c in checks if c.state == ATTENTION]
     if band == BAND_HIGH:
@@ -701,6 +716,9 @@ def _headline(band: str, checks: list[Check], score: float) -> str:
         return (f"{len(att)} thing{'s' if len(att) != 1 else ''} worth checking "
                 f"before you use this ({'; '.join(names)}).")
     if band == BAND_INCOMPLETE:
+        if kind in ("food", "beverage", "water", "cosmetic", "household"):
+            return ("Not enough information yet. Add the expiry date and the "
+                    "product name printed on the pack.")
         return "Not enough information yet. Add the NAFDAC number or the expiry date."
     return "Nothing wrong found in the checks that can be done from here."
 
@@ -717,11 +735,20 @@ def _actions_for(
     out: list[Action] = []
 
     if band == BAND_INCOMPLETE:
-        out.append(Action("complete", "Photograph the back panel",
-                          "The NAFDAC number and expiry are printed there.",
-                          0, "camera"))
-        out.append(Action("manual", "Type the NAFDAC number or barcode", 
-                          "Faster than re-shooting if the print is clear.", 0, "ui"))
+        if kind in ("food", "beverage", "water", "cosmetic", "household"):
+            out.append(Action("complete", "Photograph the date panel",
+                              "The best-before date and product name are printed there.",
+                              0, "camera"))
+            out.append(Action("manual", "Type the barcode and expiry date",
+                              "Faster than re-shooting if the print is clear.",
+                              0, "ui"))
+        else:
+            out.append(Action("complete", "Photograph the back panel",
+                              "The NAFDAC number and expiry are printed there.",
+                              0, "camera"))
+            out.append(Action("manual", "Type the NAFDAC number or barcode",
+                              "Faster than re-shooting if the print is clear.",
+                              0, "ui"))
         return out
 
     out.append(Action("preserve", "Keep the pack, receipt and this report",

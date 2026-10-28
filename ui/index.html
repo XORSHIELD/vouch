@@ -238,11 +238,144 @@
   .stat b{display:block;font-size:28px;letter-spacing:-.03em;font-weight:800;background:linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .stat span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-top:4px;display:block}
   .hidden{display:none!important}
+
+  /* ---------- scanner ---------- */
+  .modal{position:fixed;inset:0;z-index:80;background:rgba(7,59,46,.45);display:flex;align-items:center;justify-content:center;padding:18px}
+  .sheet{background:#fff;border:1px solid var(--line);border-radius:18px;width:min(720px,100%);max-height:92vh;overflow:auto;box-shadow:0 30px 90px rgba(7,59,46,.35)}
+  .sheet-hd{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}
+  .sheet-hd h2{margin:0;font-size:18px;letter-spacing:-.02em}
+  .sheet-hd small{color:var(--ink-3);font-size:12px}
+  .iconbtn{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;color:var(--ink-3)}
+  .iconbtn:hover{background:var(--sage);color:var(--green);border-color:transparent}
+  .scan-tabs{display:flex;gap:6px;padding:14px 22px 0}
+  .scan-tabs button{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 8px;font-size:13.5px;font-weight:600;color:var(--ink-3)}
+  .scan-tabs button.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .scan-body{padding:18px 22px 22px}
+  .camera-wrap{position:relative;border-radius:14px;overflow:hidden;background:var(--green-deep);aspect-ratio:4/3;display:grid;place-items:center}
+  .camera-wrap video{width:100%;height:100%;object-fit:cover;display:block}
+  .camera-wrap .frame{position:absolute;inset:14% 10%;border:2px dashed rgba(255,255,255,.65);border-radius:14px;pointer-events:none}
+  .cam-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#dff3e5;padding:24px;font-size:13.5px;line-height:1.6;background:linear-gradient(160deg,var(--green-deep),#0b5840)}
+  .scan-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .drop{border:1.5px dashed #c3d4ca;border-radius:14px;background:var(--bg);padding:34px 20px;text-align:center;color:var(--ink-3);font-size:14px;transition:.15s}
+  .drop.over{border-color:var(--green);background:var(--sage);color:var(--green)}
+  .drop strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+  .scan-note{margin:12px 0 0;font-size:12.5px;color:var(--ink-3);line-height:1.65}
+  .scan-status{margin-top:12px;font-size:13px;border-radius:10px;padding:9px 12px;background:var(--amber-bg);color:var(--amber);border:1px solid #f0e2bf}
+  .scan-status.ok{background:var(--green-bg);color:var(--ok);border-color:#cfe7d8}
+  .scan-status.err{background:var(--red-bg);color:var(--err);border-color:#f2d6d6}
+
+  /* ---------- history / guide / settings ---------- */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .toolbar input{max-width:320px}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .filters button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+  .filters button.on{background:var(--green);border-color:var(--green);color:#fff}
+  .htable{width:100%;border-collapse:collapse;font-size:13.5px}
+  .htable th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:10px 12px;border-bottom:1px solid var(--line);font-weight:800}
+  .htable td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .htable tr:last-child td{border-bottom:0}
+  .htable tr:hover td{background:var(--bg)}
+  .hpill{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:3px 9px}
+  .hpill.clear{background:var(--green-bg);color:var(--ok)}
+  .hpill.review{background:var(--amber-bg);color:var(--amber)}
+  .hpill.high_risk{background:var(--red-bg);color:var(--err)}
+  .hpill.incomplete{background:var(--bg);color:var(--ink-3)}
+  .guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .guide-item{border:1px solid var(--line);border-radius:12px;background:#fff;padding:0;overflow:hidden}
+  .guide-item summary{cursor:pointer;padding:15px 16px;font-weight:700;font-size:14.5px;list-style:none;display:flex;gap:10px;align-items:center}
+  .guide-item summary::-webkit-details-marker{display:none}
+  .guide-item summary::before{content:"+";width:22px;height:22px;border-radius:6px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800;flex:0 0 22px}
+  .guide-item[open] summary::before{content:"–"}
+  .guide-item .g-body{padding:0 16px 16px;font-size:13.5px;color:var(--ink-2);line-height:1.7}
+  .guide-item .g-body p{margin:0 0 8px}
+  .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .settings-grid .card{margin:0}
+  @media (max-width:760px){
+    .top-in{height:auto;padding:12px 0;flex-wrap:wrap;gap:10px}
+    .brand{font-size:20px}
+    .brand small{display:none}
+    nav.tabs{margin-left:0;order:3;width:100%;overflow-x:auto;gap:2px}
+    nav.tabs button{padding:7px 11px;font-size:13px;white-space:nowrap}
+    .cta{margin-left:auto;padding:8px 13px;font-size:13px}
+    .hero h1{font-size:34px}
+    .guide-grid,.settings-grid{grid-template-columns:1fr}
+    .compare{grid-template-columns:1fr}
+    .compare>div:first-child{border-right:0;border-bottom:1.5px solid var(--line)}
+    .htable .hide-sm{display:none}
+    .sheet{border-radius:14px}
+  }
+
+  /* ---------- voice agent ---------- */
+  .voice-fab{
+    position:fixed;right:22px;bottom:22px;z-index:70;display:inline-flex;align-items:center;gap:9px;
+    background:var(--green);color:#fff;border:0;border-radius:999px;padding:11px 18px 11px 13px;
+    font:inherit;font-weight:700;font-size:14px;letter-spacing:.01em;cursor:pointer;
+    box-shadow:0 10px 30px rgba(7,59,46,.28);transition:transform .15s ease, background .15s ease
+  }
+  .voice-fab:hover{background:#0f5c3b;transform:translateY(-1px)}
+  .voice-fab:active{transform:translateY(0)}
+  .voice-fab svg{width:19px;height:19px;flex:0 0 19px}
+  .voice-fab[aria-expanded="true"]{background:var(--green-deep)}
+
+  .voice-panel{
+    position:fixed;right:22px;bottom:82px;z-index:75;width:min(412px,calc(100vw - 28px));
+    max-height:min(74vh,660px);display:flex;flex-direction:column;background:#fff;
+    border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 24px 70px rgba(7,59,46,.26)
+  }
+  .voice-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .voice-head .who{display:flex;align-items:center;gap:10px;min-width:0}
+  .voice-dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:0 0 9px;box-shadow:0 0 0 3px rgba(24,121,78,.12)}
+  .voice-dot.listening{background:var(--err);box-shadow:0 0 0 3px rgba(198,40,40,.14);animation:vpulse 1.4s infinite}
+  .voice-dot.speaking{background:var(--amber);box-shadow:0 0 0 3px rgba(183,121,31,.14)}
+  .voice-head b{display:block;font-size:14px;letter-spacing:-.01em;line-height:1.2}
+  .voice-head small{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .voice-head .actions{margin-left:auto;display:flex;gap:6px}
+  .voice-head .iconbtn{width:30px;height:30px;border-radius:8px}
+  .voice-list{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#fff;min-height:140px}
+  .vmsg{max-width:88%;border-radius:12px;padding:9px 12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
+  .vmsg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line);color:var(--ink-2);border-bottom-left-radius:4px}
+  .vmsg.user{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:4px}
+  .vmsg small{display:block;margin-top:5px;font-size:10.5px;letter-spacing:.03em;color:var(--ink-3);white-space:normal}
+  .vmsg.user small{color:rgba(255,255,255,.72)}
+  .vmsg.thinking{color:var(--ink-3);font-style:italic}
+  .vmsg.thinking .dots{display:inline-block;width:18px;text-align:left;animation:vblink 1.2s infinite}
+  @keyframes vblink{0%,20%{opacity:.2}50%{opacity:1}100%{opacity:.2}}
+  .voice-suggests{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+  .voice-suggests button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:999px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+  .voice-suggests button:hover{background:var(--sage);border-color:transparent;color:var(--green)}
+  .voice-form{display:flex;gap:7px;padding:0 14px 10px}
+  .voice-form input{flex:1;min-width:0;padding:9px 11px;font-size:13.5px}
+  .voice-form .btn{padding:9px 14px;font-size:13px;border-radius:8px}
+  .voice-controls{display:flex;align-items:center;gap:12px;padding:10px 14px 6px;border-top:1px solid var(--line);background:var(--bg)}
+  .voice-mic{
+    width:52px;height:52px;flex:0 0 52px;border-radius:50%;border:0;background:var(--green);color:#fff;
+    display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px rgba(18,107,69,.25);
+    transition:background .15s ease
+  }
+  .voice-mic:hover{background:#0f5c3b}
+  .voice-mic.listening{background:var(--err);animation:vpulse 1.4s infinite}
+  .voice-mic:disabled{background:#a9b8b0;cursor:not-allowed;box-shadow:none}
+  .voice-mic svg{width:22px;height:22px}
+  @keyframes vpulse{0%{box-shadow:0 0 0 0 rgba(198,40,40,.34)}70%{box-shadow:0 0 0 15px rgba(198,40,40,0)}100%{box-shadow:0 0 0 0 rgba(198,40,40,0)}}
+  .voice-hint{font-size:12.5px;color:var(--ink-3);line-height:1.55;min-height:38px}
+  .voice-hint b{color:var(--ink-2)}
+  .voice-stop{margin-left:auto;align-self:flex-start;border:1px solid var(--line);background:#fff;color:var(--ink-3);border-radius:8px;padding:6px 9px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+  .voice-stop:hover{background:var(--sage);color:var(--green)}
+  .voice-stop[disabled]{opacity:.45;cursor:not-allowed}
+  .voice-privacy{margin:0;padding:7px 14px 12px;font-size:10.5px;line-height:1.5;color:var(--ink-3);background:var(--bg)}
+  @media (max-width:560px){
+    .voice-fab{right:14px;bottom:14px;padding:11px 15px}
+    .voice-panel{right:10px;left:10px;bottom:74px;width:auto;max-height:76vh}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .voice-mic.listening,.voice-dot.listening{animation:none}
+  }
 </style>
 </head>
 <body>
 
-header.top{
+<header class="top">
   <div class="wrap top-in">
     <div class="brand">
       <span class="brand-mark">
@@ -258,9 +391,15 @@ header.top{
     </div>
     <nav class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-tab="check">Verify</button>
-      <button role="tab" aria-selected="false" data-tab="cases">Cases <span id="caseCount"></span></button>
+      <button role="tab" aria-selected="false" data-tab="history">History</button>
+      <button role="tab" aria-selected="false" data-tab="guide">Product guide</button>
+      <button role="tab" aria-selected="false" data-tab="cases">Reports <span id="caseCount"></span></button>
+      <button role="tab" aria-selected="false" data-tab="settings">Settings</button>
     </nav>
-    <a class="cta" href="#form">Check a product</a>
+    <button class="cta" id="btnScanTop" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg>
+      Scan product
+    </button>
   </div>
 </header>
 
@@ -416,8 +555,177 @@ header.top{
     </div>
   </section>
 
-  <!-- CASES -->
+  <!-- HISTORY -->
+  <section id="tab-history" class="hidden">
+    <div class="card">
+      <div class="hd">
+        <div class="hd-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>
+        </div>
+        <h2>Scan history</h2>
+        <span style="margin-left:auto;font-size:12px;color:var(--ink-3)" id="historyCount"></span>
+      </div>
+      <div class="bd">
+        <div class="toolbar">
+          <input id="historySearch" placeholder="Search product, number or barcode…" autocomplete="off" />
+          <div class="filters" id="historyFilters">
+            <button data-f="all" class="on">All</button>
+            <button data-f="clear">Clear</button>
+            <button data-f="review">Check further</button>
+            <button data-f="high_risk">High-risk</button>
+            <button data-f="incomplete">Inconclusive</button>
+          </div>
+          <button class="btn ghost sm" id="btnClearHistory" type="button" style="margin-left:auto">Clear history</button>
+        </div>
+        <div id="historyTable"></div>
+        <p class="scan-note">History is stored in this browser only. Nothing is uploaded or shared. Opening a past scan re-runs the same checks against today’s data.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCT GUIDE -->
+  <section id="tab-guide" class="hidden">
+    <div class="card" style="margin-bottom:18px">
+      <div class="bd">
+        <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Product guide</h2>
+        <p style="margin:0;color:var(--ink-3);font-size:15px">Practical guidance for reading dates, spotting packaging problems, and knowing what a check can and cannot prove.</p>
+      </div>
+    </div>
+    <div class="guide-grid">
+      <details class="guide-item" open>
+        <summary>How to find the expiry date</summary>
+        <div class="g-body">
+          <p>Look on the crimp of a tube, the base of a bottle, the sealed end of a sachet, and the back or bottom of a carton. It is often stamped in the same colour as the pack, so tilt it towards the light.</p>
+          <p>Common formats: <b>EXP 06/2028</b>, <b>06 2028</b>, <b>2028-06</b>, <b>JUN 28</b>. A date without a day usually means the last day of that month.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>Best-before vs use-by</summary>
+        <div class="g-body">
+          <p><b>Use-by</b> is a safety limit. Do not eat or use the product after it, even if it looks fine.</p>
+          <p><b>Best-before</b> is a quality limit. The product may still be safe afterwards, but taste, texture or potency may have changed. Medicines use an expiry date, which is a potency and safety limit.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>How to identify a batch number</summary>
+        <div class="g-body">
+          <p>A batch or lot number is usually 4–10 letters and digits printed near the expiry date, often with <b>LOT</b>, <b>BATCH</b> or <b>BN</b> in front. It identifies the production run, and it is how a recall reaches the right packs.</p>
+          <p>If the batch and the expiry are printed in different styles, or one looks stuck on, treat that as a reason to look closer — not proof on its own.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>Common packaging irregularities</summary>
+        <div class="g-body">
+          <p>Watch for: a sticker over printed text; expiry printed over a different date; a seal or tamper band already broken; a missing hologram where the brand normally has one; blurred or uneven print; spelling errors in the brand or manufacturer name; loose or damaged tablets.</p>
+          <p>Each of these is an indicator. Vouch records them as findings with evidence and explains what they do not prove.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>What a barcode can and cannot prove</summary>
+        <div class="g-body">
+          <p>A barcode identifies a product record, not a physical pack. A copied barcode is trivial to reprint, so a match does not prove the item in your hand is genuine.</p>
+          <p>A barcode that is absent from public databases may simply be a small local producer, or a product not yet catalogued. Vouch never treats absence alone as proof of falsification.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>Verifying a manufacturer</summary>
+        <div class="g-body">
+          <p>Compare the manufacturer and product name on the pack with the registry record. A correct registration number attached to a different product name is a serious mismatch and should be escalated.</p>
+          <p>Be careful with similar names: a single changed letter can be a different company or a different registration.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>Handling a suspicious product</summary>
+        <div class="g-body">
+          <p>Stop using it. Keep the pack, receipt and any remaining contents. Do not return the only evidence to the seller before you have photographed it.</p>
+          <p>Do not take a medicine you suspect is counterfeit in order to test it. Report it to NAFDAC or FCCPC and keep the reference number.</p>
+        </div>
+      </details>
+      <details class="guide-item">
+        <summary>What Vouch cannot do</summary>
+        <div class="g-body">
+          <p>Vouch cannot confirm authenticity from a photograph. It cannot test chemical content, and it does not replace laboratory analysis or a NAFDAC inspection.</p>
+          <p>If the evidence is not available, the result is <b>Inconclusive</b> rather than a guess. That is deliberate.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="hidden">
+    <div class="card" style="margin-bottom:18px">
+      <div class="bd">
+        <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Settings</h2>
+        <p style="margin:0;color:var(--ink-3);font-size:15px">This build stores preferences in this browser. There is no account server, so nothing here is sent anywhere.</p>
+      </div>
+    </div>
+    <div class="settings-grid">
+      <div class="card">
+        <div class="hd"><h2>Profile</h2></div>
+        <div class="bd">
+          <label class="f"><span>Display name</span>
+            <input id="setName" placeholder="e.g. Joseph" autocomplete="name" /></label>
+          <label class="f"><span>Account type</span>
+            <select id="setRole">
+              <option value="consumer">Consumer</option>
+              <option value="retailer">Retailer</option>
+              <option value="distributor">Distributor</option>
+              <option value="inspector">Inspection team</option>
+            </select></label>
+          <button class="btn" id="btnSaveProfile" type="button">Save profile</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="hd"><h2>Notifications</h2></div>
+        <div class="bd">
+          <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:12px">
+            <input type="checkbox" id="setReminders" style="width:auto;margin-top:4px" />
+            <span>Remind me when a case deadline falls due</span>
+          </label>
+          <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:12px">
+            <input type="checkbox" id="setSummary" style="width:auto;margin-top:4px" />
+            <span>Show a summary of unresolved cases on the dashboard</span>
+          </label>
+          <label class="f"><span>Language</span>
+            <select id="setLang">
+              <option value="en">English</option>
+              <option value="pcm">Nigerian Pidgin (planned)</option>
+              <option value="ha">Hausa (planned)</option>
+              <option value="ig">Igbo (planned)</option>
+              <option value="yo">Yorùbá (planned)</option>
+            </select></label>
+          <button class="btn" id="btnSavePrefs" type="button">Save preferences</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="hd"><h2>Your data</h2></div>
+        <div class="bd">
+          <p style="margin:0 0 14px;font-size:13.5px;color:var(--ink-2)">Scan history lives in this browser. Cases live on this Vouch server.</p>
+          <div class="docbtns" style="margin-top:0">
+            <button class="btn ghost sm" id="btnExport" type="button">Export my history</button>
+            <button class="btn ghost sm" id="btnResetCases" type="button">Reset demo cases</button>
+          </div>
+          <p class="scan-note">Resetting demo cases deletes every case stored on this server, including rehearsals. It cannot be undone.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="hd"><h2>Session</h2></div>
+        <div class="bd">
+          <p style="margin:0 0 14px;font-size:13.5px;color:var(--ink-2)">You are using Vouch in local demo mode. No sign-in is required and no data leaves this machine.</p>
+          <button class="btn ghost" id="btnSignOut" type="button">Return to website</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CASES / REPORTS -->
   <section id="tab-cases" class="hidden">
+    <div class="card" style="margin-bottom:18px">
+      <div class="bd">
+        <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Reports and cases</h2>
+        <p style="margin:0;color:var(--ink-3);font-size:15px">A finding only matters if it is chased. Each case keeps the evidence, the deadline and every document generated from it.</p>
+      </div>
+    </div>
     <div id="queueList"></div>
     <div class="stats" id="caseStats"></div>
     <div id="caseList"></div>
@@ -425,6 +733,114 @@ header.top{
   </section>
 
 </main>
+
+<!-- SCANNER -->
+<div class="modal hidden" id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+  <div class="sheet">
+    <div class="sheet-hd">
+      <div>
+        <h2 id="scanTitle">Scan a product</h2>
+        <small>Camera, photo, or barcode. Nothing is uploaded to a third party.</small>
+      </div>
+      <button class="iconbtn" id="scanClose" type="button" aria-label="Close scanner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="scan-tabs" role="tablist">
+      <button type="button" data-mode="camera" class="on">Camera</button>
+      <button type="button" data-mode="upload">Photo file</button>
+      <button type="button" data-mode="barcode">Barcode</button>
+    </div>
+    <div class="scan-body">
+      <div id="modeCamera">
+        <div class="camera-wrap">
+          <video id="cam" playsinline muted autoplay></video>
+          <div class="frame"></div>
+          <div class="cam-empty" id="camEmpty">
+            <div>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+              <div><b>Point the camera at the pack</b><br/>Fill the frame with the label, including the expiry date and batch number.</div>
+            </div>
+          </div>
+        </div>
+        <div class="scan-row">
+          <button class="btn" id="btnCapture" type="button">Capture &amp; check</button>
+          <button class="btn ghost" id="btnCamStart" type="button">Start camera</button>
+          <button class="btn ghost" id="btnCamFlip" type="button">Flip camera</button>
+          <button class="btn ghost" id="btnCamStop" type="button">Stop camera</button>
+        </div>
+        <p class="scan-note">The camera needs permission and a secure context (localhost or HTTPS). If it is blocked, use <b>Photo file</b> or enter the details by hand.</p>
+      </div>
+
+      <div id="modeUpload" class="hidden">
+        <div class="drop" id="dropZone">
+          <strong>Drop a photo here</strong>
+          or choose a file from this device
+          <div class="scan-row" style="justify-content:center">
+            <button class="btn" id="btnChooseFile" type="button">Choose photo</button>
+            <button class="btn ghost" id="btnTakePhoto" type="button">Use device camera</button>
+          </div>
+        </div>
+        <p class="scan-note">JPG, PNG or WebP up to 25 MB. Keep the whole label in frame and avoid glare. OCR works best on straight, well-lit text.</p>
+      </div>
+
+      <div id="modeBarcode" class="hidden">
+        <label class="f"><span>Barcode number</span>
+          <input id="scanBarcode" inputmode="numeric" autocomplete="off" placeholder="8, 12, 13 or 14 digits" style="font-family:var(--mono);letter-spacing:.06em" /></label>
+        <div class="scan-row">
+          <button class="btn" id="btnBarcodeLookup" type="button">Look up barcode</button>
+          <button class="btn ghost" id="btnBarcodeCamera" type="button">Scan with camera</button>
+        </div>
+        <p class="scan-note">Used for food, drink, water, cosmetics and household products. A barcode match identifies a product record — it does not prove the pack in your hand is genuine.</p>
+      </div>
+
+      <div id="scanStatus" class="scan-status hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE AGENT -->
+<button class="voice-fab" id="voiceFab" type="button" aria-expanded="false" aria-controls="voicePanel">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+  Ask Vouch
+</button>
+
+<div class="voice-panel hidden" id="voicePanel" role="dialog" aria-labelledby="voiceTitle">
+  <div class="voice-head">
+    <div class="who">
+      <span class="voice-dot" id="voiceDot" aria-hidden="true"></span>
+      <div>
+        <b id="voiceTitle">Vouch voice agent</b>
+        <small id="voiceStatus" role="status">Ready</small>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="iconbtn" id="voiceMute" type="button" aria-label="Mute spoken answers" title="Mute spoken answers">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>
+      </button>
+      <button class="iconbtn" id="voiceClose" type="button" aria-label="Close the voice agent" title="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="voice-list" id="voiceList" aria-live="polite" aria-relevant="additions text"></div>
+  <div class="voice-suggests" id="voiceSuggest"></div>
+
+  <form class="voice-form" id="voiceForm" autocomplete="off">
+    <input id="voiceText" placeholder="Type, or press the mic and speak" aria-label="Ask the Vouch voice agent" />
+    <button class="btn" type="submit">Send</button>
+  </form>
+
+  <div class="voice-controls">
+    <button class="voice-mic" id="voiceMic" type="button" aria-label="Start listening" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+    </button>
+    <div class="voice-hint" id="voiceHint">Press the mic and ask about this pack. You can also say <b>“open a case”</b> or <b>“read my result”</b>.</div>
+    <button class="voice-stop" id="voiceStop" type="button" disabled>Stop audio</button>
+  </div>
+  <p class="voice-privacy">Speech recognition is provided by your browser and may send audio to the browser vendor. Vouch does not record or store audio. Answers come only from the checks shown here.</p>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -487,17 +903,21 @@ function fillForm(f={}){  for (const k of ['nafdac_number','barcode','product_na
 
 const jump = document.getElementById('btnJumpCases');
 if(jump){
-  jump.onclick = () => {
-    const btns = document.querySelectorAll('nav.tabs button');
-    if(btns[1]) btns[1].click();
-  };
+  jump.onclick = () => goTab('cases');
 }
-$$('nav.tabs button').forEach(b => b.onclick = () => {
-  $$('nav.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b));
-  $('#tab-check').classList.toggle('hidden', b.dataset.tab!=='check');
-  $('#tab-cases').classList.toggle('hidden', b.dataset.tab!=='cases');
-  if (b.dataset.tab==='cases') loadCases();
-});
+
+const TABS = ['check','history','guide','cases','settings'];
+function goTab(name){
+  const btn = $$('nav.tabs button').find(x => x.dataset.tab === name);
+  if (!btn) return;
+  $$('nav.tabs button').forEach(x => x.setAttribute('aria-selected', x === btn));
+  TABS.forEach(t => { const sec = $('#tab-' + t); if (sec) sec.classList.toggle('hidden', t !== name); });
+  if (name === 'cases') loadCases();
+  if (name === 'history') renderHistory();
+  if (name === 'settings') loadSettings();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+$$('nav.tabs button').forEach(b => b.onclick = () => goTab(b.dataset.tab));
 
 /* ---------- flags ---------- */
 $('#flags').innerHTML = Object.entries(FLAGS).map(([k,v]) =>
@@ -583,6 +1003,7 @@ async function readPhoto(fileOrBlob, name){
   const fd = new FormData();
   fd.append('file', fileOrBlob, name || 'pack.jpg');
   toast('Reading the pack…');
+  scanStatus('Reading the label — this can take a few seconds…', 'ok');
   try {
     const r = await fetch('/api/extract/image', {method:'POST', body:fd});
     const body = await r.json();
@@ -591,17 +1012,266 @@ async function readPhoto(fileOrBlob, name){
     const warns = body.extraction.warnings || [];
     toast(`Read by ${body.extraction.provider} — check the fields`);
     const box = $('#photoNotes');
-    if (box && warns.length) {
-      box.classList.remove('hidden');
+    if (box) {
+      box.classList.toggle('hidden', !warns.length);
       box.innerHTML = warns.map(w=>`<p style="margin:0 0 4px">• ${esc(w)}</p>`).join('');
     }
+    closeScanner();
     // Fill then check in one gesture: the point is the verdict, not the form.
     $('#form').requestSubmit();
   } catch(err){
     toast(err.message);
     $('#pasteBox').classList.remove('hidden'); $('#pasteActions').classList.remove('hidden');
+    scanStatus(err.message + ' — you can paste the label text instead.', 'err');
   }
 }
+
+/* ---------- scanner ---------- */
+let camStream = null;
+let camFacing = 'environment';
+let barcodeTimer = null;
+let scanning = false;
+
+function scanStatus(msg, kind){
+  const el = $('#scanStatus');
+  if (!el) return;
+  if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+  el.className = 'scan-status ' + (kind || '');
+  el.textContent = msg;
+}
+
+function openScanner(mode){
+  const m = $('#scanModal');
+  if (!m) return;
+  if (typeof closeVoice === 'function') closeVoice();
+  m.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  setScanMode(mode || 'camera');
+}
+
+function closeScanner(){
+  const m = $('#scanModal');
+  if (!m) return;
+  m.classList.add('hidden');
+  document.body.style.overflow = '';
+  stopCamera();
+  scanStatus('');
+}
+
+function setScanMode(mode){
+  $$('.scan-tabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  $('#modeCamera').classList.toggle('hidden', mode !== 'camera');
+  $('#modeUpload').classList.toggle('hidden', mode !== 'upload');
+  $('#modeBarcode').classList.toggle('hidden', mode !== 'barcode');
+  scanStatus('');
+  if (mode === 'camera') startCamera();
+  else stopCamera();
+}
+
+async function startCamera(){
+  const video = $('#cam');
+  const empty = $('#camEmpty');
+  if (!video) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    scanStatus('This browser cannot open a camera here. Use Photo file, or open Vouch on localhost/HTTPS.', 'err');
+    return;
+  }
+  stopCamera();
+  try {
+    scanStatus('Asking for camera permission…', '');
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: {ideal: camFacing}, width: {ideal: 1280}, height: {ideal: 960} },
+      audio: false
+    });
+    video.srcObject = camStream;
+    await video.play().catch(()=>{});
+    if (empty) empty.classList.add('hidden');
+    scanStatus('Camera ready. Fill the frame with the label, then capture.', 'ok');
+    startBarcodeDetection(video);
+  } catch (err) {
+    stopCamera();
+    const msg = err && (err.name === 'NotAllowedError')
+      ? 'Camera permission was blocked. Allow it in the browser, or use Photo file instead.'
+      : err && err.name === 'NotFoundError'
+        ? 'No camera was found on this device. Use Photo file instead.'
+        : 'The camera could not start. Use Photo file instead.';
+    scanStatus(msg, 'err');
+  }
+}
+
+function stopCamera(){
+  scanning = false;
+  if (barcodeTimer) { clearInterval(barcodeTimer); barcodeTimer = null; }
+  if (camStream) {
+    camStream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+    camStream = null;
+  }
+  const video = $('#cam');
+  if (video) video.srcObject = null;
+  const empty = $('#camEmpty');
+  if (empty) empty.classList.remove('hidden');
+}
+
+function startBarcodeDetection(video){
+  if (!('BarcodeDetector' in window)) return;
+  let detector;
+  try {
+    detector = new window.BarcodeDetector({formats: ['ean_13','ean_8','upc_a','upc_e','code_128','qr_code']});
+  } catch {
+    try { detector = new window.BarcodeDetector(); } catch { return; }
+  }
+  scanning = true;
+  barcodeTimer = setInterval(async () => {
+    if (!scanning || !camStream) return;
+    try {
+      const codes = await detector.detect(video);
+      if (codes && codes.length && codes[0].rawValue) {
+        scanning = false;
+        clearInterval(barcodeTimer); barcodeTimer = null;
+        const value = String(codes[0].rawValue).replace(/\D/g, '');
+        if (value.length >= 8) {
+          $('#scanBarcode').value = value;
+          stopCamera();
+          scanStatus('Barcode detected: ' + value, 'ok');
+          lookupBarcode(value);
+        }
+      }
+    } catch {}
+  }, 700);
+}
+
+async function capturePhoto(){
+  const video = $('#cam');
+  if (!video || !video.videoWidth) {
+    scanStatus('The camera is not running yet. Press Start camera first.', 'err');
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+  if (!blob) { scanStatus('Could not capture a frame. Try again.', 'err'); return; }
+  stopCamera();
+  await readPhoto(blob, 'scan.jpg');
+}
+
+async function lookupBarcode(code){
+  const digits = String(code || '').replace(/\D/g, '');
+  if (![8, 12, 13, 14].includes(digits.length)) {
+    scanStatus('A barcode is 8, 12, 13 or 14 digits. Check the number and try again.', 'err');
+    return;
+  }
+  scanStatus('Looking up ' + digits + '…', '');
+  try {
+    const payload = Object.assign({}, formData(), {barcode: digits});
+    const out = await api('/api/barcode', {method:'POST', body: JSON.stringify(payload)});
+    suppressHistory = false;
+    fillForm(out.assessment.input || {barcode: digits, product_name: (out.barcode||{}).name || ''});
+    $$('#flags input').forEach(i => i.checked = false);
+    state.assessment = out.assessment;
+    renderAssessment(out.assessment);
+    closeScanner();
+    goTab('check');
+    toast('Barcode ' + digits + ' checked');
+  } catch (e) {
+    scanStatus(e.message || 'Barcode lookup failed.', 'err');
+  }
+}
+
+$('#btnScanTop').onclick = () => openScanner('camera');
+$('#scanClose').onclick = closeScanner;
+$('#scanModal').onclick = (e) => { if (e.target.id === 'scanModal') closeScanner(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeScanner(); });
+
+$$('.scan-tabs button').forEach(b => b.onclick = () => setScanMode(b.dataset.mode));
+$('#btnCamStart').onclick = startCamera;
+$('#btnCamStop').onclick = () => { stopCamera(); scanStatus('Camera stopped.', ''); };
+$('#btnCamFlip').onclick = async () => {
+  camFacing = camFacing === 'environment' ? 'user' : 'environment';
+  await startCamera();
+};
+$('#btnCapture').onclick = capturePhoto;
+
+$('#btnChooseFile').onclick = () => {
+  $('#fileInput').removeAttribute('capture');
+  $('#fileInput').click();
+};
+$('#btnTakePhoto').onclick = () => {
+  $('#fileInput').setAttribute('capture', 'environment');
+  $('#fileInput').click();
+};
+
+const dropZone = $('#dropZone');
+if (dropZone) {
+  ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, (e) => {
+    e.preventDefault(); dropZone.classList.add('over');
+  }));
+  ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, (e) => {
+    e.preventDefault(); dropZone.classList.remove('over');
+  }));
+  dropZone.addEventListener('drop', (e) => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) { setScanMode('upload'); readPhoto(f, f.name); }
+  });
+}
+
+$('#btnBarcodeLookup').onclick = () => lookupBarcode($('#scanBarcode').value);
+$('#scanBarcode').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); lookupBarcode($('#scanBarcode').value); }
+});
+$('#btnBarcodeCamera').onclick = () => { setScanMode('camera'); };
+
+/* history + settings controls */
+$('#historySearch').addEventListener('input', (e) => {
+  histQuery = e.target.value.trim();
+  renderHistory();
+});
+$$('#historyFilters button').forEach(b => b.onclick = () => {
+  histFilter = b.dataset.f;
+  $$('#historyFilters button').forEach(x => x.classList.toggle('on', x === b));
+  renderHistory();
+});
+$('#btnClearHistory').onclick = () => {
+  if (!confirm('Delete every scan stored in this browser? This cannot be undone.')) return;
+  writeHistory([]);
+  renderHistory();
+  toast('History cleared');
+};
+
+$('#btnSaveProfile').onclick = () => {
+  savePrefs({name: $('#setName').value.trim(), role: $('#setRole').value});
+  toast('Profile saved');
+};
+$('#btnSavePrefs').onclick = () => {
+  savePrefs({
+    reminders: $('#setReminders').checked,
+    summary: $('#setSummary').checked,
+    lang: $('#setLang').value
+  });
+  const lang = $('#setLang').value;
+  toast(lang === 'en' ? 'Preferences saved' : 'Preferences saved — that language is not translated yet');
+};
+$('#btnExport').onclick = () => {
+  const payload = {exported_at: new Date().toISOString(), scans: readHistory()};
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vouch-history.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast('History exported');
+};
+$('#btnResetCases').onclick = async () => {
+  if (!confirm('Delete all cases on this Vouch server, including demo rehearsals?')) return;
+  try {
+    await api('/api/demo/reset', {method:'POST'});
+    toast('Cases reset');
+    loadCases();
+  } catch (e) { toast(e.message); }
+};
+$('#btnSignOut').onclick = () => { window.location.href = '/'; };
 
 $$('#samples .chip').forEach(b => b.onclick = async () => {
   b.disabled = true;
@@ -624,6 +1294,188 @@ $('#btnExtract').onclick = async () => {
   } catch(e){ toast(e.message); }
 };
 
+/* ---------- AI explanation (streamed) ---------- */
+let explainCtl = null;
+
+function packPayload(question){
+  return Object.assign(formData(), {question: question || ''});
+}
+
+function aiWhoText(provider){
+  if (!provider) return 'on-device';
+  return provider === 'vouch-composer' ? 'on-device composer' : provider;
+}
+
+async function startExplain(a, question){
+  const bodyEl = $('#aiBody');
+  if (!bodyEl) return;
+  const who = $('#aiWho');
+  const caret = $('#aiCaret');
+  bodyEl.textContent = '';
+  if (who) who.textContent = 'thinking…';
+  if (caret) caret.classList.add('on');
+  if (explainCtl) explainCtl.abort();
+  const ctl = new AbortController();
+  explainCtl = ctl;
+  const payload = packPayload(question);
+  try {
+    const r = await fetch('/api/explain', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+      signal: ctl.signal
+    });
+    if (!r.ok || !r.body) throw new Error('stream unavailable');
+    const reader = r.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const chunk = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        const line = chunk.split('\n').find(l => l.startsWith('data: '));
+        if (!line) continue;
+        let ev;
+        try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+        if (ev.meta && who) who.textContent = aiWhoText(ev.meta.provider);
+        if (ev.delta) bodyEl.textContent += ev.delta;
+        if (ev.done && who) who.textContent = aiWhoText(ev.provider);
+      }
+    }
+    if (!bodyEl.textContent) throw new Error('empty explanation');
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    try {
+      const out = await api('/api/ask', {method:'POST', body: JSON.stringify(payload)});
+      bodyEl.textContent = out.answer;
+      if (who) who.textContent = aiWhoText(out.provider);
+    } catch (e2) {
+      bodyEl.textContent = 'The explanation service is unavailable right now. The checks above are still valid evidence.';
+      if (who) who.textContent = 'offline';
+    }
+  } finally {
+    if (caret) caret.classList.remove('on');
+  }
+}
+
+/* ---------- history (browser-local) ---------- */
+const HIST_KEY = 'vouch.history.v1';
+let histFilter = 'all';
+let histQuery = '';
+let suppressHistory = false;
+
+function readHistory(){
+  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch { return []; }
+}
+function writeHistory(list){
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, 100))); } catch {}
+}
+function saveScan(a, input){
+  if (suppressHistory) return;
+  const port = a.input || input || {};
+  const entry = {
+    at: new Date().toISOString(),
+    band: a.band,
+    headline: a.headline,
+    product: port.product_name || (a.barcode && a.barcode.name) || '',
+    nafdac: port.nafdac_number || (a.registry && a.registry.nafdac) || '',
+    barcode: port.barcode || (a.barcode && a.barcode.code) || '',
+    rail: a.rail,
+    kind: a.kind,
+    input: port
+  };
+  const list = readHistory();
+  const last = list[0];
+  if (last && JSON.stringify(last.input) === JSON.stringify(entry.input)
+      && last.band === entry.band && (Date.now() - new Date(last.at).getTime()) < 8000) return;
+  list.unshift(entry);
+  writeHistory(list);
+  const countEl = $('#historyCount');
+  if (countEl) countEl.textContent = list.length + (list.length === 1 ? ' scan' : ' scans');
+}
+
+function renderHistory(){
+  const list = readHistory();
+  const countEl = $('#historyCount');
+  if (countEl) countEl.textContent = list.length + (list.length === 1 ? ' scan' : ' scans');
+  const rows = list.filter(e => {
+    if (histFilter !== 'all' && e.band !== histFilter) return false;
+    if (!histQuery) return true;
+    const hay = [e.product, e.nafdac, e.barcode, e.headline].join(' ').toLowerCase();
+    return hay.includes(histQuery.toLowerCase());
+  });
+  const box = $('#historyTable');
+  if (!box) return;
+  if (!list.length) {
+    box.innerHTML = `<div class="empty">No scans yet. Every check you run is saved here, in this browser.<br><span style="font-size:12px">Run a demo or scan a pack to begin.</span></div>`;
+    return;
+  }
+  if (!rows.length) {
+    box.innerHTML = `<div class="empty">No scans match this filter.</div>`;
+    return;
+  }
+  box.innerHTML = `<div style="overflow:auto"><table class="htable">
+    <thead><tr><th>Product</th><th class="hide-sm">Number</th><th class="hide-sm">When</th><th>Result</th><th></th></tr></thead>
+    <tbody>${rows.map((e) => {
+      const idx = list.indexOf(e);
+      return `<tr>
+        <td><b>${esc(e.product || e.headline || 'Unnamed product')}</b></td>
+        <td class="hide-sm" style="font-family:var(--mono);font-size:12px;color:var(--ink-3)">${esc(e.nafdac || e.barcode || '—')}</td>
+        <td class="hide-sm" style="color:var(--ink-3)">${esc(when(e.at))}</td>
+        <td><span class="hpill ${esc(e.band)}">${esc((BAND[e.band]||{}).label || e.band)}</span></td>
+        <td style="white-space:nowrap;text-align:right">
+          <button class="btn ghost sm" data-hist-open="${idx}" type="button">Open</button>
+          <button class="btn ghost sm" data-hist-del="${idx}" type="button" aria-label="Delete scan">Delete</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+
+  $$('[data-hist-open]').forEach(b => b.onclick = () => reopenScan(Number(b.dataset.histOpen)));
+  $$('[data-hist-del]').forEach(b => b.onclick = () => {
+    const list2 = readHistory();
+    list2.splice(Number(b.dataset.histDel), 1);
+    writeHistory(list2);
+    renderHistory();
+  });
+}
+
+async function reopenScan(idx){
+  const entry = readHistory()[idx];
+  if (!entry) return;
+  suppressHistory = true;
+  try {
+    fillForm(entry.input || {});
+    $$('#flags input').forEach(i => i.checked = false);
+    $('#btnCheck').disabled = true;
+    const a = await api('/api/check', {method:'POST', body:JSON.stringify(entry.input || {})});
+    state.assessment = a;
+    goTab('check');
+    renderAssessment(a, entry);
+  } catch (e) { toast(e.message); }
+  finally { suppressHistory = false; $('#btnCheck').disabled = false; }
+}
+
+/* ---------- settings ---------- */
+const PREF_KEY = 'vouch.prefs.v1';
+function loadSettings(){
+  const p = (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch { return {}; } })();
+  const n = $('#setName'); if (n) n.value = p.name || '';
+  const r = $('#setRole'); if (r) r.value = p.role || 'consumer';
+  const rem = $('#setReminders'); if (rem) rem.checked = p.reminders !== false;
+  const sum = $('#setSummary'); if (sum) sum.checked = p.summary !== false;
+  const lang = $('#setLang'); if (lang) lang.value = p.lang || 'en';
+}
+function savePrefs(patch){
+  const p = (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch { return {}; } })();
+  const next = Object.assign({}, p, patch || {});
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(next)); } catch {}
+  return next;
+}
+
 /* ---------- render assessment ---------- */
 function kv(k, v, em){
   return `<div class="kv"><span class="k">${esc(k)}</span><span class="v${em?' em':''}">${esc(v||'—')}</span></div>`;
@@ -642,6 +1494,7 @@ function renderAssessment(a, packMeta){
   const reg = a.registry || {};
   const port = a.input || {};
   const bar = a.barcode || {};
+  const naf = reg.nafdac || port.nafdac_number || '';
   const soft = ['food','beverage','water'].includes(a.kind);
   const dateLabel = soft ? 'Best before' : 'Expiry date';
 
@@ -709,7 +1562,7 @@ function renderAssessment(a, packMeta){
     </div>`;
 
   $('#result').innerHTML = `
-    ${packMeta ? `<p style="font-size:13px;color:var(--ink-3);margin:0 0 8px">Demo — <b style="color:var(--ink-2)">${esc(packMeta.title)}</b></p>` : ''}
+    ${packMeta && packMeta.title ? `<p style="font-size:13px;color:var(--ink-3);margin:0 0 8px">Demo — <b style="color:var(--ink-2)">${esc(packMeta.title)}</b></p>` : ''}
     <div class="band ${a.band}">
       <div class="railrow">
         <span class="badge">${esc(KIND[a.kind] || 'Product')}</span>
@@ -766,9 +1619,21 @@ function renderAssessment(a, packMeta){
       </div>
     </div>`;
 
-  $('#btnCase').onclick = () => openCase(formData());
+  $('#btnCase').onclick = () => openCase(Object.assign({}, port, {flags: $$('#flags input:checked').map(i=>i.value)}));
+
+  $('#btnRe').onclick = () => startExplain(a);
+  $('#askForm').onsubmit = (ev) => {
+    ev.preventDefault();
+    const q = $('#askInput').value.trim();
+    if (!q) return;
+    $('#askInput').value = '';
+    startExplain(a, q);
+  };
 
   startExplain(a);
+  saveScan(a, port);
+  if (typeof voiceOnResult === 'function') voiceOnResult();
+
   if (naf || port.batch) {
     api(`/api/cluster?nafdac=${encodeURIComponent(naf)}&batch=${encodeURIComponent(port.batch||'')}`)
       .then(cl => {
@@ -794,9 +1659,7 @@ async function openCase(fields){
     const out = await api('/api/cases', {method:'POST', body:JSON.stringify(fields)});
     state.caseId = out.case_id;
     toast('Case ' + out.case_id + ' opened');
-    $$('nav.tabs button')[1].setAttribute('aria-selected','true');
-    $$('nav.tabs button')[0].setAttribute('aria-selected','false');
-    $('#tab-check').classList.add('hidden'); $('#tab-cases').classList.remove('hidden');
+    goTab('cases');
     await loadCases(out.case_id);
   } catch(e){ toast(e.message); if(b) b.disabled=false; }
 }
@@ -999,6 +1862,471 @@ async function viewDoc(caseId, kind){
     a.href = URL.createObjectURL(blob); a.download = `${kind}-${caseId}.txt`; a.click();
   };
 }
+
+/* ---------- voice agent ---------- */
+const VKEY = 'vouch.voice.v1';
+const voicePanel = $('#voicePanel');
+const voiceFab = $('#voiceFab');
+const voiceList = $('#voiceList');
+const voiceStatusEl = $('#voiceStatus');
+const voiceDot = $('#voiceDot');
+const voiceMic = $('#voiceMic');
+const voiceHint = $('#voiceHint');
+const voiceStopBtn = $('#voiceStop');
+const voiceMuteBtn = $('#voiceMute');
+
+const VI_SOUND = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>';
+const VI_MUTED = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="16" y1="9" x2="21" y2="15"></line><line x1="21" y1="9" x2="16" y2="15"></line></svg>';
+
+let voiceOpen = false;
+let voiceBusy = false;
+let voiceMuted = false;
+let voiceSpeaking = false;
+let voiceListening = false;
+let voiceRec = null;
+let voiceLang = 'en-NG';
+let voiceBooted = false;
+let voiceGotFinal = false;
+let voiceSeq = 0;
+let voiceInputError = false;
+
+try {
+  const saved = JSON.parse(localStorage.getItem(VKEY) || '{}');
+  voiceMuted = saved.muted === true;
+} catch {}
+
+function voiceSetStatus(text, mode){
+  if (!voiceStatusEl) return;
+  voiceStatusEl.textContent = text;
+  voiceDot.className = 'voice-dot' + (mode ? ' ' + mode : '');
+  if (voiceStopBtn) voiceStopBtn.disabled = !voiceSpeaking;
+}
+
+function voiceMicState(){
+  if (!voiceMic) return;
+  voiceMic.classList.toggle('listening', voiceListening);
+  voiceMic.setAttribute('aria-pressed', String(voiceListening));
+  voiceMic.setAttribute('aria-label', voiceListening ? 'Stop listening' : 'Start listening');
+}
+
+function voicePaintMute(){
+  if (!voiceMuteBtn) return;
+  voiceMuteBtn.innerHTML = voiceMuted ? VI_MUTED : VI_SOUND;
+  voiceMuteBtn.setAttribute('aria-pressed', String(voiceMuted));
+  voiceMuteBtn.setAttribute('aria-label', voiceMuted ? 'Unmute spoken answers' : 'Mute spoken answers');
+  voiceMuteBtn.title = voiceMuted ? 'Unmute spoken answers' : 'Mute spoken answers';
+  voiceMuteBtn.style.color = voiceMuted ? 'var(--ink-3)' : 'var(--green)';
+}
+
+function voiceScroll(){
+  if (voiceList) voiceList.scrollTop = voiceList.scrollHeight;
+}
+
+function voiceMsg(role, text, meta){
+  const el = document.createElement('div');
+  el.className = 'vmsg ' + role;
+  el.textContent = String(text || '');
+  if (meta){
+    const s = document.createElement('small');
+    s.textContent = meta;
+    el.appendChild(s);
+  }
+  voiceList.appendChild(el);
+  voiceScroll();
+  return el;
+}
+
+function voiceThink(){
+  const el = voiceMsg('bot', '');
+  el.classList.add('thinking');
+  el.innerHTML = 'Thinking<span class="dots">…</span>';
+  voiceScroll();
+  return el;
+}
+
+function voiceClean(text){
+  return String(text || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/[*_#>`•]/g, ' ')
+    .replace(/[—–]/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function voicePickVoice(){
+  if (!('speechSynthesis' in window)) return null;
+  const voices = speechSynthesis.getVoices() || [];
+  for (const want of ['en-NG', 'en-GB', 'en-US']){
+    const hit = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(want.toLowerCase()));
+    if (hit) return hit;
+  }
+  return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) || null;
+}
+
+function stopVoiceSpeech(){
+  voiceSeq++;
+  if ('speechSynthesis' in window){
+    try { speechSynthesis.cancel(); } catch {}
+  }
+  voiceSpeaking = false;
+  if (voiceStopBtn) voiceStopBtn.disabled = true;
+  if (voiceOpen) voiceSetStatus(voiceMuted ? 'Muted' : 'Ready', voiceListening ? 'listening' : '');
+}
+
+function voiceSpeak(text){
+  const clean = voiceClean(text);
+  if (!clean) return;
+  if (!('speechSynthesis' in window)){
+    voiceSetStatus('Speech playback is not available in this browser');
+    return;
+  }
+  voiceSeq++;
+  const seq = voiceSeq;
+  try { speechSynthesis.cancel(); } catch {}
+  if (voiceMuted){
+    voiceSetStatus('Muted — the answer is shown in text');
+    return;
+  }
+  const parts = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [clean];
+  const chunks = [];
+  let buf = '';
+  for (const part of parts){
+    const piece = part.trim();
+    if (!piece) continue;
+    if (buf && (buf + ' ' + piece).length > 220){ chunks.push(buf); buf = piece; }
+    else buf = buf ? buf + ' ' + piece : piece;
+  }
+  if (buf) chunks.push(buf);
+  if (!chunks.length) return;
+
+  const chosen = voicePickVoice();
+  voiceSpeaking = true;
+  if (voiceStopBtn) voiceStopBtn.disabled = false;
+  voiceSetStatus('Speaking', 'speaking');
+  chunks.forEach((chunk, i) => {
+    const u = new SpeechSynthesisUtterance(chunk);
+    if (chosen) u.voice = chosen;
+    u.lang = (chosen && chosen.lang) || 'en-GB';
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+    if (i === chunks.length - 1){
+      u.onend = () => {
+        if (seq !== voiceSeq) return;
+        if (!voiceSpeaking) return;
+        voiceSpeaking = false;
+        if (voiceStopBtn) voiceStopBtn.disabled = true;
+        if (voiceOpen) voiceSetStatus(voiceListening ? 'Listening…' : 'Ready', voiceListening ? 'listening' : '');
+      };
+      u.onerror = () => {
+        if (seq !== voiceSeq) return;
+        voiceSpeaking = false;
+        if (voiceStopBtn) voiceStopBtn.disabled = true;
+        if (voiceOpen) voiceSetStatus('Ready');
+      };
+    }
+    try { speechSynthesis.speak(u); }
+    catch {
+      voiceSpeaking = false;
+      if (voiceStopBtn) voiceStopBtn.disabled = true;
+    }
+  });
+}
+
+function voiceResultText(){
+  const a = state.assessment;
+  if (!a) return 'There is no result on screen yet. Check a pack first, then ask me to read it.';
+  const band = (BAND[a.band] || {}).label || a.band;
+  const checks = (a.checks || []).slice(0, 3)
+    .map(c => `${c.label}: ${String(c.state || '').replace(/_/g, ' ')}`).join('. ');
+  const next = (a.actions || [])[0];
+  return band + '. ' + (a.headline || '') +
+    (checks ? ' The checks: ' + checks + '.' : '') +
+    (next ? ' Next: ' + next.label + '.' : '') +
+    ' This is a decision aid, not proof of authenticity.';
+}
+
+function voiceCommand(text){
+  const t = text.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ').trim();
+  if (/^(stop|quiet|silence|stop talking|cancel speech)\b/.test(t)) return {act:'stop'};
+  if (/\b(help|what can you do|what do you do|how do you work)\b/.test(t)) return {act:'help'};
+  if (/\bmy result\b/.test(t)) return {act:'read'};
+  if (/\b(read|tell me|what is|what's|summari[sz]e)\b/.test(t) &&
+      /\b(result|verdict|finding|check|screen)\b/.test(t)) return {act:'read'};
+  if (/\b(open|start|make|create|raise|file)\b.*\b(case|report|complaint)\b/.test(t) ||
+      /\breport (this|it)\b/.test(t)) return {act:'case'};
+  if (/\b(show|go to|open|see|view)\b.*\b(cases|reports|queue)\b/.test(t) ||
+      /^(cases|reports)$/.test(t)) return {act:'cases'};
+  if (/\b(history|past scans|earlier scans)\b/.test(t)) return {act:'history'};
+  if (/\b(scan|take a photo|photograph|camera)\b/.test(t)) return {act:'scan'};
+  if (/\b(settings|preferences)\b/.test(t)) return {act:'settings'};
+  if (/\b(guide|how do i read|where is the expiry|where's the expiry)\b/.test(t)) return {act:'guide'};
+  return null;
+}
+
+function voiceRunCommand(cmd){
+  if (cmd.act === 'stop'){
+    stopVoiceSpeech();
+    voiceMsg('bot', 'Stopped.', 'Vouch agent · local');
+    voiceSetStatus('Ready');
+    return;
+  }
+  if (cmd.act === 'help'){
+    const msg = 'I can read the current result, explain what it does and does not prove, tell you the next step, and take you to cases, reports, history, the product guide or settings. Say “open a case” to start the follow-up. I cannot give medical advice or promise an outcome.';
+    voiceMsg('bot', msg, 'Vouch agent · local');
+    voiceSpeak(msg);
+    return;
+  }
+  if (cmd.act === 'read'){
+    const msg = voiceResultText();
+    voiceMsg('bot', msg, 'Vouch agent · local');
+    voiceSpeak(msg);
+    return;
+  }
+  if (cmd.act === 'case'){
+    if (!state.assessment){
+      const msg = 'There is no result on screen yet. Check a pack first, then say “open a case”.';
+      voiceMsg('bot', msg, 'Vouch agent · local');
+      voiceSpeak(msg);
+      return;
+    }
+    voiceMsg('bot', 'Opening a case with this evidence. The deadline queue is on the Reports tab.', 'Vouch agent · local');
+    closeVoice(true);
+    openCase(formData());
+    voiceSpeak('Opening a case.');
+    return;
+  }
+  if (cmd.act === 'scan'){
+    closeVoice(true);
+    openScanner('camera');
+    voiceSpeak('Opening the scanner.');
+    return;
+  }
+  const target = {cases:['cases','Opening reports.'],
+                  history:['history','Opening your scan history.'],
+                  settings:['settings','Opening settings.'],
+                  guide:['guide','Opening the product guide.']}[cmd.act];
+  if (target){
+    closeVoice(true);
+    goTab(target[0]);
+    voiceSpeak(target[1]);
+  }
+}
+
+async function voiceAsk(text){
+  const question = String(text || '').trim();
+  if (!question) return;
+  voiceInputError = false;
+  voiceMsg('user', question);
+  const cmd = voiceCommand(question);
+  if (cmd){ voiceRunCommand(cmd); return; }
+  if (voiceBusy){
+    voiceMsg('bot', 'One moment — I am still answering the last question.', 'Vouch agent');
+    return;
+  }
+  voiceBusy = true;
+  const box = voiceThink();
+  try {
+    const payload = Object.assign({}, formData(), {question});
+    const out = await api('/api/ask', {method:'POST', body: JSON.stringify(payload)});
+    box.classList.remove('thinking');
+    box.textContent = out.answer || 'I could not produce an explanation for that.';
+    const meta = document.createElement('small');
+    const who = out.provider === 'vouch-composer' ? 'on-device composer' : (out.provider || 'Vouch agent');
+    const band = out.band ? ' · ' + ((BAND[out.band] || {}).label || out.band) : '';
+    meta.textContent = 'Vouch agent · ' + who + band;
+    box.appendChild(meta);
+    voiceScroll();
+    voiceSpeak(out.answer || '');
+  } catch (e){
+    box.classList.remove('thinking');
+    box.textContent = 'I could not reach the explanation service. The checks on screen are still the evidence. You can try again, or use the buttons on the page to open a case.';
+    const meta = document.createElement('small');
+    meta.textContent = 'offline';
+    box.appendChild(meta);
+    voiceSpeak(box.textContent);
+  } finally {
+    voiceBusy = false;
+  }
+}
+
+function voiceStartRec(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR){
+    voiceHint.textContent = 'Voice input is not available in this browser. Type your question below, or open Vouch in Edge or Chrome.';
+    voiceMic.disabled = true;
+    voiceSetStatus('Type instead');
+    return;
+  }
+  if (voiceListening){
+    try { voiceRec.stop(); } catch {}
+    return;
+  }
+  stopVoiceSpeech();
+  if (voiceRec){ try { voiceRec.abort(); } catch {} }
+  voiceGotFinal = false;
+  const rec = new SR();
+  voiceRec = rec;
+  rec.lang = voiceLang;
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.maxAlternatives = 1;
+
+  rec.onstart = () => {
+    voiceInputError = false;
+    voiceListening = true;
+    voiceMicState();
+    voiceSetStatus('Listening…', 'listening');
+    voiceHint.innerHTML = 'Listening. Ask about this pack, or say <b>“open a case”</b>.';
+  };
+  rec.onresult = (ev) => {
+    let interim = '';
+    let finalText = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++){
+      const r = ev.results[i];
+      if (r.isFinal) finalText += r[0].transcript;
+      else interim += r[0].transcript;
+    }
+    if (interim) voiceHint.innerHTML = '“' + esc(interim.trim()) + '”';
+    if (finalText.trim()){
+      voiceGotFinal = true;
+      voiceHint.innerHTML = 'You said: <b>“' + esc(finalText.trim()) + '”</b>';
+      voiceAsk(finalText.trim());
+    }
+  };
+  rec.onerror = (ev) => {
+    voiceListening = false;
+    voiceMicState();
+    const err = (ev && ev.error) || '';
+    if (err === 'language-not-supported' && voiceLang !== 'en-GB'){
+      voiceLang = 'en-GB';
+      voiceHint.textContent = 'That language is not available here; trying British English.';
+      setTimeout(() => { if (voiceOpen && !voiceListening) voiceStartRec(); }, 250);
+      return;
+    }
+    if (err === 'aborted'){
+      voiceHint.textContent = 'Listening stopped.';
+      voiceSetStatus('Ready');
+      return;
+    }
+    voiceInputError = true;
+    voiceHint.textContent =
+      err === 'not-allowed' || err === 'service-not-allowed'
+        ? 'Microphone permission is blocked. Allow it in the browser settings, or type your question below.'
+        : err === 'no-speech'
+          ? 'I did not hear anything. Press the mic and try again.'
+          : err === 'audio-capture'
+            ? 'No microphone was found. Type your question below.'
+            : err === 'network'
+              ? 'Speech recognition needs a connection and it is unavailable. Type your question below.'
+              : 'Speech recognition failed. Type your question below.';
+    voiceSetStatus('Voice input problem');
+  };
+  rec.onend = () => {
+    voiceListening = false;
+    voiceMicState();
+    if (voiceOpen && !voiceSpeaking && !voiceInputError) voiceSetStatus('Ready');
+    if (voiceStopBtn) voiceStopBtn.disabled = !voiceSpeaking;
+  };
+  try { rec.start(); }
+  catch (e){
+    voiceListening = false;
+    voiceMicState();
+    voiceHint.textContent = 'The microphone could not start. Type your question below.';
+    voiceSetStatus('Voice input problem');
+  }
+}
+
+function voiceSuggest(){
+  const box = $('#voiceSuggest');
+  if (!box) return;
+  const items = state.assessment
+    ? ['Read my result', 'What should I do next?', 'What does this not prove?', 'Open a case']
+    : ['How do I check a pack?', 'What can you do?', 'Open the product guide'];
+  box.innerHTML = items.map(x => `<button type="button" data-vs="${esc(x)}">${esc(x)}</button>`).join('');
+  $$('#voiceSuggest button').forEach(b => b.onclick = () => voiceAsk(b.dataset.vs));
+}
+
+function openVoice(){
+  if (!voicePanel.classList.contains('hidden')){
+    closeVoice();
+    return;
+  }
+  closeScanner();
+  voicePanel.classList.remove('hidden');
+  voiceFab.setAttribute('aria-expanded', 'true');
+  voiceOpen = true;
+  if (!voiceBooted){
+    voiceBooted = true;
+    const hello = state.assessment
+      ? 'This pack is on screen. I can read the result, explain what it does and does not prove, or open a case. Press the mic and ask.'
+      : 'I can help you check a pack, explain a result, or open a case. Press the mic and ask, or type below.';
+    voiceMsg('bot', hello, 'Vouch agent · local');
+  }
+  voiceSuggest();
+  voicePaintMute();
+  voiceSetStatus(voiceMuted ? 'Muted' : 'Ready');
+  setTimeout(() => { const i = $('#voiceText'); if (i) i.focus(); }, 60);
+}
+
+function closeVoice(keepSpeech){
+  if (voiceListening && voiceRec){
+    try { voiceRec.abort(); } catch {}
+  }
+  voiceListening = false;
+  voiceMicState();
+  voicePanel.classList.add('hidden');
+  voiceFab.setAttribute('aria-expanded', 'false');
+  voiceOpen = false;
+  if (!keepSpeech) stopVoiceSpeech();
+}
+
+function voiceOnResult(){
+  if (!voicePanel.classList.contains('hidden')) voiceSuggest();
+}
+
+voiceFab.onclick = openVoice;
+$('#voiceClose').onclick = () => closeVoice();
+$('#voiceMute').onclick = () => {
+  voiceMuted = !voiceMuted;
+  try { localStorage.setItem(VKEY, JSON.stringify({muted: voiceMuted})); } catch {}
+  voicePaintMute();
+  if (voiceMuted){
+    stopVoiceSpeech();
+    voiceSetStatus('Muted — answers are shown in text');
+  } else {
+    voiceSetStatus('Ready');
+  }
+};
+voiceMic.onclick = voiceStartRec;
+voiceStopBtn.onclick = () => {
+  stopVoiceSpeech();
+  voiceSetStatus('Stopped');
+};
+$('#voiceForm').onsubmit = (e) => {
+  e.preventDefault();
+  const input = $('#voiceText');
+  const value = input.value.trim();
+  if (!value) return;
+  input.value = '';
+  voiceAsk(value);
+};
+
+voicePaintMute();
+voiceMicState();
+if (!(window.SpeechRecognition || window.webkitSpeechRecognition)){
+  voiceMic.disabled = true;
+  voiceHint.innerHTML = 'Voice input is not supported in this browser. Type your question below, or use Edge or Chrome.';
+}
+if (!('speechSynthesis' in window)){
+  voiceMuteBtn.disabled = true;
+  voiceMuteBtn.title = 'Speech playback is not available in this browser';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !voicePanel.classList.contains('hidden')) closeVoice();
+});
 
 /* ---------- boot ---------- */
 (async () => {

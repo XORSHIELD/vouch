@@ -11,6 +11,7 @@ judgement; this file only moves data between them.
 from __future__ import annotations
 
 import os
+from dataclasses import fields
 from datetime import date
 from typing import Optional
 
@@ -63,7 +64,11 @@ class PackBody(BaseModel):
     purchased_on: str = ""
 
     def to_pack(self) -> PackInput:
-        return PackInput(**self.model_dump())
+        # Subclasses add fields (ExplainBody.question); only ever pass the
+        # pack's own fields through.
+        allowed = {f.name for f in fields(PackInput)}
+        data = {k: v for k, v in self.model_dump().items() if k in allowed}
+        return PackInput(**data)
 
 
 class TextBody(BaseModel):
@@ -466,6 +471,67 @@ def get_stats() -> dict:
 
 
 # --------------------------------------------------------------------------
+# Registry browse — the whole Greenbook, not just one number
+# --------------------------------------------------------------------------
+
+@app.get("/api/registry/search")
+def registry_search(q: str = "", limit: int = 20, page: int = 1) -> dict:
+    """Search the live NAFDAC register by product name, ingredient or number.
+
+    This is the same public dataset the lookup uses, so every product that can
+    be verified by number can also be found by name.
+    """
+    limit = max(1, min(int(limit or 20), 50))
+    page = max(1, int(page or 1))
+    start = (page - 1) * limit
+    try:
+        payload = R.search(q, length=limit, start=start)
+    except R.RegistryUnavailable as exc:
+        raise HTTPException(
+            503,
+            "The NAFDAC register could not be reached and this search is not "
+            f"cached yet ({exc}). Try the number lookup, or retry shortly.",
+        )
+    records = []
+    for d in payload.get("data") or []:
+        try:
+            rec = R.Record.from_api(d)
+        except Exception:
+            continue
+        records.append({
+            "nafdac": rec.nafdac,
+            "product_name": rec.product_name,
+            "manufacturer": rec.manufacturer,
+            "status": rec.status,
+            "category": rec.category,
+            "form": rec.form,
+            "pack_size": rec.pack_size,
+            "registration_expiry": rec.registration_expiry,
+        })
+    return {
+        "query": q,
+        "page": page,
+        "limit": limit,
+        "total": payload.get("recordsTotal") or 0,
+        "matched": payload.get("recordsFiltered") or 0,
+        "records": records,
+        "source": R.BASE,
+        "note": "Registration in the Greenbook confirms a licence record, "
+                "not the authenticity of a particular pack.",
+    }
+
+
+@app.get("/api/registry/lookup/{number}")
+def registry_lookup(number: str) -> dict:
+    """Full evidence for one printed number, including the variants tried."""
+    try:
+        result = R.lookup(number)
+    except R.RegistryUnavailable as exc:
+        raise HTTPException(503, f"The NAFDAC register is unreachable: {exc}")
+    return result.to_dict()
+
+
+# --------------------------------------------------------------------------
 # Static UI
 # --------------------------------------------------------------------------
 
@@ -490,13 +556,27 @@ def _assessment_from_payload(a: dict) -> engine.Assessment:
 
 @app.get("/")
 def index() -> FileResponse:
-    # Keep the full app experience at / and expose marketing at /marketing
     return FileResponse(os.path.join(UI, "marketing.html"))
 
 
 @app.get("/app")
 def app_page() -> FileResponse:
     return FileResponse(os.path.join(UI, "index.html"))
+
+
+# Marketing pages share one document and route on the client, so a shared link
+# still resolves on a hard refresh.
+_MARKETING_PAGES = (
+    "/how-it-works", "/features", "/business", "/resources", "/about",
+    "/privacy", "/terms", "/report", "/signin", "/signup", "/forgot",
+)
+
+
+@app.get("/{page}")
+def marketing_page(page: str) -> FileResponse:
+    if "/" + page in _MARKETING_PAGES:
+        return FileResponse(os.path.join(UI, "marketing.html"))
+    raise HTTPException(404, "Not found")
 
 
 app.mount("/samples", StaticFiles(directory=os.path.join(HERE, "samples", "img")),

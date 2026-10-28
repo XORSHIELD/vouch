@@ -192,7 +192,11 @@ def identity(pack_name: str, pack_brand: str, item: Item) -> dict:
     brand_score = (match_score(pack_brand, item.brand)
                    if pack_brand and item.brand else 0.0)
     best = max(name_score, brand_score)
-    if best >= 0.6:
+    if not (pack_name or "").strip() and not (pack_brand or "").strip():
+        # Nothing on the pack has been read yet. A lookup alone cannot say the
+        # pack is wrong, so do not manufacture a mismatch from empty input.
+        verdict = "unknown"
+    elif best >= 0.6:
         verdict = "match"
     elif best < 0.45:
         verdict = "different"
