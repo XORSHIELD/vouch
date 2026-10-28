@@ -490,11 +490,19 @@ def _assessment_from_payload(a: dict) -> engine.Assessment:
 
 @app.get("/")
 def index() -> FileResponse:
+    # Keep the full app experience at / and expose marketing at /marketing
+    return FileResponse(os.path.join(UI, "marketing.html"))
+
+
+@app.get("/app")
+def app_page() -> FileResponse:
     return FileResponse(os.path.join(UI, "index.html"))
 
 
 app.mount("/samples", StaticFiles(directory=os.path.join(HERE, "samples", "img")),
           name="samples")
+app.mount("/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
+          name="assets")
 
 if os.path.isdir(UI):
     app.mount("/ui", StaticFiles(directory=UI), name="ui")

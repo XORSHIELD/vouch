@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Vouch — Real Products. Real Dates. Real Safety.</title>
+  <meta name="description" content="Verify medicines, foods, beverages and everyday consumables against the NAFDAC registry and trusted product databases." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z' fill='%23126B45'/%3E%3Cpath d='M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z' fill='white'/%3E%3C/svg%3E">
+  <style>
+    :root{
+      --primary:#126B45; --deep:#073B2E; --bg:#F7F8F5; --card:#FFFFFF;
+      --ink:#202923; --ink-3:#66736B; --sage:#DFF3E5; --line:#E5E9E4;
+      --warn:#B7791F; --warn-bg:#FFF4D6; --err:#C62828; --err-bg:#FDECEC; --ok:#18794E; --ok-bg:#E5F5EA;
+      --radius:14px; --shadow:0 1px 1px rgba(32,41,35,.02),0 6px 18px rgba(32,41,35,.05);
+      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit}
+    .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+    header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.98);backdrop-filter:saturate(180%) blur(8px);border-bottom:1px solid var(--line)}
+    .nav{display:flex;align-items:center;gap:18px;height:72px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:20px}
+    .brand-mark{display:flex;align-items:center;gap:9px}
+    .shield{width:22px;height:22px}
+    .brand small{margin-left:8px;color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+    .nav-links{display:flex;gap:18px;margin-left:auto;align-items:center}
+    .nav-links a{color:var(--ink-3);font-weight:600;font-size:14px}
+    .nav-links a:hover{color:var(--ink)}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px;border:1px solid transparent;background:var(--primary);color:#fff}
+    .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+    .btn.sm{padding:8px 14px}
+    .hero{padding:64px 0 36px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:36px;align-items:center}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--sage);color:var(--primary);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.12em}
+    h1{font-size:clamp(42px,7vw,76px);line-height:1.01;letter-spacing:-.06em;margin:18px 0 16px}
+    .lead{font-size:18px;color:var(--ink-3);max-width:620px}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:26px 0 70px}
+    .step{background:var(--card);padding:18px 22px;display:flex;align-items:center;gap:14px}
+    .num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--sage);color:var(--primary);font-weight:800}
+    .section{padding:70px 0}
+    .section.alt{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:center}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px}
+    .feat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+    .feat{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:var(--card)}
+    .shot{border:1px solid var(--line);border-radius:calc(var(--radius)+4px);overflow:hidden;box-shadow:var(--shadow)}
+    .shot img{display:block;width:100%;height:auto}
+    footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--ink-3)}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:28px}
+    .muted{color:var(--ink-3)}
+    @media(max-width:1080px){.hero-grid,.grid-2{grid-template-columns:1fr}.feat-grid,.steps{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <div class="brand">
+        <span class="brand-mark">
+          <svg class="shield" viewBox="0 0 24 24"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="var(--primary)"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#fff"/></svg>
+          <span>Vouch</span>
+        </span>
+        <small>Check it. Chase it.</small>
+      </div>
+      <nav class="nav-links">
+        <a href="#how">How It Works</a>
+        <a href="#features">Features</a>
+        <a href="#business">For Business</a>
+        <a href="#resources">Safety Resources</a>
+        <a href="#about">About</a>
+        <a href="/">Sign In</a>
+        <a class="btn" href="/">Get Started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow">Consumer Safety Platform</span>
+          <h1>Real Products. Real Dates. Real Safety.</h1>
+          <p class="lead">Check expiry dates, inspect suspicious labels, and verify product information before you buy, sell, or consume everyday products. Evidence-based verification for medicines, foods, beverages and consumables.</p>
+          <div class="hero-actions">
+            <a class="btn" href="/">Check a Product</a>
+            <a class="btn ghost" href="#how">How It Works</a>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="shot">
+            <img src="/assets/vouch-dashboard-showcase.png" alt="Vouch product verification dashboard" loading="lazy">
+          </div>
+        </div>
+      </div>
+      <div class="wrap">
+        <div class="steps">
+          <div class="step"><div class="num">1</div><div><strong>Scan</strong><div class="muted">Capture the pack, label, expiry or barcode</div></div></div>
+          <div class="step"><div class="num">2</div><div><strong>Verify</strong><div class="muted">Check against registries and available references</div></div></div>
+          <div class="step"><div class="num">3</div><div><strong>Make an Informed Decision</strong><div class="muted">Review evidence, limits and next steps</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="how">
+      <div class="wrap grid-2">
+        <div>
+          <span class="eyebrow">How It Works</span>
+          <h2 style="font-size:clamp(32px,4vw,54px);letter-spacing:-.05em;margin:16px 0 12px">Clarity without guesswork</h2>
+          <p class="lead">Vouch separates evidence from conclusions. If something cannot be verified, it says so. Results are risk-based with plain explanations.</p>
+          <div class="card" style="margin-top:22px">
+            <ol style="margin:0;padding-left:18px;display:grid;gap:10px">
+              <li><strong>Capture</strong> — image, pasted text, or barcode</li>
+              <li><strong>Extract</strong> — dates, batch, NAFDAC number</li>
+              <li><strong>Inspect</strong> — labels and available indicators</li>
+              <li><strong>Cross-check</strong> — NAFDAC register or product databases</li>
+              <li><strong>Report</strong> — findings with evidence and limitations</li>
+            </ol>
+          </div>
+        </div>
+        <div class="shot">
+          <img src="/assets/vouch-app-showcase.png" alt="Vouch mobile app verification" loading="lazy">
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="wrap">
+        <span class="eyebrow">Features</span>
+        <h2 style="font-size:clamp(32px,4vw,54px);letter-spacing:-.05em;margin:16px 0 12px">Pragmatic checks that matter</h2>
+        <p class="lead">Focus on what a phone can actually do today, with honest boundaries.</p>
+        <div class="feat-grid" style="margin-top:26px">
+          <div class="feat"><strong>Expiry &amp; Best-before</strong><p class="muted">Read and interpret dates with end-of-month rules.</p></div>
+          <div class="feat"><strong>Batch &amp; NAFDAC</strong><p class="muted">Extract and check against the NAFDAC register where published.</p></div>
+          <div class="feat"><strong>Barcode &amp; QR</strong><p class="muted">Lookup across Open Food Facts, Open Beauty Facts and Open Products Facts.</p></div>
+          <div class="feat"><strong>Label inspection</strong><p class="muted">Surface visible irregularities with evidence.</p></div>
+          <div class="feat"><strong>Follow-through</strong><p class="muted">Generate NAFDAC/FCCPC reports and track cases with deadlines.</p></div>
+          <div class="feat"><strong>AI explanations</strong><p class="muted">Grounded, streaming answers with guardrails — no binary fake/genuine verdicts.</p></div>
+        </div>
+        <div class="shot" style="margin-top:26px">
+          <img src="/assets/vouch-app-showcase-1.png" alt="Vouch app verification flow" loading="lazy">
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="business">
+      <div class="wrap grid-2">
+        <div>
+          <span class="eyebrow">For Business</span>
+          <h2 style="font-size:clamp(32px,4vw,54px);letter-spacing:-.05em;margin:16px 0 12px">Incoming stock checks with an audit trail</h2>
+          <p class="lead">For supermarkets, wholesalers, distributors and inspection teams. Keep records, share reports and stay ahead of risks.</p>
+          <div class="hero-actions" style="margin-top:22px">
+            <a class="btn" href="/">Request a Business Demo</a>
+            <a class="btn ghost" href="/">Explore Business Features</a>
+          </div>
+        </div>
+        <div class="card">
+          <ul style="margin:0;padding-left:18px;display:grid;gap:10px">
+            <li>Incoming-stock verification</li>
+            <li>Batch-level inspection records</li>
+            <li>Product-risk summaries</li>
+            <li>Exportable reports</li>
+            <li>Team access and permissions</li>
+            <li>Audit history</li>
+          </ul>
+          <p class="muted" style="margin:14px 0 0;font-size:14px">No regulatory certification or official endorsement is claimed.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="about">
+    <div class="wrap footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px">
+          <svg class="shield" viewBox="0 0 24 24"><path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="var(--primary)"/><path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#fff"/></svg>
+          <span>Vouch</span>
+        </div>
+        <p class="muted">Real Products. Real Dates. Real Safety.</p>
+      </div>
+      <div>
+        <strong>Product</strong>
+        <div style="display:grid;gap:8px;margin-top:10px">
+          <a class="muted" href="#how">How It Works</a>
+          <a class="muted" href="#features">Features</a>
+          <a class="muted" href="#business">For Business</a>
+        </div>
+      </div>
+      <div>
+        <strong>Resources</strong>
+        <div style="display:grid;gap:8px;margin-top:10px">
+          <a class="muted" href="#resources">Safety Resources</a>
+          <a class="muted" href="/">Product Guide</a>
+          <a class="muted" href="/">Report a Problem</a>
+        </div>
+      </div>
+      <div>
+        <strong>Legal</strong>
+        <div style="display:grid;gap:8px;margin-top:10px">
+          <a class="muted" href="/">Privacy Policy</a>
+          <a class="muted" href="/">Terms of Service</a>
+          <a class="muted" href="#about">About</a>
+        </div>
+      </div>
+    </div>
+    <div class="wrap" style="margin-top:26px">
+      <small class="muted">© 2026 Vouch. Not a substitute for NAFDAC inspection or laboratory testing.</small>
+    </div>
+  </footer>
+</body>
+</html>
