@@ -7,23 +7,24 @@
 <meta name="description" content="Verify medicines against the NAFDAC registry, spot counterfeit and expired packs, and follow through with regulator reports." />
 <style>
   :root{
-    --ink:#0d1b1e; --ink-2:#1a2f33; --ink-3:#4a5f63;
-    --paper:#f7f5f0; --card:#ffffff; --line:#e4dfd6;
-    --green:#0f6b4f; --green-bg:#e8f5ef;
-    --amber:#b8860b; --amber-bg:#fef7e6;
-    --red:#b71c1c; --red-bg:#fdf0ef;
-    --grey:#6b7c80; --grey-bg:#f0f2ed;
-    --accent:#0f6b4f;
-    --radius:16px; --radius-sm:12px; --shadow:0 1px 2px rgba(13,27,30,.04),0 4px 12px rgba(13,27,30,.06),0 12px 40px rgba(13,27,30,.08);
-    --shadow-hover:0 2px 4px rgba(13,27,30,.06),0 8px 20px rgba(13,27,30,.1),0 20px 60px rgba(13,27,30,.12);
+    --ink:#202923; --ink-2:#202923; --ink-3:#66736B;
+    --paper:#F7F8F5; --card:#FFFFFF; --line:#E5E9E4;
+    --green:#126B45; --green-deep:#073B2E; --green-bg:#E5F5EA; --sage:#DFF3E5;
+    --amber:#B7791F; --amber-bg:#FFF4D6;
+    --red:#C62828; --red-bg:#FDECEC;
+    --grey:#66736B; --grey-bg:#F7F8F5;
+    --accent:#126B45;
+    --radius:14px; --radius-sm:10px;
+    --shadow:0 1px 1px rgba(32,41,35,.02),0 4px 10px rgba(32,41,35,.04),0 16px 40px rgba(32,41,35,.06);
+    --shadow-hover:0 2px 2px rgba(32,41,35,.04),0 10px 24px rgba(32,41,35,.08),0 24px 60px rgba(32,41,35,.1);
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   html,body{margin:0;padding:0}
   body{
-    background:radial-gradient(ellipse at top, rgba(15,107,79,0.03) 0%, transparent 50%), var(--paper); color:var(--ink);
-    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--paper); color:var(--ink);
+    font:16px/1.7 Inter, Manrope, -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;
     -moz-osx-font-smoothing:grayscale;
   }
@@ -32,89 +33,93 @@
   .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
 
   header.top{
-    background:linear-gradient(90deg, #0d1b1e 0%, #0f2a2f 100%); color:#f6f4ef; position:sticky; top:0; z-index:30;
-    border-bottom:1px solid rgba(255,255,255,0.08);
-    backdrop-filter:blur(12px) saturate(180%);
-    -webkit-backdrop-filter:blur(12px) saturate(180%);
+    background:#FFFFFF; color:var(--ink); position:sticky; top:0; z-index:30;
+    border-bottom:1px solid var(--line);
+    box-shadow:0 1px 0 rgba(32,41,35,.02);
   }
-  .top-in{display:flex;align-items:center;gap:20px;height:64px}
-  .brand{display:flex;align-items:baseline;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:22px}
-  .brand .logo-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg, #22c55e 0%, #16a34a 100%);box-shadow:0 0 0 4px rgba(34,197,94,0.15), 0 0 20px rgba(34,197,94,0.4)}
-  .brand small{font-weight:500;font-size:12px;opacity:.7;letter-spacing:.02em;text-transform:uppercase}
-  nav.tabs{display:flex;gap:6px;margin-left:auto;background:rgba(255,255,255,0.05);padding:4px;border-radius:12px}
+  .top-in{display:flex;align-items:center;gap:20px;height:68px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:22px;color:var(--ink)}
+  .brand-mark{display:flex;align-items:center;gap:9px}
+  .shield{width:22px;height:22px;position:relative;display:inline-flex;align-items:center;justify-content:center}
+  .shield svg{width:22px;height:22px;display:block}
+  .brand small{font-weight:600;font-size:12px;color:var(--ink-3);letter-spacing:.02em;text-transform:uppercase;margin-left:6px}
+  nav.tabs{display:flex;gap:4px;margin-left:auto;background:transparent;padding:0}
   nav.tabs button{
-    background:transparent;border:0;color:#b8c5c8;padding:8px 18px;border-radius:9px;
-    font-size:14px;font-weight:600;letter-spacing:.01em;transition:all .2s ease
+    background:transparent;border:0;color:var(--ink-3);padding:8px 16px;border-radius:999px;
+    font-size:14px;font-weight:600;letter-spacing:.01em;transition:all .18s ease
   }
-  nav.tabs button:hover{color:#f6f4ef;background:rgba(255,255,255,0.08)}
-  nav.tabs button[aria-selected="true"]{background:#f6f4ef;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:7px;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
-  .dot.off{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.6)}
+  nav.tabs button:hover{color:var(--ink);background:var(--sage)}
+  nav.tabs button[aria-selected="true"]{background:var(--green);color:#fff;box-shadow:none}
+  .cta{margin-left:14px;padding:9px 16px;border-radius:999px;background:var(--green);color:#fff;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px;border:1px solid transparent}
+  .cta:hover{filter:brightness(1.02)}
 
-  main{padding:32px 0 100px}
-  .hero{margin-bottom:32px;text-align:center}
-  .hero h1{font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.04em;line-height:1.1;margin:0 0 12px;background:linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .hero p{font-size:18px;color:var(--ink-3);margin:0;max-width:600px;margin:0 auto}
-  .hero .tagline{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:8px 16px;background:var(--green-bg);color:var(--green);border-radius:999px;font-size:13px;font-weight:600}
-  .grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:28px;align-items:start}
-  @media (max-width:960px){ .grid{grid-template-columns:1fr} .hero{text-align:left} .hero p{margin:0}}
+  main{padding:28px 0 100px}
+  .hero{margin:10px 0 34px;text-align:left}
+  .hero-inner{display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:28px;align-items:center}
+  .hero h1{font-size:clamp(38px,6vw,62px);font-weight:800;letter-spacing:-.05em;line-height:1.02;margin:0 0 14px;color:var(--ink)}
+  .hero p{font-size:18px;color:var(--ink-3);margin:0;max-width:620px}
+  .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+  .hero-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px;display:flex;flex-direction:column;gap:10px}
+  .hero-card-row{display:flex;align-items:center;gap:12px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green)}
+  @media (max-width:960px){ .hero-inner{grid-template-columns:1fr} }
 
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);transition:box-shadow .3s ease, border-color .3s ease;overflow:hidden}
-  .card:hover{box-shadow:var(--shadow-hover);border-color:#d4cfc5}
-  .card .hd{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;background:linear-gradient(90deg, rgba(15,107,79,0.02) 0%, transparent 100%)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);transition:box-shadow .2s ease, border-color .2s ease;overflow:hidden}
+  .card:hover{box-shadow:var(--shadow-hover)}
+  .card .hd{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
   .card .hd h2{margin:0;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
-  .card .hd .hd-icon{width:32px;height:32px;border-radius:10px;background:var(--green-bg);color:var(--green);display:grid;place-items:center}
+  .card .hd .hd-icon{width:30px;height:30px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center}
   .card .bd{padding:22px}
 
   label.f{display:block;margin:0 0 16px}
   label.f span{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
   input,select,textarea{
-    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
-    background:#fdfcfa;color:var(--ink);font-size:15px;outline:none;transition:all .2s ease;font-family:inherit
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;
+    background:#fff;color:var(--ink);font-size:15px;outline:none;transition:all .18s ease;font-family:inherit
   }
-  input:hover,select:hover,textarea:hover{border-color:#c4bfb3}
-  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(15,107,79,0.08);background:#fff}
+  input:hover,select:hover,textarea:hover{border-color:#c9d2cc}
+  input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(18,107,69,0.08);background:#fff}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .hint{font-size:13px;color:var(--ink-3);margin:-6px 0 16px;line-height:1.6}
 
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:10px;
-    padding:12px 20px;border-radius:11px;border:1.5px solid var(--ink);
-    background:linear-gradient(135deg, var(--ink) 0%, #1a2f33 100%);color:#f6f4ef;font-weight:700;font-size:15px;
-    transition:all .25s ease;box-shadow:0 2px 8px rgba(13,27,30,0.2)
+    padding:11px 18px;border-radius:999px;border:1px solid transparent;
+    background:var(--green);color:#fff;font-weight:700;font-size:15px;
+    transition:all .18s ease;box-shadow:none
   }
-  .btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 16px rgba(13,27,30,0.3);opacity:1}
-  .btn:active:not(:disabled){transform:translateY(0)}
-  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);box-shadow:none}
-  .btn.ghost:hover:not(:disabled){background:#f1efe9;border-color:#c4bfb3;box-shadow:0 2px 8px rgba(13,27,30,0.06);transform:translateY(-1px)}
-  .btn.sm{padding:9px 14px;font-size:14px;border-radius:9px;font-weight:600}
-  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-  .btn.wide{width:100%}
-  .btn.accent{background:linear-gradient(135deg, var(--accent) 0%, #0d5a42 100%);border-color:var(--accent)}
+  .btn:hover:not(:disabled){filter:brightness(1.02)}
+  .btn:active:not(:disabled){transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .btn.ghost:hover:not(:disabled){background:var(--sage);border-color:transparent}
+  .btn.sm{padding:8px 14px;font-size:14px;border-radius:999px;font-weight:600}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .btn.wide{width:100%;border-radius:12px}
+  .btn.accent{background:var(--green);border-color:var(--green)}
 
   .demos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
   .chip{
-    border:1.5px solid var(--line);background:#fdfcfa;border-radius:999px;padding:8px 16px;
-    font-size:13px;font-weight:600;color:var(--ink-2);transition:all .2s ease;display:inline-flex;align-items:center;gap:8px
+    border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;
+    font-size:13px;font-weight:600;color:var(--ink-2);transition:all .16s ease;display:inline-flex;align-items:center;gap:8px
   }
-  .chip:hover{border-color:var(--accent);background:var(--green-bg);color:var(--green);transform:translateY(-1px);box-shadow:0 2px 8px rgba(15,107,79,0.1)}
-  .chip:active{transform:translateY(0)}
-  .chip .b{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,0.8)}
+  .chip:hover{border-color:transparent;background:var(--sage);color:var(--green)}
+  .chip:active{transform:translateY(1px)}
+  .chip .b{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:none}
 
   /* verdict */
-  .band{border-radius:var(--radius);padding:24px 28px;border:1.5px solid;margin-bottom:24px;position:relative;overflow:hidden}
+  .band{border-radius:var(--radius);padding:22px 26px;border:1px solid;margin-bottom:22px;position:relative;overflow:hidden;background:var(--card)}
   .band::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%}
-  .band h1{margin:0 0 6px;font-size:24px;letter-spacing:-.02em;line-height:1.3;font-weight:800}
-  .band p{margin:0;font-size:14px;opacity:.9}
-  .band .tag{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.5)}
-  .band.clear{background:linear-gradient(135deg, var(--green-bg) 0%, #f0f9f6 100%);border-color:#b8d9c8;color:var(--green)}
-  .band.clear::before{background:linear-gradient(180deg, #22c55e 0%, var(--green) 100%)}
-  .band.review{background:linear-gradient(135deg, var(--amber-bg) 0%, #fefaf0 100%);border-color:#f0d98c;color:var(--amber)}
-  .band.review::before{background:linear-gradient(180deg, #f59e0b 0%, var(--amber) 100%)}
-  .band.high_risk{background:linear-gradient(135deg, var(--red-bg) 0%, #fef6f5 100%);border-color:#f0c4c0;color:var(--red)}
-  .band.high_risk::before{background:linear-gradient(180deg, #ef4444 0%, var(--red) 100%)}
-  .band.incomplete{background:linear-gradient(135deg, var(--grey-bg) 0%, #f6f7f4 100%);border-color:#d4d9d0;color:var(--grey)}
-  .band.incomplete::before{background:linear-gradient(180deg, #9ca3af 0%, var(--grey) 100%)}
+  .band h1{margin:0 0 6px;font-size:26px;letter-spacing:-.02em;line-height:1.25;font-weight:800;color:var(--ink)}
+  .band p{margin:0;font-size:14px;color:var(--ink-3)}
+  .band .tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;padding:4px 10px;border-radius:999px;background:var(--sage);color:var(--green)}
+  .band.clear{border-color:#cfe7d8}
+  .band.clear::before{background:var(--green)}
+  .band.review{border-color:#f0e2bf}
+  .band.review::before{background:var(--amber)}
+  .band.high_risk{border-color:#f2d6d6}
+  .band.high_risk::before{background:var(--red)}
+  .band.incomplete{border-color:var(--line)}
+  .band.incomplete::before{background:var(--ink-3)}
 
   .compare{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 4px rgba(13,27,30,0.02)}
   .compare>div{padding:16px 18px}
@@ -237,40 +242,64 @@
 </head>
 <body>
 
-<header class="top">
+header.top{
   <div class="wrap top-in">
-    <div class="brand"><span class="logo-dot"></span> Vouch <small>Check it. Chase it.</small></div>
+    <div class="brand">
+      <span class="brand-mark">
+        <span class="shield">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="var(--green)"/>
+            <path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#FFFFFF"/>
+          </svg>
+        </span>
+        <span>Vouch</span>
+      </span>
+      <small>Check it. Chase it.</small>
+    </div>
     <nav class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="check">🔍 Check a Product</button>
-      <button role="tab" aria-selected="false" data-tab="cases">📋 My Cases <span id="caseCount"></span></button>
+      <button role="tab" aria-selected="true" data-tab="check">Verify</button>
+      <button role="tab" aria-selected="false" data-tab="cases">Cases <span id="caseCount"></span></button>
     </nav>
+    <a class="cta" href="#form">Check a product</a>
   </div>
 </header>
 
 <main class="wrap">
 
   <div class="hero">
-    <h1>Protect Yourself From Fake &amp; Expired Medicines</h1>
-    <p>Verify against the live NAFDAC registry, spot red flags, and follow through with regulator reports — all in one place.</p>
-    <div class="tagline">
-      <span>✓</span> Live NAFDAC Greenbook • Evidence-Based • No Guesswork
+    <div class="hero-inner">
+      <div>
+        <h1>Real Products. Real Dates. Real Safety.</h1>
+        <p>Verify medicines, foods, beverages and everyday consumables against the NAFDAC registry and trusted product databases. Spot copied numbers, altered dates and lapsed registrations — with evidence, not guesses.</p>
+        <div class="hero-actions">
+          <a class="btn accent" href="#form">Check a product</a>
+          <button class="btn ghost" id="btnJumpCases">View cases</button>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-row">
+          <span class="dot"></span>
+          <strong>Grounded in evidence</strong>
+        </div>
+        <div style="color:var(--ink-3);font-size:14px;line-height:1.7">NAFDAC register for medicines, devices, vaccines, herbals and veterinary products. Barcode rail for food, drink, water, cosmetics and household goods. AI explanations are validated against every check.</div>
+      </div>
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:28px;max-width:900px;margin-left:auto;margin-right:auto">
-    <div class="bd" style="padding:20px 28px;display:flex;gap:32px;align-items:center;flex-wrap:wrap;justify-content:center">
+  <div class="card" style="margin-bottom:28px">
+    <div class="bd" style="padding:18px 26px;display:flex;gap:28px;align-items:center;flex-wrap:wrap;justify-content:flex-start">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:12px;background:var(--green-bg);color:var(--green);display:grid;place-items:center;font-weight:800">1</div>
-        <div><div style="font-weight:700">Check</div><div style="font-size:13px;color:var(--ink-3)">Scan or enter details</div></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800">1</div>
+        <div><div style="font-weight:700">Check</div><div style="font-size:13px;color:var(--ink-3)">Scan, paste or enter details</div></div>
       </div>
-      <div style="color:var(--line);font-size:24px">→</div>
+      <div style="color:var(--line);font-size:22px">→</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:12px;background:var(--amber-bg);color:var(--amber);display:grid;place-items:center;font-weight:800">2</div>
-        <div><div style="font-weight:700">Verify</div><div style="font-size:13px;color:var(--ink-3)">Against NAFDAC registry</div></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800">2</div>
+        <div><div style="font-weight:700">Verify</div><div style="font-size:13px;color:var(--ink-3)">Against NAFDAC or barcode</div></div>
       </div>
-      <div style="color:var(--line);font-size:24px">→</div>
+      <div style="color:var(--line);font-size:22px">→</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:12px;background:var(--red-bg);color:var(--red);display:grid;place-items:center;font-weight:800">3</div>
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800">3</div>
         <div><div style="font-weight:700">Chase</div><div style="font-size:13px;color:var(--ink-3)">Report, demand, escalate</div></div>
       </div>
     </div>
@@ -456,7 +485,13 @@ function fillForm(f={}){  for (const k of ['nafdac_number','barcode','product_na
   }
 }
 
-/* ---------- tabs ---------- */
+const jump = document.getElementById('btnJumpCases');
+if(jump){
+  jump.onclick = () => {
+    const btns = document.querySelectorAll('nav.tabs button');
+    if(btns[1]) btns[1].click();
+  };
+}
 $$('nav.tabs button').forEach(b => b.onclick = () => {
   $$('nav.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b));
   $('#tab-check').classList.toggle('hidden', b.dataset.tab!=='check');
