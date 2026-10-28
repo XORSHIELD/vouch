@@ -15,7 +15,7 @@ from dataclasses import fields
 from datetime import date
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import (FileResponse, PlainTextResponse,
                                StreamingResponse)
@@ -30,6 +30,7 @@ import barcode as B
 import cases
 import engine
 import registry as R
+import scan as S
 import vision
 from engine import PackInput
 
@@ -171,6 +172,68 @@ def extract_image(file: UploadFile = File(...)) -> dict:
     except vision.VisionUnavailable as exc:
         raise HTTPException(503, str(exc))
     return {"extraction": ex.to_dict()}
+
+
+def _form_list(raw: str, default: list | None = None) -> list:
+    """Form fields carry JSON. Bad JSON must not 500 the scan."""
+    try:
+        value = json.loads(raw) if raw else []
+    except Exception:
+        return list(default or [])
+    return value if isinstance(value, list) else list(default or [])
+
+
+@app.post("/api/scan/multi")
+def scan_multi(
+    files: list[UploadFile] = File(...),
+    sides: str = Form("[]"),
+    barcodes: str = Form("[]"),
+    qr: str = Form("[]"),
+    rotations: str = Form("[]"),
+) -> dict:
+    """Read several sides of one pack and reconcile what they say.
+
+    The client rotates and crops each frame before upload; this endpoint treats
+    every frame as the same physical pack and keeps per-side evidence. It never
+    invents a field that no frame contained.
+    """
+    if not files:
+        raise HTTPException(400, "No frames were supplied.")
+    if len(files) > 8:
+        raise HTTPException(400, "At most eight sides can be read at once.")
+
+    labels = _form_list(sides)
+    detections = _form_list(barcodes)
+    payloads = _form_list(qr)
+    turns = _form_list(rotations)
+
+    frames: list[dict] = []
+    total = 0
+    for idx, upload in enumerate(files):
+        data = upload.file.read()
+        total += len(data)
+        if not data:
+            raise HTTPException(400, f"Frame {idx + 1} is empty.")
+        if total > 100 * 1024 * 1024:
+            raise HTTPException(413, "The frames together are larger than 100 MB.")
+        label = labels[idx] if idx < len(labels) and isinstance(labels[idx], str) else ""
+        det = detections[idx] if idx < len(detections) and isinstance(detections[idx], dict) else None
+        qr_for_side = payloads[idx] if idx < len(payloads) and isinstance(payloads[idx], list) else []
+        frames.append({
+            "label": label,
+            "data": data,
+            "media_type": upload.content_type or "image/jpeg",
+            "barcode": det,
+            "qr": qr_for_side,
+            "rotation": turns[idx] if idx < len(turns) else 0,
+        })
+
+    try:
+        out = S.analyze(frames)
+    except vision.VisionUnavailable as exc:
+        raise HTTPException(503, str(exc))
+    out["rotations"] = turns[:len(frames)]
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -581,8 +644,6 @@ def marketing_page(page: str) -> FileResponse:
 
 app.mount("/samples", StaticFiles(directory=os.path.join(HERE, "samples", "img")),
           name="samples")
-app.mount("/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
-          name="assets")
 
 if os.path.isdir(UI):
     app.mount("/ui", StaticFiles(directory=UI), name="ui")

@@ -213,6 +213,83 @@ try:
 except ImportError:
     print("  (requests not installed, skipped)")
 
+print("\nmulti-side scan")
+try:
+    import requests
+
+    def scan_post(paths, sides, barcodes=None, qr=None, rotations=None):
+        handles = [open(p, "rb") for p in paths]
+        try:
+            return requests.post(
+                BASE + "/api/scan/multi",
+                files=[("files", (p.replace("/", "-"), h, "image/png"))
+                       for p, h in zip(paths, handles)],
+                data={
+                    "sides": json.dumps(sides),
+                    "barcodes": json.dumps(barcodes or [None] * len(paths)),
+                    "qr": json.dumps(qr or [[] for _ in paths]),
+                    "rotations": json.dumps(rotations or [0] * len(paths)),
+                },
+                timeout=180,
+            )
+        finally:
+            for h in handles:
+                h.close()
+
+    one = scan_post(["samples/img/sample-expired.png"], ["Back panel"])
+    ok(one.status_code == 200, "one side is read", one.text[:300])
+    body = one.json()
+    ok(body.get("merged", {}).get("nafdac_number") == "A11-0551",
+       "multi: NAFDAC number merged", str(body.get("merged")))
+    ok(body.get("merged", {}).get("batch") == "ACD1902",
+       "multi: batch merged", str(body.get("merged")))
+    ok(body.get("frames_read") == 1, "multi: one frame read",
+       str(body.get("frames_read")))
+    ok(body.get("quality", {}).get("verdict") in ("good", "fair", "poor"),
+       "multi: quality verdict", str(body.get("quality")))
+    ok(body.get("readers"), "multi: names the reader", str(body.get("readers")))
+    ok(body.get("limits"), "multi: states the limits", str(body.get("limits")))
+
+    two = scan_post(
+        ["samples/img/sample-expired.png", "samples/img/sample-genuine.png"],
+        ["Back panel", "Front panel"],
+    )
+    ok(two.status_code == 200, "two sides are read", two.text[:300])
+    body = two.json()
+    ok(body.get("frames_read") == 2, "multi: both frames read",
+       str(body.get("frames_read")))
+    fields = {c.get("field") for c in body.get("conflicts", [])}
+    ok("batch" in fields, "multi: disagreement is reported, not hidden",
+       str(fields))
+    ok(body.get("merged", {}).get("batch") == "ACD1902",
+       "multi: the majority read is chosen", str(body.get("merged")))
+
+    cons = scan_post(
+        ["samples/img/sample-expired.png", "samples/img/sample-genuine.png"],
+        ["Back panel", "Barcode / QR"],
+        barcodes=[
+            {"value": "5010162000164", "format": "EAN-13", "votes": 2},
+            {"value": "5010162000165", "format": "EAN-13", "votes": 1},
+        ],
+        qr=[[], ["https://example.com/p/5010162000164"]],
+        rotations=[0, 90],
+    )
+    ok(cons.status_code == 200, "barcode consensus runs", cons.text[:300])
+    body = cons.json()
+    bar = body.get("barcode") or {}
+    ok(bar.get("code") == "5010162000164", "near-miss folds to the valid code",
+       str(bar))
+    ok(bar.get("checksum") is True, "consensus checksum is true", str(bar))
+    ok(body.get("merged", {}).get("barcode") == "5010162000164",
+       "consensus barcode reaches the merged fields", str(body.get("merged")))
+    ok(body.get("rotations") == [0, 90], "rotations are echoed",
+       str(body.get("rotations")))
+
+    empty = scan_post([], [])
+    ok(empty.status_code >= 400, "an empty scan is refused", empty.text[:200])
+except ImportError:
+    print("  (requests not installed, skipped)")
+
 print("\ntext extraction")
 status, ex = call("/api/extract/text", "POST", {
     "text": "AC-Drex Tablet\nNAFDAC REG NO: A11-0551\nBATCH NO: ACD2401\n"

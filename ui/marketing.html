@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z' fill='%23126B45'/%3E%3Cpath d='M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z' fill='%23fff'/%3E%3C/svg%3E" />
 <title>Vouch — Real Products. Real Dates. Real Safety.</title>
 <meta name="description" content="Vouch helps consumers, retailers and inspectors check expiry dates, batch numbers, barcodes and NAFDAC registration records before a product is bought, sold or consumed." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -467,8 +468,63 @@
     .scan-device::before{display:none}
     .mic-wave i{height:60%}
   }
+  /* ---------- honest interface illustrations ---------- */
+  .ui-figure{margin:0;border:1px solid var(--line);border-radius:var(--radius-lg);background:#fff;box-shadow:var(--shadow-lg);overflow:hidden}
+  .ui-figure figcaption{padding:10px 14px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted);background:#fbfcfa}
+  .ui-mock{padding:16px;background:linear-gradient(180deg,#fbfcfa,#f4f7f3);display:grid;gap:10px}
+  .ui-top{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+  .ui-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 4px rgba(18,107,69,.10)}
+  .ui-badge{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--sage);color:var(--primary);white-space:nowrap}
+  .ui-badge.amber{background:var(--warn-bg);color:#8A5A0C}
+  .ui-stage{position:relative;border-radius:14px;background:var(--deep);min-height:182px;display:grid;place-items:center;overflow:hidden}
+  .ui-stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(223,243,229,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(223,243,229,.08) 1px,transparent 1px);background-size:24px 24px;-webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000 35%,transparent 75%);mask-image:radial-gradient(70% 70% at 50% 50%,#000 35%,transparent 75%)}
+  .ui-pack{position:relative;width:104px;height:132px;border-radius:10px;background:linear-gradient(160deg,#fff,#e9f2ec);box-shadow:0 18px 40px rgba(0,0,0,.28);padding:13px 11px;display:flex;flex-direction:column;gap:7px;transform:rotate(-3deg)}
+  .ui-pack::before{content:"";display:block;height:5px;width:46%;border-radius:3px;background:var(--primary)}
+  .ui-pack-line{display:block;height:4px;border-radius:3px;background:#c8d5cd}
+  .ui-pack-line.w70{width:70%}
+  .ui-pack-line.w50{width:50%}
+  .ui-pack-code{margin-top:auto;height:26px;border-radius:4px;background:repeating-linear-gradient(90deg,#202923 0 2px,#fff 2px 4px,#202923 4px 5px,#fff 5px 8px)}
+  .ui-scanline{position:absolute;left:8px;right:8px;top:0;height:1.5px;background:linear-gradient(90deg,transparent,#8fe0b3,transparent);box-shadow:0 0 12px rgba(143,224,179,.8);animation:uiSweep 3.2s ease-in-out infinite}
+  .ui-corners i{position:absolute;width:20px;height:20px;border:2px solid rgba(223,243,229,.7);border-radius:4px}
+  .ui-corners i:nth-child(1){top:12px;left:12px;border-right:0;border-bottom:0}
+  .ui-corners i:nth-child(2){top:12px;right:12px;border-left:0;border-bottom:0}
+  .ui-corners i:nth-child(3){bottom:12px;left:12px;border-right:0;border-top:0}
+  .ui-corners i:nth-child(4){bottom:12px;right:12px;border-left:0;border-top:0}
+  .ui-chip{position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.96);text-align:left;box-shadow:0 8px 20px rgba(7,59,46,.18)}
+  .ui-chip-ico{width:24px;height:24px;flex:0 0 24px;border-radius:6px;background:var(--sage);color:var(--primary);display:grid;place-items:center;font-size:13px;font-weight:800}
+  .ui-chip b{display:block;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;color:var(--ink)}
+  .ui-chip small{display:block;font-size:9.5px;color:var(--muted)}
+  .ui-sides{display:flex;gap:5px;flex-wrap:wrap}
+  .ui-sides span{font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 8px;background:#fff}
+  .ui-sides span.done{color:var(--primary);border-color:#cfe7d8;background:var(--sage)}
+  .ui-quality{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted)}
+  .ui-quality i{flex:1;height:5px;border-radius:999px;background:#e4ebe6;overflow:hidden;display:block}
+  .ui-quality i b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7fc9a1,var(--primary))}
+  .ui-quality em{font-style:normal;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9.5px}
+  .ui-band{background:var(--warn-bg);border:1px solid #f0e2bf;border-radius:11px;padding:10px 12px}
+  .ui-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.72);border-radius:999px;padding:2px 7px;color:#8A5A0C;margin-bottom:5px}
+  .ui-band b{display:block;font-size:13px;line-height:1.35;color:var(--ink)}
+  .ui-band small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+  .ui-checks{display:grid;gap:5px}
+  .ui-checks > div{display:flex;align-items:flex-start;gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 9px}
+  .ui-checks i{width:16px;height:16px;flex:0 0 16px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:9.5px;font-weight:800;background:var(--ok-bg);color:var(--ok);margin-top:1px}
+  .ui-checks .warn i{background:var(--warn-bg);color:#8A5A0C}
+  .ui-checks .unk i{background:#eef1ee;color:var(--muted)}
+  .ui-checks b{display:block;font-size:11px}
+  .ui-checks small{display:block;font-size:9.5px;color:var(--muted)}
+  .ui-foot{font-size:10px;line-height:1.5;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+  .ui-side-row{display:flex;align-items:flex-start;gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .ui-side-row .tick{width:16px;height:16px;flex:0 0 16px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:9.5px;font-weight:800;font-style:normal}
+  .ui-side-row.warn .tick{background:var(--warn-bg);color:#8A5A0C}
+  .ui-side-row b{display:block;font-size:11px}
+  .ui-side-row small{display:block;font-size:9.5px;color:var(--muted)}
+  .ui-side-row em{margin-left:auto;font-style:normal;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;color:var(--muted)}
+  @keyframes uiSweep{0%{transform:translateY(0);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateY(148px);opacity:0}}
+  @media (prefers-reduced-motion: reduce){
+    .ui-scanline{animation:none;opacity:.7}
+  }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
-    .card,.steps,.state,details.q,.shot,.mock .cell,header.site,.mobile,.btn.ghost,.btn.dark,input,select,textarea,.scan-device,.page-hero{background:#fff}
+    .card,.steps,.state,details.q,.shot,.ui-figure,.mock .cell,header.site,.mobile,.btn.ghost,.btn.dark,input,select,textarea,.scan-device,.page-hero{background:#fff}
   }
 </style>
 </head>
@@ -518,7 +574,7 @@
         <div>
           <span class="eyebrow">Consumer product verification</span>
           <h1>Real Products. Real Dates. Real Safety.</h1>
-          <p class="lead">Check expiry dates, inspect suspicious labels, and verify product information before you buy, sell or consume everyday products.</p>
+          <p class="lead">Rotate the pack and let Vouch read every side — front, back, barcode and any damage — then check the dates, labels and registration before you buy, sell or consume.</p>
           <div class="hero-actions">
             <a class="btn dark" href="/app">Check a product</a>
             <a class="btn outline-light" href="/how-it-works" data-link>How it works</a>
@@ -579,11 +635,11 @@
     <div class="steps">
       <div class="step">
         <div class="n">1</div>
-        <div><div class="step-h">Scan</div><p>Capture the pack, label, expiry date or barcode with a phone or laptop camera.</p></div>
+        <div><div class="step-h">Scan</div><p>Turn the pack and capture each side. Vouch coaches focus and light, and reads barcodes and QR codes as you go.</p></div>
       </div>
       <div class="step">
         <div class="n">2</div>
-        <div><div class="step-h">Verify</div><p>Cross-check dates, batch, barcode and registration against available records.</p></div>
+        <div><div class="step-h">Read and reconcile</div><p>Each side is read separately, then Vouch reconciles the fields and shows any disagreement instead of hiding it.</p></div>
       </div>
       <div class="step">
         <div class="n">3</div>
@@ -727,21 +783,51 @@
   <section class="white">
     <div class="wrap">
       <div class="head">
-        <span class="eyebrow">Product preview</span>
-        <h2 style="margin-top:14px">Built for a phone in one hand</h2>
-        <p class="lead">The same workflow on a laptop at a stockroom desk. Demo screens below; every check in the app runs against live data.</p>
+        <span class="eyebrow">The guided scan</span>
+        <h2 style="margin-top:14px">Turn the pack. Read every side.</h2>
+        <p class="lead">Front, back, barcode and any damage. Vouch checks each frame for focus, light and glare, reads the codes, then reconciles what the sides say instead of trusting one photo.</p>
       </div>
       <div class="grid-2" style="gap:20px">
-        <figure class="shot" style="margin:0">
-          <img src="/assets/vouch-app-showcase.png" alt="Vouch mobile app screen showing a product check" loading="lazy" />
-          <figcaption>Scan, review the extracted fields, and correct anything OCR misread.</figcaption>
+        <figure class="ui-figure">
+          <div class="ui-mock" aria-hidden="true">
+            <div class="ui-top"><span class="ui-dot"></span><span>AI scan · 4 sides</span><span class="ui-badge">Guided</span></div>
+            <div class="ui-stage">
+              <div class="ui-pack">
+                <span class="ui-pack-line w70"></span>
+                <span class="ui-pack-line w50"></span>
+                <span class="ui-pack-code"></span>
+                <span class="ui-scanline"></span>
+              </div>
+              <span class="ui-corners"><i></i><i></i><i></i><i></i></span>
+              <div class="ui-chip">
+                <span class="ui-chip-ico">▦</span>
+                <span><b>5010162000164</b><small>EAN-13 · check digit ok · seen 3×</small></span>
+              </div>
+            </div>
+            <div class="ui-sides"><span class="done">Front</span><span class="done">Back</span><span class="done">Barcode</span><span>Seal</span></div>
+            <div class="ui-quality"><span>Quality</span><i><b style="width:86%"></b></i><em>86</em></div>
+          </div>
+          <figcaption>Illustration — guided capture of each side, with a live frame-quality coach.</figcaption>
         </figure>
-        <figure class="shot" style="margin:0">
-          <img src="/assets/vouch-app-showcase-1.png" alt="Vouch mobile app result screen with evidence" loading="lazy" />
-          <figcaption>Results separate what was checked from what could not be checked.</figcaption>
+        <figure class="ui-figure">
+          <div class="ui-mock" aria-hidden="true">
+            <div class="ui-top"><span class="ui-dot"></span><span>Result</span><span class="ui-badge amber">Check further</span></div>
+            <div class="ui-band">
+              <span class="ui-tag">Medicine</span>
+              <b>A date and a number need a closer look</b>
+              <small>2 checks passed · 1 to check · 1 unknown</small>
+            </div>
+            <div class="ui-checks">
+              <div><i>✓</i><span><b>NAFDAC number</b><small>Resolves to the same product</small></span></div>
+              <div class="warn"><i>!</i><span><b>Expiry date</b><small>Printed date has passed</small></span></div>
+              <div class="unk"><i>?</i><span><b>Seal</b><small>Not visible in the photos</small></span></div>
+            </div>
+            <div class="ui-foot">Evidence, source and limits stay attached to every check.</div>
+          </div>
+          <figcaption>Illustration — a result separates what was checked from what could not be checked.</figcaption>
         </figure>
       </div>
-      <div class="note" style="margin-top:18px">Screens show demonstration data. Live results depend on the registry and databases being reachable; when they are not, Vouch says so instead of guessing.</div>
+      <div class="note" style="margin-top:18px">These are interface illustrations, not screenshots. The working app uses your camera or uploaded photos, and states which reader ran and what it could not see.</div>
     </div>
   </section>
 
@@ -805,8 +891,8 @@
     <div class="wrap split">
       <div>
         <div style="display:grid;gap:14px">
-          <div class="card"><h3>1 · Capture</h3><p>Photograph the front of the pack, the batch and expiry area, and any barcode. Or paste the label text, or enter the fields by hand when the light is bad.</p></div>
-          <div class="card"><h3>2 · Extract</h3><p>OCR reads the visible text. Vouch pulls out the registration number, product name, manufacturer, batch, manufacture date and expiry. You can correct any field before checking.</p></div>
+          <div class="card"><h3>1 · Capture each side</h3><p>Start with the front, then turn the pack for the back, the barcode and any seal or damage. The live coach checks sharpness, light and glare; you can rotate the preview in 90° steps. Photos and pasted text work when the camera will not.</p></div>
+          <div class="card"><h3>2 · Extract and reconcile</h3><p>Every frame is read separately. Vouch pulls out the registration number, product name, manufacturer, batch, dates and codes, then merges the readings. If two sides disagree, both values stay visible and you decide which to trust.</p></div>
           <div class="card"><h3>3 · Inspect the label</h3><p>You record what you can see: a sticker over print, a second date, a broken seal, a missing hologram, inconsistent typography. These are indicators, not proof.</p></div>
           <div class="card"><h3>4 · Check the reference</h3><p>The registration number is resolved against the NAFDAC register, including numbering variants and likely OCR confusions. Barcodes are validated and looked up in product databases.</p></div>
           <div class="card"><h3>5 · Compare the details</h3><p>Product name, manufacturer and registration status are compared with the pack. A number that resolves to a different product is treated as a serious mismatch.</p></div>
@@ -814,9 +900,15 @@
         </div>
       </div>
       <div>
-        <figure class="shot" style="margin:0 0 18px">
-          <img src="/assets/vouch-dashboard-showcase.png" alt="Vouch verification result with checks and evidence" loading="lazy" />
-          <figcaption>The result screen keeps checks, evidence and next steps together.</figcaption>
+        <figure class="ui-figure" style="margin:0 0 18px">
+          <div class="ui-mock" aria-hidden="true">
+            <div class="ui-top"><span class="ui-dot"></span><span>Read from 3 sides</span><span class="ui-badge">Windows OCR</span></div>
+            <div class="ui-side-row"><span class="tick">✓</span><span><b>Back panel</b><small>Number, batch and expiry read</small></span><em>94</em></div>
+            <div class="ui-side-row"><span class="tick">✓</span><span><b>Barcode</b><small>EAN-13 · check digit ok · seen 3×</small></span><em>91</em></div>
+            <div class="ui-side-row warn"><span class="tick">!</span><span><b>Seal / damage</b><small>Two different dates were read</small></span><em>72</em></div>
+            <div class="ui-foot">Disagreements stay visible instead of being averaged away.</div>
+          </div>
+          <figcaption>Illustration — per-side evidence with quality scores and disagreements.</figcaption>
         </figure>
         <div class="note warn"><b>What no photo can establish.</b> A photograph cannot confirm chemical content, the true manufacturing site, or whether a genuine pack was refilled. Those require laboratory analysis or a regulator inspection. Vouch will not pretend otherwise.</div>
       </div>
@@ -851,10 +943,11 @@
     <div class="wrap">
       <div class="head"><span class="eyebrow">Available now</span><h2 style="margin-top:14px">In the working build</h2></div>
       <div class="grid-3">
+        <div class="card"><h3>Guided multi-side scan</h3><p>Captures the front, back, barcode and any damage as separate frames. A live coach measures sharpness, light and glare, the preview rotates in 90° steps, and the readings are reconciled afterwards. Disagreements stay visible instead of being averaged away.</p></div>
         <div class="card"><h3>Expiry-date reading</h3><p>Reads printed dates from text or OCR, applies end-of-month rules, and flags the pack when the date has passed.</p></div>
         <div class="card"><h3>Batch extraction</h3><p>Pulls batch and lot numbers from the label and checks they are well formed and consistent with the printed date style.</p></div>
         <div class="card"><h3>NAFDAC number resolution</h3><p>Resolves the printed number against the live register, repairs punctuation and OCR noise without crossing numbering series, and compares names.</p></div>
-        <div class="card"><h3>Barcode and QR lookup</h3><p>Validates check digits, then searches open product databases for food, drink, water, cosmetics and household goods.</p></div>
+        <div class="card"><h3>Barcode and QR reading</h3><p>Uses the browser’s native detector with a bundled ZXing fallback. A code must pass its check digit or be seen on more than one frame before it is used, then it is searched in open product databases for food, drink, water, cosmetics and household goods.</p></div>
         <div class="card"><h3>Label-tampering indicators</h3><p>Records what you observe and explains why it matters — without calling it proof of fraud.</p></div>
         <div class="card"><h3>Evidence and limitations</h3><p>Every check carries its source, its confidence and an explicit statement of what it does not prove.</p></div>
         <div class="card"><h3>Scan history</h3><p>Keeps your checks in the browser with filters and one-tap re-check against current data.</p></div>

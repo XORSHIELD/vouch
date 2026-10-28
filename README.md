@@ -55,8 +55,19 @@ authentic.
 
 ## What the app does
 
-- Camera capture, photo upload, drag-and-drop, barcode entry and live
-  `BarcodeDetector` scanning where the browser supports it.
+- **Guided multi-side scanning.** The scanner captures the front, back, barcode
+  and any damage as separate frames, up to eight sides. A live coach measures
+  sharpness, lighting, contrast and glare before a frame is taken, the preview
+  rotates in 90° steps, and an optional auto-capture counts down when the frame
+  is sharp. Frames stay in the tab until you press **Read sides with AI**.
+- Multi-frame reading. Each side is transcribed separately, then reconciled.
+  When two sides disagree the conflict is shown with both values and the side it
+  came from; it is never averaged into a single confident answer.
+- Barcode and QR reading through the browser's native `BarcodeDetector` where
+  available, with a bundled ZXing (Apache-2.0) fallback. A code must pass its
+  check digit or be seen on more than one frame, and near-identical reads are
+  folded together rather than splitting the vote.
+- Photo upload and drag-and-drop for each side, plus barcode entry.
 - On-device OCR through the Windows OCR engine. Extracted fields are shown for
   correction before a check is run.
 - Expiry parsing with end-of-month rules; best-before and use-by treated
@@ -78,11 +89,14 @@ authentic.
 python test_engine.py
 python test_expiry.py
 python test_registry.py
+python test_scan.py
 python smoke.py
 ```
 
 The smoke suite exercises the API, the band invariants, the case lifecycle, the
-queue, the photo path and the reset flow.
+queue, the single-photo path, the multi-side scan endpoint and the reset flow.
+`test_scan.py` covers frame-quality scoring, multi-side reconciliation,
+conflict reporting and barcode/QR consensus.
 
 ## Honest limits
 
@@ -112,6 +126,7 @@ vouch/
   registry.py      NAFDAC Greenbook client and normalisation
   barcode.py       barcode validation, identity scoring, product databases
   expiry.py        date parsing and expiry assessment
+  scan.py          frame quality, multi-side reconciliation, barcode/QR consensus
   vision.py        OCR extraction and fixtures
   ai.py            explanation layer, guardrails, streaming
   cases.py         case lifecycle, deadlines, queue and stats
@@ -119,6 +134,6 @@ vouch/
   ui/
     index.html     the application
     marketing.html the marketing site and docs pages
-  assets/          product showcase images
+    vendor/        bundled ZXing decoder and its Apache-2.0 licence
   samples/img/     demo pack images used by the app
 ```

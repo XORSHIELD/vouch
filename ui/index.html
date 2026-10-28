@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z' fill='%23126B45'/%3E%3Cpath d='M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z' fill='%23fff'/%3E%3C/svg%3E" />
 <title>Vouch — Check it. Chase it. | Medicine Verification for Nigeria</title>
 <meta name="description" content="Verify medicines against the NAFDAC registry, spot counterfeit and expired packs, and follow through with regulator reports." />
 <style>
@@ -241,8 +242,8 @@
 
   /* ---------- scanner ---------- */
   .modal{position:fixed;inset:0;z-index:80;background:rgba(7,59,46,.45);display:flex;align-items:center;justify-content:center;padding:18px}
-  .sheet{background:#fff;border:1px solid var(--line);border-radius:18px;width:min(720px,100%);max-height:92vh;overflow:auto;box-shadow:0 30px 90px rgba(7,59,46,.35)}
-  .sheet-hd{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}
+  .sheet{background:#fff;border:1px solid var(--line);border-radius:18px;width:min(980px,100%);max-height:94vh;overflow:auto;box-shadow:0 30px 90px rgba(7,59,46,.35)}
+  .sheet-hd{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5}
   .sheet-hd h2{margin:0;font-size:18px;letter-spacing:-.02em}
   .sheet-hd small{color:var(--ink-3);font-size:12px}
   .iconbtn{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;color:var(--ink-3)}
@@ -251,10 +252,6 @@
   .scan-tabs button{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 8px;font-size:13.5px;font-weight:600;color:var(--ink-3)}
   .scan-tabs button.on{background:var(--green);color:#fff;border-color:var(--green)}
   .scan-body{padding:18px 22px 22px}
-  .camera-wrap{position:relative;border-radius:14px;overflow:hidden;background:var(--green-deep);aspect-ratio:4/3;display:grid;place-items:center}
-  .camera-wrap video{width:100%;height:100%;object-fit:cover;display:block}
-  .camera-wrap .frame{position:absolute;inset:14% 10%;border:2px dashed rgba(255,255,255,.65);border-radius:14px;pointer-events:none}
-  .cam-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#dff3e5;padding:24px;font-size:13.5px;line-height:1.6;background:linear-gradient(160deg,var(--green-deep),#0b5840)}
   .scan-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
   .drop{border:1.5px dashed #c3d4ca;border-radius:14px;background:var(--bg);padding:34px 20px;text-align:center;color:var(--ink-3);font-size:14px;transition:.15s}
   .drop.over{border-color:var(--green);background:var(--sage);color:var(--green)}
@@ -263,6 +260,158 @@
   .scan-status{margin-top:12px;font-size:13px;border-radius:10px;padding:9px 12px;background:var(--amber-bg);color:var(--amber);border:1px solid #f0e2bf}
   .scan-status.ok{background:var(--green-bg);color:var(--ok);border-color:#cfe7d8}
   .scan-status.err{background:var(--red-bg);color:var(--err);border-color:#f2d6d6}
+
+  /* ---------- guided AI scan ---------- */
+  .ai-scan{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(268px,.68fr);gap:18px;align-items:start}
+  .scan-stage-main{min-width:0}
+  .camera-wrap{position:relative;border-radius:16px;overflow:hidden;background:var(--green-deep);aspect-ratio:4/3;display:grid;place-items:center;isolation:isolate}
+  .camera-wrap video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .28s ease}
+  .camera-wrap .frame{position:absolute;inset:13% 10%;border:1.5px dashed rgba(255,255,255,.55);border-radius:16px;pointer-events:none;z-index:2}
+  .cam-empty{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;color:#dff3e5;padding:24px;font-size:13.5px;line-height:1.6;background:linear-gradient(160deg,var(--green-deep),#0b5840)}
+  .cam-empty b{font-size:15px;letter-spacing:-.01em}
+  .cam-overlay{position:absolute;inset:0;z-index:4;pointer-events:none}
+  .cam-overlay::before{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(223,243,229,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(223,243,229,.07) 1px,transparent 1px);
+    background-size:28px 28px;
+    -webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000 40%,transparent 78%);
+    mask-image:radial-gradient(70% 70% at 50% 50%,#000 40%,transparent 78%);
+  }
+  .cam-beam{
+    position:absolute;left:7%;right:7%;top:0;height:30%;
+    background:linear-gradient(180deg,rgba(223,243,229,0),rgba(223,243,229,.14) 48%,rgba(223,243,229,.02) 58%,rgba(223,243,229,0));
+    animation:camSweep 3.4s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  .cam-beam::after{content:"";position:absolute;left:0;right:0;top:48%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(223,243,229,.85),transparent);box-shadow:0 0 14px rgba(223,243,229,.45)}
+  .cam-corners i{position:absolute;width:26px;height:26px;border:2px solid rgba(223,243,229,.75);border-radius:5px}
+  .cam-corners i:nth-child(1){top:15%;left:10%;border-right:0;border-bottom:0}
+  .cam-corners i:nth-child(2){top:15%;right:10%;border-left:0;border-bottom:0}
+  .cam-corners i:nth-child(3){bottom:15%;left:10%;border-right:0;border-top:0}
+  .cam-corners i:nth-child(4){bottom:15%;right:10%;border-left:0;border-top:0}
+  .cam-top{position:absolute;top:10px;left:10px;right:10px;display:flex;align-items:center;gap:7px;z-index:6}
+  .live-pill,.qual-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(12px)}
+  .live-pill{background:rgba(7,59,46,.62);color:#dff3e5;border:1px solid rgba(223,243,229,.28)}
+  .live-pill i{width:6px;height:6px;border-radius:50%;background:#6ee7a8;box-shadow:0 0 0 4px rgba(110,231,168,.16);animation:hsPulse 2s infinite}
+  .qual-pill{margin-left:auto;background:rgba(255,255,255,.84);color:var(--ink-3);border:1px solid rgba(255,255,255,.9);letter-spacing:.04em;text-transform:none;font-size:11px}
+  .qual-pill.good{background:rgba(229,245,234,.94);color:var(--ok)}
+  .qual-pill.fair{background:rgba(255,244,214,.95);color:var(--amber)}
+  .qual-pill.poor{background:rgba(253,236,236,.95);color:var(--err)}
+  .cam-hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:6;width:max-content;max-width:88%;text-align:center;padding:6px 12px;border-radius:999px;background:rgba(7,59,46,.66);border:1px solid rgba(223,243,229,.24);color:#eaf4ee;font-size:11.5px;line-height:1.4;backdrop-filter:blur(12px)}
+  .cam-hint b{color:#fff}
+  .code-chip{
+    position:absolute;left:10px;right:10px;bottom:48px;z-index:7;display:flex;align-items:center;gap:9px;
+    padding:8px 11px;border-radius:12px;background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.95);
+    box-shadow:0 10px 26px rgba(7,59,46,.18);color:var(--ink);text-align:left;
+  }
+  .code-chip .ico{width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--green-bg);color:var(--green);display:grid;place-items:center}
+  .code-chip b{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.04em;line-height:1.2}
+  .code-chip small{display:block;font-size:10.5px;color:var(--ink-3);margin-top:1px}
+  .code-chip .ok{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);background:var(--green-bg);border-radius:999px;padding:4px 8px;white-space:nowrap}
+  .code-chip.bad .ok{color:var(--err);background:var(--red-bg)}
+  .auto-count{
+    position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(7,59,46,.24);backdrop-filter:blur(2px);
+  }
+  .auto-count span{
+    width:86px;height:86px;border-radius:50%;display:grid;place-items:center;font-size:38px;font-weight:800;color:#fff;
+    background:rgba(7,59,46,.72);border:1px solid rgba(223,243,229,.5);box-shadow:0 18px 50px rgba(0,0,0,.3);
+  }
+  .cam-flash{position:absolute;inset:0;z-index:9;background:#fff;opacity:0;pointer-events:none}
+  .cam-flash.on{animation:camFlash .42s ease-out}
+  .rotate-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .mini-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink-2);transition:.15s}
+  .mini-btn:hover{border-color:#c9d7cf;background:#fff}
+  .mini-btn svg{width:14px;height:14px}
+  .mini-btn[disabled]{opacity:.45;cursor:not-allowed}
+  .rotate-row .spacer{margin-left:auto;font-size:11px;color:var(--ink-3)}
+  .side-panel{border:1px solid rgba(229,233,228,.9);background:rgba(255,255,255,.62);border-radius:16px;padding:14px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset}
+  .side-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .side-head span{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .side-head b{margin-left:auto;font-size:11.5px;color:var(--green);font-family:var(--mono)}
+  .side-list{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+  .side-row{
+    width:100%;display:flex;align-items:center;gap:9px;text-align:left;border:1px solid transparent;background:transparent;
+    border-radius:11px;padding:6px;color:var(--ink);cursor:pointer;transition:.15s;
+  }
+  .side-row:hover{background:rgba(255,255,255,.7)}
+  .side-row.on{background:#fff;border-color:rgba(18,107,69,.28);box-shadow:0 4px 14px rgba(7,59,46,.06)}
+  .side-row .num{width:20px;height:20px;flex:0 0 20px;border-radius:50%;display:grid;place-items:center;background:#eef3f0;color:var(--ink-3);font-size:10.5px;font-weight:800}
+  .side-row.captured .num{background:var(--green);color:#fff}
+  .side-thumb{width:38px;height:38px;flex:0 0 38px;border-radius:8px;overflow:hidden;background:#eef3f0;border:1px solid var(--line);display:grid;place-items:center;color:#9aaba2}
+  .side-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .side-thumb svg{width:17px;height:17px}
+  .side-meta{min-width:0;flex:1}
+  .side-meta b{display:block;font-size:12px;line-height:1.25;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side-meta small{display:block;font-size:10px;line-height:1.35;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side-state{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+  .side-row.captured .side-state{color:var(--ok)}
+  .side-row.on .side-state{color:var(--green)}
+  .quality-box{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+  .quality-box .qline{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--ink-3);margin-bottom:5px}
+  .quality-box .qline span{width:56px;flex:0 0 56px}
+  .quality-box .qline i{flex:1;height:5px;border-radius:999px;background:#e8efeb;overflow:hidden;display:block}
+  .quality-box .qline i b{display:block;height:100%;width:0;background:linear-gradient(90deg,#7fc9a1,var(--green));border-radius:999px;transition:width .24s ease}
+  .quality-box .qline em{width:24px;text-align:right;font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+  .coach{margin:8px 0 0;font-size:11.5px;line-height:1.5;color:var(--ink-2);min-height:34px}
+  .capture-actions{display:grid;gap:7px;margin-top:10px}
+  .btn.wide{width:100%;justify-content:center}
+  .auto-toggle{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-3);cursor:pointer}
+  .auto-toggle input{width:15px;height:15px;accent-color:var(--green)}
+  .scan-progress{height:5px;border-radius:999px;background:#e8efeb;overflow:hidden;margin:2px 0 10px}
+  .scan-progress b{display:block;height:100%;width:0;background:var(--green);border-radius:999px;transition:width .25s ease}
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+  .photo-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:8px;position:relative}
+  .photo-card img{width:100%;height:92px;object-fit:cover;border-radius:8px;background:#eef3f0}
+  .photo-card .pc-top{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .photo-card .pc-q{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:999px;background:var(--green-bg);color:var(--ok)}
+  .photo-card .pc-q.fair{background:var(--amber-bg);color:var(--amber)}
+  .photo-card .pc-q.poor{background:var(--red-bg);color:var(--err)}
+  .photo-card select{width:100%;margin-top:7px;padding:6px 7px;font-size:11.5px;border-radius:7px}
+  .photo-card .pc-code{font-family:var(--mono);font-size:9.5px;color:var(--green);margin-top:5px;word-break:break-all}
+  .photo-card .pc-x{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.92);display:grid;place-items:center;color:var(--ink-3);font-size:12px}
+  .scan-evidence .hd h2{font-size:15.5px}
+  .scan-evidence .who{font-size:11px;color:var(--ink-3);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .ev-coach{margin:0 0 12px;font-size:13px;line-height:1.6;color:var(--ink-2)}
+  .ev-sides{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px}
+  .ev-side{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 9px;background:var(--bg)}
+  .ev-side.good{border-color:#cfe7d8;background:var(--green-bg)}
+  .ev-side.fair{border-color:#f0e2bf;background:var(--amber-bg)}
+  .ev-side.poor{border-color:#f2d6d6;background:var(--red-bg)}
+  .ev-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;margin-top:5px;background:var(--ink-3)}
+  .ev-side.good .ev-dot{background:var(--ok)}
+  .ev-side.fair .ev-dot{background:var(--amber)}
+  .ev-side.poor .ev-dot{background:var(--err)}
+  .ev-side b{display:block;font-size:12px;letter-spacing:-.01em}
+  .ev-side small{display:block;font-size:10.5px;line-height:1.45;color:var(--ink-3);margin-top:2px}
+  .ev-side .ev-q{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink-3)}
+  .ev-conflict{margin-top:10px;border:1px solid #f0e2bf;background:var(--amber-bg);border-radius:10px;padding:9px 11px}
+  .ev-conflict b{font-size:12px;color:var(--amber)}
+  .ev-conflict p{margin:3px 0 0;font-size:12px;line-height:1.55;color:var(--ink-2)}
+  .ev-warn{margin-top:10px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 11px;font-size:11.5px;line-height:1.5;color:var(--ink-3)}
+  .ev-limits{margin-top:10px;font-size:12px;color:var(--ink-3)}
+  .ev-limits summary{cursor:pointer;font-weight:600;color:var(--ink-2)}
+  .ev-limits ul{margin:7px 0 0;padding-left:18px;line-height:1.6}
+  @keyframes camSweep{0%{transform:translateY(-30%);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(280%);opacity:0}}
+  @keyframes camFlash{0%{opacity:.85}100%{opacity:0}}
+  @media (max-width:840px){
+    .ai-scan{grid-template-columns:1fr}
+    .side-panel{order:2}
+    .camera-wrap{aspect-ratio:1.15/1}
+    .side-list{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:560px){
+    .modal{padding:0;align-items:flex-end}
+    .sheet{max-height:96vh;border-radius:18px 18px 0 0}
+    .scan-body{padding:14px 14px 20px}
+    .scan-tabs{padding:12px 14px 0}
+    .sheet-hd{padding:14px}
+    .side-list{grid-template-columns:1fr}
+    .rotate-row .spacer{display:none}
+    .cam-hint{font-size:10.5px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cam-beam{animation:none;opacity:0}
+    .live-pill i{animation:none}
+  }
 
   /* ---------- history / guide / settings ---------- */
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
@@ -967,49 +1116,107 @@
   <div class="sheet">
     <div class="sheet-hd">
       <div>
-        <h2 id="scanTitle">Scan a product</h2>
-        <small>Camera, photo, or barcode. Nothing is uploaded to a third party.</small>
+        <h2 id="scanTitle">AI product scan</h2>
+        <small>Guided multi-side capture. Rotate the pack; every side is read and reconciled.</small>
       </div>
       <button class="iconbtn" id="scanClose" type="button" aria-label="Close scanner">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
     <div class="scan-tabs" role="tablist">
-      <button type="button" data-mode="camera" class="on">Camera</button>
-      <button type="button" data-mode="upload">Photo file</button>
-      <button type="button" data-mode="barcode">Barcode</button>
+      <button type="button" data-mode="camera" class="on">Live multi-side</button>
+      <button type="button" data-mode="upload">Photo files</button>
+      <button type="button" data-mode="barcode">Barcode / QR</button>
     </div>
     <div class="scan-body">
       <div id="modeCamera">
-        <div class="camera-wrap">
-          <video id="cam" playsinline muted autoplay></video>
-          <div class="frame"></div>
-          <div class="cam-empty" id="camEmpty">
-            <div>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
-              <div><b>Point the camera at the pack</b><br/>Fill the frame with the label, including the expiry date and batch number.</div>
+        <div class="ai-scan">
+          <div class="scan-stage-main">
+            <div class="camera-wrap" id="camWrap">
+              <video id="cam" playsinline muted autoplay></video>
+              <div class="frame"></div>
+              <div class="cam-empty" id="camEmpty">
+                <div>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+                  <div><b>Point the camera at the pack</b><br/>Capture the front, then turn the pack for the back, barcode and any damage. Frames stay on this device until you ask them to be read.</div>
+                </div>
+              </div>
+              <div class="cam-overlay">
+                <span class="cam-beam"></span>
+                <span class="cam-corners"><i></i><i></i><i></i><i></i></span>
+              </div>
+              <div class="cam-top">
+                <span class="live-pill"><i></i>AI scan</span>
+                <span class="qual-pill" id="qualPill">Waiting for camera</span>
+              </div>
+              <button class="code-chip hidden" id="codeChip" type="button" aria-live="polite">
+                <span class="ico">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5v14"></path><path d="M7 5v14"></path><path d="M11 5v14"></path><path d="M15 5v14"></path><path d="M19 5v14"></path></svg>
+                </span>
+                <span><b id="codeValue">—</b><small id="codeMeta">Barcode detected</small></span>
+                <span class="ok" id="codeOk">Ready</span>
+              </button>
+              <div class="auto-count hidden" id="autoCount"><span>3</span></div>
+              <div class="cam-hint" id="camHint"><b>Front panel</b> · Brand and product name</div>
+              <div class="cam-flash" id="camFlash"></div>
+            </div>
+            <div class="rotate-row">
+              <button class="mini-btn" id="btnRotateL" type="button" aria-label="Rotate the camera view left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                <span>Rotate left</span>
+              </button>
+              <button class="mini-btn" id="btnRotateR" type="button" aria-label="Rotate the camera view right">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                <span>Rotate right</span>
+              </button>
+              <button class="mini-btn" id="btnRotateReset" type="button">Reset view</button>
+              <button class="mini-btn" id="btnCamFlip" type="button">Flip camera</button>
+              <span class="spacer" id="rotateLabel">0°</span>
+            </div>
+            <div class="scan-row">
+              <button class="btn ghost" id="btnCamStart" type="button">Start camera</button>
+              <button class="btn ghost" id="btnCamStop" type="button">Stop camera</button>
+              <button class="mini-btn" id="btnResetScan" type="button">Start over</button>
             </div>
           </div>
+
+          <aside class="side-panel" aria-label="Guided capture">
+            <div class="side-head"><span>Guided capture</span><b id="sideProgress">0 of 4</b></div>
+            <div class="scan-progress"><b id="sideBar"></b></div>
+            <ol class="side-list" id="sideList"></ol>
+            <div class="quality-box">
+              <div class="qline"><span>Sharpness</span><i><b id="qSharp"></b></i><em id="qSharpN">–</em></div>
+              <div class="qline"><span>Light</span><i><b id="qLight"></b></i><em id="qLightN">–</em></div>
+              <div class="qline"><span>Glare</span><i><b id="qGlare"></b></i><em id="qGlareN">–</em></div>
+            </div>
+            <p class="coach" id="coachText">Start the camera. Each side is checked for focus and light before it is captured.</p>
+            <div class="capture-actions">
+              <button class="btn accent wide" id="btnCapture" type="button">Capture front panel</button>
+              <label class="auto-toggle"><input id="autoCapture" type="checkbox" /> Auto-capture when the frame is sharp</label>
+              <button class="btn ghost wide" id="btnFinishScan" type="button" disabled>Read 0 sides with AI</button>
+              <button class="mini-btn" id="btnAddSide" type="button">+ Add another side</button>
+            </div>
+          </aside>
         </div>
-        <div class="scan-row">
-          <button class="btn" id="btnCapture" type="button">Capture &amp; check</button>
-          <button class="btn ghost" id="btnCamStart" type="button">Start camera</button>
-          <button class="btn ghost" id="btnCamFlip" type="button">Flip camera</button>
-          <button class="btn ghost" id="btnCamStop" type="button">Stop camera</button>
-        </div>
-        <p class="scan-note">The camera needs permission and a secure context (localhost or HTTPS). If it is blocked, use <b>Photo file</b> or enter the details by hand.</p>
+        <p class="scan-note">The camera needs permission and a secure context (localhost or HTTPS). Captured frames stay in this tab; they are sent to the local reader only when you press <b>Read sides with AI</b>. If the camera is blocked, use <b>Photo files</b> or type the details.</p>
       </div>
 
       <div id="modeUpload" class="hidden">
         <div class="drop" id="dropZone">
-          <strong>Drop a photo here</strong>
-          or choose a file from this device
+          <strong>Drop photos of each side here</strong>
+          Front, back, barcode and any damage — or choose files from this device
           <div class="scan-row" style="justify-content:center">
-            <button class="btn" id="btnChooseFile" type="button">Choose photo</button>
+            <button class="btn" id="btnChooseFile" type="button">Choose photos</button>
             <button class="btn ghost" id="btnTakePhoto" type="button">Use device camera</button>
           </div>
         </div>
-        <p class="scan-note">JPG, PNG or WebP up to 25 MB. Keep the whole label in frame and avoid glare. OCR works best on straight, well-lit text.</p>
+        <input type="file" id="scanFiles" accept="image/*" multiple class="hidden" />
+        <div class="photo-grid" id="photoGrid"></div>
+        <div class="scan-row">
+          <button class="btn accent" id="btnReadPhotos" type="button" disabled>Read 0 photos with AI</button>
+          <button class="mini-btn" id="btnClearPhotos" type="button">Clear</button>
+        </div>
+        <p class="scan-note">JPG, PNG or WebP up to 25 MB each. Add each side of the same pack; Vouch reads them together and reports disagreements instead of hiding them.</p>
       </div>
 
       <div id="modeBarcode" class="hidden">
@@ -1019,7 +1226,7 @@
           <button class="btn" id="btnBarcodeLookup" type="button">Look up barcode</button>
           <button class="btn ghost" id="btnBarcodeCamera" type="button">Scan with camera</button>
         </div>
-        <p class="scan-note">Used for food, drink, water, cosmetics and household products. A barcode match identifies a product record — it does not prove the pack in your hand is genuine.</p>
+        <p class="scan-note">The camera reads EAN-8/13, UPC-A/E, Code 128, Data Matrix, Aztec and QR. A code must pass its check digit or be seen on more than one frame before it is used. A barcode match identifies a product record — it does not prove the pack in your hand is genuine.</p>
       </div>
 
       <div id="scanStatus" class="scan-status hidden"></div>
@@ -1072,6 +1279,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/ui/vendor/zxing.min.js" defer></script>
 <script>
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
@@ -1097,7 +1305,7 @@ const BAND = {
   incomplete:{label:"Not enough to go on", tag:"Needs more detail"}
 };
 
-let state = { assessment:null, caseId:null, packs:[] };
+let state = { assessment:null, caseId:null, packs:[], scanEvidence:null };
 
 /* ---------- helpers ---------- */
 async function api(path, opts={}) {
@@ -1186,6 +1394,7 @@ async function runBarcodeDemo(key, btn){
   if (btn) btn.disabled = true;
   try {
     const out = await api('/api/demo/barcode', {method:'POST', body:JSON.stringify({key})});
+    state.scanEvidence = null;
     state.assessment = out.assessment;
     fillForm(out.pack);
     $$('#flags input').forEach(i => i.checked = false);
@@ -1198,6 +1407,7 @@ async function runDemo(key){
   if (btn) btn.disabled = true;
   try {
     const out = await api('/api/demo/run', {method:'POST', body:JSON.stringify({key})});
+    state.scanEvidence = null;
     state.assessment = out.assessment;
     fillForm(out.pack.fields);
     $$('#flags input').forEach(i => i.checked = (out.pack.flags||[]).includes(i.value));
@@ -1213,6 +1423,7 @@ $('#form').onsubmit = async (ev) => {
   const label = b.innerHTML;
   b.disabled = true; b.innerHTML = '<span class="spin"></span> Checking';
   try {
+    state.scanEvidence = null;
     const a = await api('/api/check', {method:'POST', body:JSON.stringify(formData())});
     state.assessment = a; state.caseId = null;
     renderAssessment(a);
@@ -1236,6 +1447,7 @@ async function readPhoto(fileOrBlob, name){
     const r = await fetch('/api/extract/image', {method:'POST', body:fd});
     const body = await r.json();
     if (!r.ok) throw new Error(body.detail || 'Could not read the image');
+    state.scanEvidence = null;
     fillForm(body.extraction);
     const warns = body.extraction.warnings || [];
     toast(`Read by ${body.extraction.provider} — check the fields`);
@@ -1255,10 +1467,45 @@ async function readPhoto(fileOrBlob, name){
 }
 
 /* ---------- scanner ---------- */
+const SCAN_SIDE_DEFS = [
+  {key:'front', label:'Front panel', hint:'Brand and product name'},
+  {key:'back', label:'Back panel', hint:'Registration, maker, batch and expiry'},
+  {key:'code', label:'Barcode / QR', hint:'Any barcode or QR code'},
+  {key:'detail', label:'Seal / damage', hint:'Optional: sticker, seal or print fault'}
+];
+const SCAN_MAX_SIDES = 8;
+const SCAN_SIDE_OPTIONS = ['Front panel','Back panel','Barcode / QR','Seal / damage','Side 5','Side 6','Side 7','Side 8'];
+const SCAN_FIELD_LABELS = {
+  nafdac_number:'NAFDAC number', product_name:'product name',
+  manufacturer:'manufacturer', batch:'batch', exp_date:'expiry date',
+  mfg_date:'manufacture date', strength:'strength', pack_size:'pack size',
+  barcode:'barcode'
+};
+
 let camStream = null;
 let camFacing = 'environment';
-let barcodeTimer = null;
-let scanning = false;
+let camRotation = 0;
+let camMirror = false;
+let scanLoopTimer = null;
+let scanDetectTimer = null;
+let autoCaptureTimer = null;
+let autoCapture = false;
+let lastProbe = null;
+let scanBusy = false;
+let liveVotes = new Map();
+let zxingReader = null;
+let nativeDetector = null;
+let nativeDetectorTried = false;
+let scanSides = SCAN_SIDE_DEFS.map(d => Object.assign({}, d));
+let activeSide = 0;
+let scanPhotoQueue = [];
+let photoSeq = 0;
+const probeCanvas = document.createElement('canvas');
+const probeCtx = probeCanvas.getContext('2d', {willReadFrequently:true});
+const detectCanvas = document.createElement('canvas');
+
+function clamp(n, lo=0, hi=100){ return Math.max(lo, Math.min(hi, n)); }
+function currentSide(){ return scanSides[activeSide]; }
 
 function scanStatus(msg, kind){
   const el = $('#scanStatus');
@@ -1268,13 +1515,727 @@ function scanStatus(msg, kind){
   el.textContent = msg;
 }
 
+function readerLabel(ev){
+  const readers = (ev && ev.readers) || [];
+  const pretty = readers.map(r => r === 'windows-ocr' ? 'Windows OCR'
+    : r === 'vouch-composer' ? 'Vouch composer'
+    : String(r).indexOf('meta') === 0 ? 'Model vision' : r);
+  if (ev && ev.ai_used) return 'Model vision · ' + pretty.join(', ');
+  if (pretty.length) return 'On-device reader · ' + pretty.join(', ');
+  if (ev && ev.barcode) return 'Camera barcode detection';
+  return 'No reader';
+}
+
+/* ---------- frame quality (a coach, not a verdict) ---------- */
+function measureCanvas(canvas){
+  try {
+    const w = 240;
+    const h = Math.max(8, Math.round((canvas.height || 1) / (canvas.width || 1) * w));
+    probeCanvas.width = w; probeCanvas.height = h;
+    probeCtx.drawImage(canvas, 0, 0, w, h);
+    const data = probeCtx.getImageData(0, 0, w, h).data;
+    const grey = new Float32Array(w * h);
+    let sum = 0, sum2 = 0;
+    for (let i = 0, p = 0; i < data.length; i += 4, p++){
+      const g = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      grey[p] = g; sum += g; sum2 += g * g;
+    }
+    const n = w * h;
+    const mean = sum / n;
+    const std = Math.sqrt(Math.max(0, sum2 / n - mean * mean));
+    let lapSum = 0, lapSum2 = 0, lapN = 0, edge = 0, glare = 0;
+    for (let y = 1; y < h - 1; y++){
+      for (let x = 1; x < w - 1; x++){
+        const i = y * w + x;
+        const lap = 4 * grey[i] - grey[i - 1] - grey[i + 1] - grey[i - w] - grey[i + w];
+        lapSum += lap; lapSum2 += lap * lap; lapN++;
+        const gx = Math.abs(grey[i + 1] - grey[i]);
+        const gy = Math.abs(grey[i + w] - grey[i]);
+        if (gx + gy > 22) edge++;
+        const i4 = i * 4;
+        if (data[i4] > 246 && data[i4 + 1] > 246 && data[i4 + 2] > 246 && (gx + gy) > 8) glare++;
+      }
+    }
+    if (!lapN) return null;
+    const lapVar = Math.max(0, lapSum2 / lapN - (lapSum / lapN) ** 2);
+    const brightness = mean / 255;
+    const contrast = std / 255;
+    const sharp = clamp(Math.sqrt(lapVar) / 11 * 100);
+    let light;
+    if (brightness < 0.25) light = clamp(brightness / 0.25 * 55);
+    else if (brightness < 0.42) light = clamp(55 + (brightness - 0.25) / 0.17 * 45);
+    else if (brightness <= 0.82) light = 100;
+    else light = clamp(100 - (brightness - 0.82) * 160, 55);
+    const contrastScore = clamp(contrast / 0.28 * 100);
+    const coverage = clamp((edge / lapN) / 0.07 * 100);
+    const glareFrac = glare / lapN;
+    const glareScore = clamp(100 - Math.max(0, glareFrac - 0.10) * 180, 35);
+    const score = sharp * 0.42 + light * 0.24 + contrastScore * 0.14
+                + coverage * 0.12 + glareScore * 0.08;
+    let advice;
+    if (brightness < 0.22) advice = 'Too dark. Move the pack towards better light.';
+    else if (brightness > 0.94) advice = 'Very bright. Tilt the pack away from the lamp.';
+    else if (glareFrac > 0.14) advice = 'Glare is washing out the print. Tilt the pack slightly.';
+    else if (sharp < 34) advice = 'The frame is soft. Hold still and let the camera focus.';
+    else if (edge / lapN < 0.012) advice = 'Little text is visible. Fill the frame with the label.';
+    else if (score >= 76) advice = 'Sharp and evenly lit. Capture this side.';
+    else advice = 'Readable, but a steadier, closer frame will read better.';
+    return {
+      score: Math.round(score * 10) / 10,
+      verdict: score >= 72 ? 'good' : score >= 48 ? 'fair' : 'poor',
+      sharpness: Math.round(sharp), lighting: Math.round(light),
+      contrast: Math.round(contrastScore), coverage: Math.round(coverage),
+      glare: Math.round(glareFrac * 1000) / 1000,
+      brightness: Math.round(brightness * 1000) / 1000,
+      advice
+    };
+  } catch { return null; }
+}
+
+function setMeter(barSel, numSel, value, label, suffix=''){
+  const bar = $(barSel), num = $(numSel);
+  if (bar) bar.style.width = clamp(value) + '%';
+  if (num) num.textContent = label + suffix;
+}
+
+function setQualityUI(q){
+  const pill = $('#qualPill');
+  if (!pill) return;
+  if (!q){
+    pill.className = 'qual-pill';
+    pill.textContent = 'Waiting for camera';
+    setMeter('#qSharp', '#qSharpN', 0, '–');
+    setMeter('#qLight', '#qLightN', 0, '–');
+    setMeter('#qGlare', '#qGlareN', 0, '–');
+    return;
+  }
+  pill.className = 'qual-pill ' + q.verdict;
+  pill.textContent = Math.round(q.score) + ' · ' + q.verdict;
+  setMeter('#qSharp', '#qSharpN', q.sharpness, Math.round(q.sharpness));
+  setMeter('#qLight', '#qLightN', q.lighting, Math.round(q.lighting));
+  const glarePct = Math.round((q.glare || 0) * 100);
+  setMeter('#qGlare', '#qGlareN', Math.max(0, 100 - glarePct * 3), glarePct, '%');
+  const coach = $('#coachText');
+  if (coach) coach.textContent = q.advice;
+}
+
+/* ---------- barcode + QR ---------- */
+function normaliseDigits(text){
+  const digits = String(text || '').replace(/\D/g, '');
+  return [8, 12, 13, 14].includes(digits.length) ? digits : '';
+}
+
+function checksumOk(code){
+  if (![8, 12, 13, 14].includes(String(code || '').length)) return false;
+  if (!/^\d+$/.test(code)) return false;
+  const d = code.split('').map(Number);
+  const check = d.pop();
+  let sum = 0, weight = 3;
+  for (let i = d.length - 1; i >= 0; i--){ sum += d[i] * weight; weight = weight === 3 ? 1 : 3; }
+  return (10 - (sum % 10)) % 10 === check;
+}
+
+function prettyFormat(f){
+  const map = {
+    ean_13:'EAN-13', ean_8:'EAN-8', upc_a:'UPC-A', upc_e:'UPC-E',
+    code_128:'Code 128', code_39:'Code 39', itf:'ITF',
+    qr_code:'QR', data_matrix:'Data Matrix', aztec:'Aztec'
+  };
+  const key = String(f || '').toLowerCase();
+  return map[key] || (key ? key.replace(/_/g, ' ').toUpperCase() : 'Code');
+}
+
+function getNativeDetector(){
+  if (nativeDetectorTried) return nativeDetector;
+  nativeDetectorTried = true;
+  if (!('BarcodeDetector' in window)) return null;
+  const formats = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code','data_matrix','aztec'];
+  try {
+    nativeDetector = new window.BarcodeDetector({formats});
+  } catch {
+    try { nativeDetector = new window.BarcodeDetector(); } catch { nativeDetector = null; }
+  }
+  return nativeDetector;
+}
+
+function getZxingReader(){
+  if (zxingReader) return zxingReader;
+  if (!window.ZXing || !window.ZXing.MultiFormatReader) return null;
+  try {
+    zxingReader = {
+      reader: new window.ZXing.MultiFormatReader(),
+      hints: new Map([[window.ZXing.DecodeHintType.TRY_HARDER, true]])
+    };
+  } catch { zxingReader = null; }
+  return zxingReader;
+}
+
+function zxingFromCanvas(canvas){
+  const z = getZxingReader();
+  if (!z) return [];
+  try {
+    const w = canvas.width, h = canvas.height;
+    const img = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, w, h).data;
+    const lum = new Uint8ClampedArray(w * h);
+    for (let i = 0, p = 0; i < img.length; i += 4, p++){
+      lum[p] = (img[i] * 0.299 + img[i + 1] * 0.587 + img[i + 2] * 0.114) | 0;
+    }
+    const source = new window.ZXing.RGBLuminanceSource(lum, w, h);
+    const bitmap = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(source));
+    const result = z.reader.decode(bitmap, z.hints);
+    const text = result && result.getText ? result.getText() : '';
+    const fmt = result && result.getBarcodeFormat ? result.getBarcodeFormat() : 'code';
+    return text ? [{rawValue:text, formatString:fmt}] : [];
+  } catch { return []; }
+}
+
+async function detectOnCanvas(canvas){
+  const out = {codes:[], qr:[]};
+  function ingest(raw, fmt){
+    const text = String(raw || '').trim();
+    if (!text) return;
+    const digits = normaliseDigits(text);
+    const isQr = /qr/i.test(String(fmt || ''));
+    if (isQr){
+      if (!out.qr.includes(text)) out.qr.push(text);
+      if (digits && !out.codes.some(c => c.value === digits)){
+        out.codes.push({value:digits, format:'QR', raw:text});
+      }
+      return;
+    }
+    if (digits && !out.codes.some(c => c.value === digits)){
+      out.codes.push({value:digits, format:prettyFormat(fmt), raw:text});
+    }
+  }
+  const detector = getNativeDetector();
+  let readSomething = false;
+  if (detector){
+    try {
+      const found = await detector.detect(canvas);
+      for (const c of found || []){ ingest(c.rawValue, c.format); readSomething = true; }
+    } catch {}
+  }
+  if (!readSomething) {
+    for (const c of zxingFromCanvas(canvas)){ ingest(c.rawValue, c.formatString); readSomething = true; }
+  }
+  return out;
+}
+
+function noteVote(code, format){
+  const entry = liveVotes.get(code) || {count:0, format, last:0};
+  entry.count += 1;
+  entry.format = format || entry.format;
+  entry.last = Date.now();
+  liveVotes.set(code, entry);
+  return entry;
+}
+
+function bestLiveCode(){
+  let best = null;
+  for (const [code, entry] of liveVotes){
+    if (Date.now() - entry.last > 9000) continue;
+    const score = (checksumOk(code) ? 1000 : 0) + entry.count * 10 + code.length;
+    if (!best || score > best.score) best = Object.assign({code}, entry, {score});
+  }
+  return best;
+}
+
+function showCodeChip(code, entry, format){
+  const chip = $('#codeChip');
+  if (!chip) return;
+  const valid = checksumOk(code);
+  $('#codeValue').textContent = code;
+  $('#codeMeta').textContent = (format || 'Barcode') + ' · seen ' + (entry.count || 1) + '×';
+  $('#codeOk').textContent = valid ? 'Check digit ok' : 'Consensus';
+  chip.classList.toggle('bad', !valid);
+  chip.classList.remove('hidden');
+  chip.onclick = () => { stopCamera(); lookupBarcode(code); };
+}
+
+/* ---------- camera ---------- */
+function drawVideoToCanvas(canvas, rotation, mirror){
+  const video = $('#cam');
+  if (!video || !video.videoWidth) return false;
+  const w = video.videoWidth, h = video.videoHeight;
+  const swap = rotation % 180 !== 0;
+  canvas.width = swap ? h : w;
+  canvas.height = swap ? w : h;
+  const ctx = canvas.getContext('2d', {willReadFrequently:true});
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((rotation || 0) * Math.PI / 180);
+  if (mirror) ctx.scale(-1, 1);
+  ctx.drawImage(video, -w / 2, -h / 2, w, h);
+  ctx.restore();
+  return true;
+}
+
+function applyPreviewRotation(){
+  const video = $('#cam');
+  if (!video) return;
+  const swap = camRotation % 180 !== 0;
+  const scale = swap ? 1.34 : 1;
+  video.style.transform = 'rotate(' + camRotation + 'deg) scale('
+    + (camMirror ? -scale : scale) + ', ' + scale + ')';
+  const label = $('#rotateLabel');
+  if (label) label.textContent = camRotation + '°' + (camMirror ? ' · mirrored' : '');
+}
+
+function stopScanLoop(){
+  if (scanLoopTimer){ clearInterval(scanLoopTimer); scanLoopTimer = null; }
+  if (scanDetectTimer){ clearInterval(scanDetectTimer); scanDetectTimer = null; }
+}
+
+function startScanLoop(){
+  stopScanLoop();
+  scanLoopTimer = setInterval(() => {
+    if (!camStream) return;
+    const video = $('#cam');
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    if (!drawVideoToCanvas(canvas, camRotation, camMirror)) return;
+    const quality = measureCanvas(canvas);
+    lastProbe = {quality, at: Date.now()};
+    setQualityUI(quality);
+    if (autoCapture && !autoCaptureTimer && quality && quality.score >= 72){
+      const side = currentSide();
+      if (side && !side.frame) beginAutoCapture();
+    }
+  }, 720);
+  scanDetectTimer = setInterval(scanForCodes, 1150);
+}
+
+async function scanForCodes(){
+  if (!camStream || scanBusy) return;
+  if (!drawVideoToCanvas(detectCanvas, camRotation, camMirror)) return;
+  const found = await detectOnCanvas(detectCanvas);
+  for (const c of found.codes) noteVote(c.value, c.format);
+  const best = bestLiveCode();
+  if (best && (checksumOk(best.code) || best.count >= 2)){
+    showCodeChip(best.code, best, best.format);
+  }
+}
+
+async function startCamera(){
+  const video = $('#cam');
+  const empty = $('#camEmpty');
+  if (!video) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    scanStatus('This browser cannot open a camera here. Use Photo files, or open Vouch on localhost/HTTPS.', 'err');
+    return;
+  }
+  stopCamera();
+  try {
+    scanStatus('Asking for camera permission…', '');
+    camMirror = camFacing === 'user';
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode: {ideal: camFacing}, width: {ideal: 1280}, height: {ideal: 960}},
+      audio: false
+    });
+    video.srcObject = camStream;
+    await video.play().catch(() => {});
+    if (empty) empty.classList.add('hidden');
+    applyPreviewRotation();
+    startScanLoop();
+    scanStatus('Camera ready. Capture the front, then turn the pack for each side.', 'ok');
+  } catch (err){
+    stopCamera();
+    const msg = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')
+      ? 'Camera permission was blocked. Allow it in the browser, or use Photo files instead.'
+      : err && err.name === 'NotFoundError'
+        ? 'No camera was found on this device. Use Photo files instead.'
+        : 'The camera could not start. Use Photo files instead.';
+    scanStatus(msg, 'err');
+  }
+}
+
+function stopCamera(){
+  stopScanLoop();
+  cancelAutoCapture();
+  if (camStream){
+    camStream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+    camStream = null;
+  }
+  const video = $('#cam');
+  if (video) video.srcObject = null;
+  const empty = $('#camEmpty');
+  if (empty) empty.classList.remove('hidden');
+  const chip = $('#codeChip');
+  if (chip) chip.classList.add('hidden');
+  setQualityUI(null);
+}
+
+function flashFrame(){
+  const el = $('#camFlash');
+  if (!el) return;
+  el.classList.remove('on');
+  void el.offsetWidth;
+  el.classList.add('on');
+}
+
+function canvasToBlob(canvas){
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+}
+
+function beginAutoCapture(){
+  if (autoCaptureTimer) return;
+  const el = $('#autoCount');
+  if (!el) return;
+  let left = 3;
+  const number = el.querySelector('span');
+  el.classList.remove('hidden');
+  if (number) number.textContent = String(left);
+  autoCaptureTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0){
+      clearInterval(autoCaptureTimer);
+      autoCaptureTimer = null;
+      el.classList.add('hidden');
+      if (autoCapture && camStream) captureSide();
+      return;
+    }
+    if (number) number.textContent = String(left);
+  }, 800);
+}
+
+function cancelAutoCapture(){
+  if (autoCaptureTimer){ clearInterval(autoCaptureTimer); autoCaptureTimer = null; }
+  const el = $('#autoCount');
+  if (el) el.classList.add('hidden');
+}
+
+function advanceSide(){
+  const total = scanSides.length;
+  for (let step = 1; step <= total; step++){
+    const i = (activeSide + step) % total;
+    if (!scanSides[i].frame){ activeSide = i; return; }
+  }
+}
+
+async function captureSide(){
+  if (scanBusy) return;
+  if (!camStream){ scanStatus('Start the camera first, or use Photo files.', 'err'); return; }
+  const side = currentSide();
+  if (!side) return;
+  scanBusy = true;
+  try {
+    const canvas = document.createElement('canvas');
+    if (!drawVideoToCanvas(canvas, camRotation, camMirror)){
+      scanStatus('The camera is not ready yet. Give it a moment and try again.', 'err');
+      return;
+    }
+    flashFrame();
+    const quality = measureCanvas(canvas);
+    const found = await detectOnCanvas(canvas);
+    let barcode = null;
+    if (found.codes.length){
+      const code = found.codes[0];
+      const vote = noteVote(code.value, code.format);
+      barcode = {value:code.value, format:code.format, votes:vote.count};
+    }
+    const blob = await canvasToBlob(canvas);
+    if (!blob){ scanStatus('Could not capture that frame. Try again.', 'err'); return; }
+    side.frame = {
+      blob,
+      url: canvas.toDataURL('image/jpeg', 0.82),
+      quality, barcode, qr: found.qr, rotation: camRotation
+    };
+    advanceSide();
+    renderSideList();
+    updateCaptureUI();
+    if (barcode) showCodeChip(barcode.value, {count:barcode.votes}, barcode.format);
+    if (quality){
+      scanStatus(side.label + ' captured · quality ' + Math.round(quality.score)
+        + ' (' + quality.verdict + ').', quality.verdict === 'poor' ? 'err' : 'ok');
+    }
+    if (scanSides.every(s => s.frame)){
+      scanStatus('All sides captured. Press Read sides with AI, or add another side.', 'ok');
+    }
+  } finally { scanBusy = false; }
+}
+
+/* ---------- sides ---------- */
+function renderSideList(){
+  const list = $('#sideList');
+  if (!list) return;
+  list.innerHTML = scanSides.map((side, i) => {
+    const frame = side.frame;
+    const q = frame && frame.quality;
+    const sub = frame
+      ? (q ? q.verdict + ' · ' + Math.round(q.score) : 'Captured')
+      : side.hint;
+    return '<li><button class="side-row ' + (i === activeSide ? 'on ' : '') + (frame ? 'captured' : '')
+      + '" data-side="' + i + '" type="button">'
+      + '<span class="num">' + (frame ? '✓' : (i + 1)) + '</span>'
+      + '<span class="side-thumb">' + (frame
+        ? '<img src="' + frame.url + '" alt="" />'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><circle cx="12" cy="9" r="2"></circle><path d="M8 17h8"></path></svg>')
+      + '</span>'
+      + '<span class="side-meta"><b>' + esc(side.label) + '</b><small>' + esc(sub) + '</small></span>'
+      + '<span class="side-state">' + (frame ? 'Retake' : 'Capture') + '</span>'
+      + '</button></li>';
+  }).join('');
+  $$('#sideList .side-row').forEach(btn => btn.onclick = () => {
+    activeSide = Number(btn.dataset.side);
+    renderSideList();
+    updateCaptureUI();
+  });
+}
+
+function updateCaptureUI(){
+  const side = currentSide();
+  const captured = scanSides.filter(s => s.frame).length;
+  const progress = $('#sideProgress');
+  if (progress) progress.textContent = captured + ' of ' + scanSides.length;
+  const bar = $('#sideBar');
+  if (bar) bar.style.width = scanSides.length ? (captured / scanSides.length * 100) + '%' : '0%';
+  if (side){
+    const hint = $('#camHint');
+    if (hint) hint.innerHTML = '<b>' + esc(side.label) + '</b> · ' + esc(side.hint);
+    const capture = $('#btnCapture');
+    if (capture) capture.textContent = (side.frame ? 'Retake ' : 'Capture ') + side.label.toLowerCase();
+  }
+  const finish = $('#btnFinishScan');
+  if (finish){
+    finish.disabled = captured === 0;
+    finish.textContent = 'Read ' + captured + ' side' + (captured === 1 ? '' : 's') + ' with AI';
+  }
+  const add = $('#btnAddSide');
+  if (add) add.disabled = scanSides.length >= SCAN_MAX_SIDES;
+  const rotate = $('#rotateLabel');
+  if (rotate) rotate.textContent = camRotation + '°' + (camMirror ? ' · mirrored' : '');
+}
+
+function addSide(){
+  if (scanSides.length >= SCAN_MAX_SIDES){ toast('Eight sides is the limit for one scan.'); return; }
+  const n = scanSides.length + 1;
+  scanSides.push({key:'side' + n, label:'Side ' + n, hint:'Any other face, label or leaflet'});
+  activeSide = scanSides.length - 1;
+  renderSideList();
+  updateCaptureUI();
+}
+
+/* ---------- photo queue ---------- */
+function photoLabel(index){
+  return SCAN_SIDE_OPTIONS[index] || ('Side ' + (index + 1));
+}
+
+function loadImage(url){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not read that image'));
+    img.src = url;
+  });
+}
+
+async function inspectPhoto(entry){
+  try {
+    const img = await loadImage(entry.url);
+    const canvas = document.createElement('canvas');
+    const max = 1400;
+    const scale = Math.min(1, max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+    canvas.width = Math.max(1, Math.round((img.naturalWidth || 1) * scale));
+    canvas.height = Math.max(1, Math.round((img.naturalHeight || 1) * scale));
+    const ctx = canvas.getContext('2d', {willReadFrequently:true});
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    entry.quality = measureCanvas(canvas);
+    const found = await detectOnCanvas(canvas);
+    if (found.codes.length){
+      entry.barcode = {value:found.codes[0].value, format:found.codes[0].format, votes:1};
+    }
+    entry.qr = found.qr;
+  } catch {
+    entry.quality = null;
+  } finally {
+    entry.busy = false;
+  }
+}
+
+async function addPhotoFiles(files){
+  const list = Array.from(files || []);
+  if (!list.length) return;
+  for (const file of list){
+    if (!String(file.type || '').startsWith('image/')){ toast((file.name || 'That file') + ' is not an image'); continue; }
+    if (file.size > 25 * 1024 * 1024){ toast((file.name || 'That file') + ' is larger than 25 MB'); continue; }
+    if (scanPhotoQueue.length >= SCAN_MAX_SIDES){ toast('Eight photos is the limit for one scan.'); break; }
+    const entry = {
+      id: ++photoSeq, file, url: URL.createObjectURL(file),
+      label: photoLabel(scanPhotoQueue.length), quality:null,
+      barcode:null, qr:[], rotation:0, busy:true
+    };
+    scanPhotoQueue.push(entry);
+    renderPhotoGrid();
+    await inspectPhoto(entry);
+  }
+  renderPhotoGrid();
+}
+
+function renderPhotoGrid(){
+  const grid = $('#photoGrid');
+  if (!grid) return;
+  grid.innerHTML = scanPhotoQueue.map((p, i) => {
+    const qClass = p.quality && p.quality.verdict !== 'good' ? p.quality.verdict : '';
+    const qText = p.busy ? 'reading…' : p.quality
+      ? Math.round(p.quality.score) + ' · ' + p.quality.verdict : 'no score';
+    return '<div class="photo-card" data-photo="' + p.id + '">'
+      + '<button class="pc-x" type="button" data-remove="' + p.id + '" aria-label="Remove photo ' + (i + 1) + '">×</button>'
+      + '<div class="pc-top"><span class="pc-q ' + qClass + '">' + esc(qText) + '</span></div>'
+      + '<img src="' + p.url + '" alt="Photo ' + (i + 1) + ' of the pack" />'
+      + '<select data-label="' + p.id + '" aria-label="Which side is this?">'
+      + SCAN_SIDE_OPTIONS.map(l => '<option' + (l === p.label ? ' selected' : '') + '>' + esc(l) + '</option>').join('')
+      + '</select>'
+      + (p.barcode ? '<div class="pc-code">' + esc(p.barcode.value) + ' · ' + esc(p.barcode.format) + '</div>'
+        : p.qr.length ? '<div class="pc-code">QR payload read</div>' : '')
+      + '</div>';
+  }).join('');
+  const read = $('#btnReadPhotos');
+  if (read){
+    read.disabled = !scanPhotoQueue.length || scanPhotoQueue.some(p => p.busy);
+    read.textContent = 'Read ' + scanPhotoQueue.length + ' photo' + (scanPhotoQueue.length === 1 ? '' : 's') + ' with AI';
+  }
+  const clear = $('#btnClearPhotos');
+  if (clear) clear.disabled = !scanPhotoQueue.length;
+}
+
+function clearPhotoQueue(){
+  scanPhotoQueue.forEach(p => { try { URL.revokeObjectURL(p.url); } catch {} });
+  scanPhotoQueue = [];
+  renderPhotoGrid();
+}
+
+/* ---------- multi-side read ---------- */
+async function runMultiScan(frames, source){
+  if (!frames.length) return;
+  const pressed = source === 'photos' ? $('#btnReadPhotos') : $('#btnFinishScan');
+  const label = pressed ? pressed.textContent : '';
+  if (pressed){ pressed.disabled = true; pressed.innerHTML = '<span class="spin"></span> Reading sides'; }
+  scanStatus('Reading ' + frames.length + ' side' + (frames.length === 1 ? '' : 's')
+    + ' — this can take a few seconds…', 'ok');
+  try {
+    const fd = new FormData();
+    frames.forEach((f, i) => fd.append('files', f.blob, f.filename || ('side-' + (i + 1) + '.jpg')));
+    fd.append('sides', JSON.stringify(frames.map((f, i) => f.label || ('Side ' + (i + 1)))));
+    fd.append('barcodes', JSON.stringify(frames.map(f => f.barcode
+      ? {value:f.barcode.value, format:f.barcode.format, votes:f.barcode.votes || 1} : null)));
+    fd.append('qr', JSON.stringify(frames.map(f => f.qr || [])));
+    fd.append('rotations', JSON.stringify(frames.map(f => f.rotation || 0)));
+    const r = await fetch('/api/scan/multi', {method:'POST', body:fd});
+    const body = await r.json().catch(() => ({detail:'The scan response could not be read.'}));
+    if (!r.ok) throw new Error(body.detail || ('Scan failed (HTTP ' + r.status + ')'));
+    closeScanner();
+    resetScanSession();
+    await applyScanResult(body);
+  } catch (err){
+    scanStatus(err.message || 'The scan could not be read. Try again with clearer frames.', 'err');
+    toast(err.message || 'Scan failed');
+    if (pressed){ pressed.disabled = false; pressed.textContent = label; }
+  }
+}
+
+async function applyScanResult(out){
+  const merged = out.merged || {};
+  state.scanEvidence = out;
+  state.caseId = null;
+  fillForm(merged);
+  $$('#flags input').forEach(i => i.checked = false);
+  const pack = Object.assign(formData(), merged, {flags: []});
+  try {
+    let assessment;
+    if (merged.nafdac_number){
+      assessment = await api('/api/check', {method:'POST', body:JSON.stringify(pack)});
+    } else if (merged.barcode){
+      assessment = await api('/api/barcode', {method:'POST', body:JSON.stringify(pack)});
+    } else {
+      assessment = await api('/api/check', {method:'POST', body:JSON.stringify(pack)});
+    }
+    state.assessment = assessment;
+    renderAssessment(assessment);
+    goTab('check');
+    const n = out.frames_read || 0;
+    toast('Read ' + n + ' side' + (n === 1 ? '' : 's') + ' · ' + readerLabel(out));
+  } catch (err){
+    state.scanEvidence = null;
+    toast(err.message || 'The fields were read, but the check failed.');
+    scanStatus(err.message || 'The fields were read, but the check failed.', 'err');
+  }
+}
+
+function scanEvidenceHtml(ev){
+  if (!ev) return '';
+  const sides = (ev.sides || []).map((s, i) => {
+    const q = s.quality || {};
+    const ex = s.extraction || {};
+    const bits = [];
+    if (ex.product_name) bits.push(ex.product_name);
+    if (ex.exp_date) bits.push('exp ' + ex.exp_date);
+    if (ex.batch) bits.push('batch ' + ex.batch);
+    if (s.barcode && s.barcode.value) bits.push('code ' + s.barcode.value);
+    if (s.qr && s.qr.length) bits.push('QR read');
+    const verdict = q.verdict || 'unknown';
+    const score = typeof q.score === 'number' ? Math.round(q.score) : '–';
+    return '<div class="ev-side ' + esc(verdict) + '">'
+      + '<span class="ev-dot"></span>'
+      + '<div><b>' + esc(s.label || ('Side ' + (i + 1))) + '</b>'
+      + '<small>' + (s.error ? 'Not read: ' + esc(String(s.error).slice(0, 90))
+        : esc(bits.join(' · ') || 'No text found')) + '</small></div>'
+      + '<span class="ev-q">' + score + '</span></div>';
+  }).join('');
+
+  const conflicts = (ev.conflicts || []).map(c => {
+    const others = (c.values || []).filter(v => v.value !== c.chosen)
+      .map(v => esc(v.value) + ' (' + esc((v.sides || []).join(', ')) + ')').join('; ');
+    return '<div class="ev-conflict"><b>Disagreement on '
+      + esc(SCAN_FIELD_LABELS[c.field] || c.field) + '</b>'
+      + '<p>Vouch used <b>' + esc(c.chosen) + '</b>'
+      + (others ? '. Other reads: ' + others : '')
+      + '. Check the pack before relying on it.</p></div>';
+  }).join('');
+
+  const limits = (ev.limits || []).map(x => '<li>' + esc(x) + '</li>').join('');
+  const warnings = (ev.warnings || []).length
+    ? '<div class="ev-warn">' + ev.warnings.map(w => esc(w)).join('<br>') + '</div>' : '';
+
+  return '<div class="card scan-evidence" style="margin-bottom:18px">'
+    + '<div class="hd"><h2>Read from ' + (ev.frames_read || 0) + ' of ' + (ev.frames || 0)
+    + ' side' + (ev.frames === 1 ? '' : 's') + '</h2>'
+    + '<span class="who" style="margin-left:auto">' + esc(readerLabel(ev)) + '</span></div>'
+    + '<div class="bd">'
+    + '<p class="ev-coach">' + esc(ev.coach || '') + '</p>'
+    + '<div class="ev-sides">' + sides + '</div>'
+    + conflicts + warnings
+    + (limits ? '<details class="ev-limits"><summary>What this read does and does not show</summary><ul>'
+      + limits + '</ul></details>' : '')
+    + '</div></div>';
+}
+
+/* ---------- session + modes ---------- */
+function resetScanSession(){
+  cancelAutoCapture();
+  scanSides = SCAN_SIDE_DEFS.map(d => Object.assign({}, d));
+  activeSide = 0;
+  liveVotes = new Map();
+  lastProbe = null;
+  camRotation = 0;
+  applyPreviewRotation();
+  const chip = $('#codeChip');
+  if (chip) chip.classList.add('hidden');
+  setQualityUI(null);
+  renderSideList();
+  updateCaptureUI();
+  clearPhotoQueue();
+}
+
 function openScanner(mode){
   const m = $('#scanModal');
   if (!m) return;
   if (typeof closeVoice === 'function') closeVoice();
+  const kept = scanSides.some(s => s.frame) || scanPhotoQueue.length > 0;
   m.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  if (!scanSides.length) resetScanSession();
   setScanMode(mode || 'camera');
+  if (kept) scanStatus('Previous captures kept. Press Start over to begin a new pack.', '');
 }
 
 function closeScanner(){
@@ -1296,98 +2257,9 @@ function setScanMode(mode){
   else stopCamera();
 }
 
-async function startCamera(){
-  const video = $('#cam');
-  const empty = $('#camEmpty');
-  if (!video) return;
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    scanStatus('This browser cannot open a camera here. Use Photo file, or open Vouch on localhost/HTTPS.', 'err');
-    return;
-  }
-  stopCamera();
-  try {
-    scanStatus('Asking for camera permission…', '');
-    camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: {ideal: camFacing}, width: {ideal: 1280}, height: {ideal: 960} },
-      audio: false
-    });
-    video.srcObject = camStream;
-    await video.play().catch(()=>{});
-    if (empty) empty.classList.add('hidden');
-    scanStatus('Camera ready. Fill the frame with the label, then capture.', 'ok');
-    startBarcodeDetection(video);
-  } catch (err) {
-    stopCamera();
-    const msg = err && (err.name === 'NotAllowedError')
-      ? 'Camera permission was blocked. Allow it in the browser, or use Photo file instead.'
-      : err && err.name === 'NotFoundError'
-        ? 'No camera was found on this device. Use Photo file instead.'
-        : 'The camera could not start. Use Photo file instead.';
-    scanStatus(msg, 'err');
-  }
-}
-
-function stopCamera(){
-  scanning = false;
-  if (barcodeTimer) { clearInterval(barcodeTimer); barcodeTimer = null; }
-  if (camStream) {
-    camStream.getTracks().forEach(t => { try { t.stop(); } catch {} });
-    camStream = null;
-  }
-  const video = $('#cam');
-  if (video) video.srcObject = null;
-  const empty = $('#camEmpty');
-  if (empty) empty.classList.remove('hidden');
-}
-
-function startBarcodeDetection(video){
-  if (!('BarcodeDetector' in window)) return;
-  let detector;
-  try {
-    detector = new window.BarcodeDetector({formats: ['ean_13','ean_8','upc_a','upc_e','code_128','qr_code']});
-  } catch {
-    try { detector = new window.BarcodeDetector(); } catch { return; }
-  }
-  scanning = true;
-  barcodeTimer = setInterval(async () => {
-    if (!scanning || !camStream) return;
-    try {
-      const codes = await detector.detect(video);
-      if (codes && codes.length && codes[0].rawValue) {
-        scanning = false;
-        clearInterval(barcodeTimer); barcodeTimer = null;
-        const value = String(codes[0].rawValue).replace(/\D/g, '');
-        if (value.length >= 8) {
-          $('#scanBarcode').value = value;
-          stopCamera();
-          scanStatus('Barcode detected: ' + value, 'ok');
-          lookupBarcode(value);
-        }
-      }
-    } catch {}
-  }, 700);
-}
-
-async function capturePhoto(){
-  const video = $('#cam');
-  if (!video || !video.videoWidth) {
-    scanStatus('The camera is not running yet. Press Start camera first.', 'err');
-    return;
-  }
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-  if (!blob) { scanStatus('Could not capture a frame. Try again.', 'err'); return; }
-  stopCamera();
-  await readPhoto(blob, 'scan.jpg');
-}
-
 async function lookupBarcode(code){
   const digits = String(code || '').replace(/\D/g, '');
-  if (![8, 12, 13, 14].includes(digits.length)) {
+  if (![8, 12, 13, 14].includes(digits.length)){
     scanStatus('A barcode is 8, 12, 13 or 14 digits. Check the number and try again.', 'err');
     return;
   }
@@ -1395,19 +2267,22 @@ async function lookupBarcode(code){
   try {
     const payload = Object.assign({}, formData(), {barcode: digits});
     const out = await api('/api/barcode', {method:'POST', body: JSON.stringify(payload)});
-    suppressHistory = false;
-    fillForm(out.assessment.input || {barcode: digits, product_name: (out.barcode||{}).name || ''});
+    state.scanEvidence = null;
+    fillForm(out.assessment.input || {barcode: digits, product_name: (out.barcode || {}).name || ''});
     $$('#flags input').forEach(i => i.checked = false);
     state.assessment = out.assessment;
+    state.caseId = null;
     renderAssessment(out.assessment);
+    resetScanSession();
     closeScanner();
     goTab('check');
     toast('Barcode ' + digits + ' checked');
-  } catch (e) {
+  } catch (e){
     scanStatus(e.message || 'Barcode lookup failed.', 'err');
   }
 }
 
+/* ---------- wiring ---------- */
 $('#btnScanTop').onclick = () => openScanner('camera');
 $('#scanClose').onclick = closeScanner;
 $('#scanModal').onclick = (e) => { if (e.target.id === 'scanModal') closeScanner(); };
@@ -1418,21 +2293,61 @@ $('#btnCamStart').onclick = startCamera;
 $('#btnCamStop').onclick = () => { stopCamera(); scanStatus('Camera stopped.', ''); };
 $('#btnCamFlip').onclick = async () => {
   camFacing = camFacing === 'environment' ? 'user' : 'environment';
+  camMirror = camFacing === 'user';
   await startCamera();
 };
-$('#btnCapture').onclick = capturePhoto;
+$('#btnCapture').onclick = captureSide;
+$('#btnFinishScan').onclick = () => {
+  const frames = scanSides.filter(s => s.frame).map(s => ({
+    blob: s.frame.blob, label: s.label, barcode: s.frame.barcode,
+    qr: s.frame.qr, rotation: s.frame.rotation
+  }));
+  runMultiScan(frames, 'camera');
+};
+$('#btnAddSide').onclick = addSide;
+$('#btnResetScan').onclick = () => {
+  resetScanSession();
+  scanStatus('Scan cleared. Start with the front panel.', '');
+};
+$('#btnRotateL').onclick = () => {
+  camRotation = (camRotation + 270) % 360;
+  applyPreviewRotation();
+  updateCaptureUI();
+};
+$('#btnRotateR').onclick = () => {
+  camRotation = (camRotation + 90) % 360;
+  applyPreviewRotation();
+  updateCaptureUI();
+};
+$('#btnRotateReset').onclick = () => {
+  camRotation = 0;
+  applyPreviewRotation();
+  updateCaptureUI();
+};
+$('#autoCapture').onchange = (e) => {
+  autoCapture = e.target.checked;
+  if (!autoCapture) cancelAutoCapture();
+  scanStatus(autoCapture ? 'Auto-capture on. Hold the pack steady in good light.' : 'Auto-capture off.', '');
+};
 
 $('#btnChooseFile').onclick = () => {
-  $('#fileInput').removeAttribute('capture');
-  $('#fileInput').click();
+  $('#scanFiles').removeAttribute('capture');
+  $('#scanFiles').click();
 };
 $('#btnTakePhoto').onclick = () => {
-  $('#fileInput').setAttribute('capture', 'environment');
-  $('#fileInput').click();
+  $('#scanFiles').setAttribute('capture', 'environment');
+  $('#scanFiles').click();
 };
+$('#scanFiles').onchange = async (e) => {
+  const files = e.target.files;
+  await addPhotoFiles(files);
+  e.target.value = '';
+};
+$('#btnReadPhotos').onclick = readPhotoQueue;
+$('#btnClearPhotos').onclick = () => { clearPhotoQueue(); scanStatus('Photos cleared.', ''); };
 
 const dropZone = $('#dropZone');
-if (dropZone) {
+if (dropZone){
   ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, (e) => {
     e.preventDefault(); dropZone.classList.add('over');
   }));
@@ -1440,16 +2355,56 @@ if (dropZone) {
     e.preventDefault(); dropZone.classList.remove('over');
   }));
   dropZone.addEventListener('drop', (e) => {
-    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) { setScanMode('upload'); readPhoto(f, f.name); }
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length){ setScanMode('upload'); addPhotoFiles(files); }
   });
 }
 
+$('#photoGrid').addEventListener('change', (e) => {
+  const id = Number(e.target.dataset.label);
+  if (!id) return;
+  const entry = scanPhotoQueue.find(p => p.id === id);
+  if (entry) entry.label = e.target.value;
+});
+$('#photoGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-remove]');
+  if (!btn) return;
+  const id = Number(btn.dataset.remove);
+  const idx = scanPhotoQueue.findIndex(p => p.id === id);
+  if (idx >= 0){
+    try { URL.revokeObjectURL(scanPhotoQueue[idx].url); } catch {}
+    scanPhotoQueue.splice(idx, 1);
+    renderPhotoGrid();
+  }
+});
+
 $('#btnBarcodeLookup').onclick = () => lookupBarcode($('#scanBarcode').value);
 $('#scanBarcode').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); lookupBarcode($('#scanBarcode').value); }
+  if (e.key === 'Enter'){ e.preventDefault(); lookupBarcode($('#scanBarcode').value); }
 });
-$('#btnBarcodeCamera').onclick = () => { setScanMode('camera'); };
+$('#btnBarcodeCamera').onclick = () => setScanMode('camera');
+
+function readPhotoQueue(){
+  if (!scanPhotoQueue.length){
+    scanStatus('Add at least one photo first.', 'err');
+    return;
+  }
+  if (scanPhotoQueue.some(p => p.busy)){
+    scanStatus('Still measuring the photos. Give it a moment.', '');
+    return;
+  }
+  const frames = scanPhotoQueue.map(p => ({
+    blob: p.file, label: p.label, barcode: p.barcode, qr: p.qr, rotation: 0
+  }));
+  runMultiScan(frames, 'photos');
+}
+
+renderSideList();
+updateCaptureUI();
+setQualityUI(null);
+applyPreviewRotation();
+
+
 
 /* history + settings controls */
 $('#historySearch').addEventListener('input', (e) => {
@@ -1676,6 +2631,7 @@ async function reopenScan(idx){
   if (!entry) return;
   suppressHistory = true;
   try {
+    state.scanEvidence = null;
     fillForm(entry.input || {});
     $$('#flags input').forEach(i => i.checked = false);
     $('#btnCheck').disabled = true;
@@ -1801,6 +2757,8 @@ function renderAssessment(a, packMeta){
       <h1>${esc(a.headline)}</h1>
       <p>${esc(band.label)} · ${a.checks.filter(x=>x.state!=='not_applicable').length} checks run</p>
     </div>
+
+    ${scanEvidenceHtml(state.scanEvidence)}
 
     <div class="ai">
       <div class="hd">
