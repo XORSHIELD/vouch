@@ -1,0 +1,6 @@
+s=open('ui/index.html',encoding='utf-8').read()
+print(len(s))
+print(s.count('Vouch AI'))
+print(s.count('name="barcode"'))
+print(s.count('/api/explain'))
+print(s.count('Food, drink'))

@@ -733,9 +733,7 @@ function renderAssessment(a, packMeta){
 
   $('#btnCase').onclick = () => openCase(formData());
 
-  // Network signal: has anyone else reported this number or batch? This is the
-  // only check that gets stronger the more people use the product.
-  const naf = port.nafdac_number || reg.nafdac || '';
+  startExplain(a);
   if (naf || port.batch) {
     api(`/api/cluster?nafdac=${encodeURIComponent(naf)}&batch=${encodeURIComponent(port.batch||'')}`)
       .then(cl => {
