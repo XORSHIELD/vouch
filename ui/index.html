@@ -509,6 +509,13 @@
   @keyframes vpulse{0%{box-shadow:0 0 0 0 rgba(198,40,40,.34)}70%{box-shadow:0 0 0 15px rgba(198,40,40,0)}100%{box-shadow:0 0 0 0 rgba(198,40,40,0)}}
   .voice-hint{font-size:12.5px;color:var(--ink-3);line-height:1.55;min-height:38px}
   .voice-hint b{color:var(--ink-2)}
+  .voice-hint .linkish{border:0;background:none;padding:0;margin:0;font:inherit;font-weight:700;color:var(--green);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+  .voice-meter{display:flex;align-items:center;gap:8px;margin:0 14px 8px;font-size:10.5px;color:var(--ink-3)}
+  .voice-meter.hidden{display:none}
+  .voice-meter i{flex:1;height:5px;border-radius:999px;background:var(--line);overflow:hidden;display:block}
+  .voice-meter b{display:block;height:100%;width:0;border-radius:999px;background:var(--ok);transition:width .1s linear}
+  .voice-meter.low b{background:var(--err)}
+  .voice-meter em{font-style:normal;font-family:var(--mono);font-size:10px;min-width:34px;text-align:right}
   .voice-stop{margin-left:auto;align-self:flex-start;border:1px solid var(--line);background:#fff;color:var(--ink-3);border-radius:8px;padding:6px 9px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
   .voice-stop:hover{background:var(--sage);color:var(--green)}
   .voice-stop[disabled]{opacity:.45;cursor:not-allowed}
@@ -1271,8 +1278,11 @@
     <button class="voice-mic" id="voiceMic" type="button" aria-label="Start listening" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
     </button>
-    <div class="voice-hint" id="voiceHint">Press the mic and ask about this pack. You can also say <b>“open a case”</b> or <b>“read my result”</b>.</div>
+    <div class="voice-hint" id="voiceHint">Press the mic and ask about this pack. You can say <b>“open a case”</b> or <b>“read my result”</b>. <button type="button" class="linkish" id="voiceMicTest">Test microphone</button></div>
     <button class="voice-stop" id="voiceStop" type="button" disabled>Stop audio</button>
+  </div>
+  <div class="voice-meter hidden" id="voiceMeter" aria-hidden="true">
+    <span>Input</span><i><b id="voiceMeterBar"></b></i><em id="voiceMeterNum">–</em>
   </div>
   <p class="voice-privacy">Speech recognition is provided by your browser and may send audio to the browser vendor. Vouch does not record or store audio. Answers come only from the checks shown here.</p>
 </div>
@@ -3075,6 +3085,17 @@ let voiceBooted = false;
 let voiceGotFinal = false;
 let voiceSeq = 0;
 let voiceInputError = false;
+let voiceStream = null;
+let voiceAudio = null;
+let voiceMeterTimer = 0;
+let voicePeak = 0;
+let voiceStarting = false;
+let voiceHeard = false;
+let voiceSilence = null;
+let voiceHardStop = null;
+let voiceTesting = false;
+let voiceTestTimer = null;
+let voiceManualStop = false;
 
 try {
   const saved = JSON.parse(localStorage.getItem(VKEY) || '{}');
@@ -3337,34 +3358,222 @@ async function voiceAsk(text){
   }
 }
 
-function voiceStartRec(){
+/* ---------- microphone preflight + input meter ----------
+   SpeechRecognition opens its own capture. This separate stream exists only to
+   prove that the microphone is actually sending sound, so "the mic is not
+   hearing me" can be told apart from "the speech service failed". */
+function voiceMeterParts(){
+  return {
+    box: $('#voiceMeter'),
+    bar: $('#voiceMeterBar'),
+    num: $('#voiceMeterNum')
+  };
+}
+
+function voiceShowMeter(on){
+  const {box, bar, num} = voiceMeterParts();
+  if (box) box.classList.toggle('hidden', !on);
+  if (!on){
+    if (bar) bar.style.width = '0%';
+    if (num) num.textContent = '–';
+    if (box) box.classList.remove('low');
+  }
+}
+
+function voiceStopAudio(){
+  if (voiceMeterTimer){ clearTimeout(voiceMeterTimer); voiceMeterTimer = 0; }
+  if (voiceSilence){ clearTimeout(voiceSilence); voiceSilence = null; }
+  if (voiceHardStop){ clearTimeout(voiceHardStop); voiceHardStop = null; }
+  if (voiceAudio){
+    try { voiceAudio.close(); } catch {}
+    voiceAudio = null;
+  }
+  if (voiceStream){
+    voiceStream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+    voiceStream = null;
+  }
+  voiceShowMeter(false);
+}
+
+async function voiceOpenMic(){
+  if (voiceStream) return voiceStream;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    const err = new Error('This browser cannot open a microphone here.');
+    err.name = 'NotSupportedError';
+    throw err;
+  }
+  voiceStream = await navigator.mediaDevices.getUserMedia({
+    audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}
+  });
+  return voiceStream;
+}
+
+async function voiceStartMeter(){
+  try {
+    const stream = await voiceOpenMic();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    voiceAudio = new Ctx();
+    if (voiceAudio.state === 'suspended') await voiceAudio.resume().catch(() => {});
+    const source = voiceAudio.createMediaStreamSource(stream);
+    const analyser = voiceAudio.createAnalyser();
+    analyser.fftSize = 1024;
+    source.connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+    voicePeak = 0;
+    voiceShowMeter(true);
+    const tick = () => {
+      if (!voiceAudio) return;
+      analyser.getFloatTimeDomainData(buf);
+      let peak = 0, sum = 0;
+      for (const v of buf){
+        const a = Math.abs(v);
+        if (a > peak) peak = a;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / buf.length);
+      voicePeak = Math.max(voicePeak, peak);
+      const pct = Math.min(100, Math.round(rms * 620));
+      const {box, bar, num} = voiceMeterParts();
+      if (bar) bar.style.width = Math.max(2, pct) + '%';
+      if (num) num.textContent = pct + '%';
+      if (box) box.classList.toggle('low', voiceListening && voicePeak < 0.01);
+      voiceMeterTimer = setTimeout(tick, 90);
+    };
+    tick();
+  } catch {
+    /* The recognition path reports the real error; the meter is best effort. */
+  }
+}
+
+function voiceMicError(err){
+  const name = (err && err.name) || '';
+  if (name === 'NotAllowedError' || name === 'SecurityError'){
+    return 'Microphone permission is blocked. Allow it for this site in the browser, and in Windows privacy settings, then try again. You can type below now.';
+  }
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError'){
+    return 'No microphone was found. Plug one in, pick an input in Windows sound settings, or type below.';
+  }
+  if (name === 'NotReadableError' || name === 'TrackStartError'){
+    return 'The microphone is busy in another app. Close the app using it, then press the mic again — or type below.';
+  }
+  if (name === 'NotSupportedError'){
+    return 'This browser cannot open a microphone here. Type below, or open Vouch in Chrome or Edge.';
+  }
+  return 'The microphone could not start. Check Windows privacy settings and the selected input device, or type below.';
+}
+
+function voiceTestLink(){
+  return ' <button type="button" class="linkish" id="voiceMicTest">Test microphone</button>';
+}
+
+function voiceArmSilence(ms){
+  if (voiceSilence) clearTimeout(voiceSilence);
+  voiceSilence = setTimeout(() => {
+    if (voiceListening && voiceRec){
+      try { voiceRec.stop(); } catch {}
+    }
+  }, ms);
+}
+
+async function voiceTestMic(){
+  if (voiceListening && voiceRec){ try { voiceRec.stop(); } catch {} }
+  voiceStopAudio();
+  voiceTesting = true;
+  if (voiceTestTimer){ clearTimeout(voiceTestTimer); voiceTestTimer = null; }
+  voiceInputError = true;
+  voiceSetStatus('Testing microphone…');
+  voiceHint.textContent = 'Speak normally for four seconds — I am measuring the input level.';
+  try {
+    await voiceOpenMic();
+    await voiceStartMeter();
+  } catch (err){
+    voiceTesting = false;
+    voiceHint.textContent = voiceMicError(err);
+    voiceSetStatus('Microphone blocked');
+    return;
+  }
+  voiceTestTimer = setTimeout(() => {
+    voiceTesting = false;
+    voiceTestTimer = null;
+    const peak = voicePeak;
+    voiceStopAudio();
+    const pct = Math.min(100, Math.round(peak * 620));
+    if (peak < 0.01){
+      voiceHint.innerHTML = '<b>No sound reached the browser.</b> Windows may be blocking the microphone or another input device is selected. Allow desktop apps in Windows Settings → Privacy &amp; security → Microphone, pick the right device in Settings → System → Sound → Input, then try again. You can type below.';
+      voiceSetStatus('No input detected');
+    } else if (peak < 0.05){
+      voiceHint.innerHTML = 'The microphone is sending a very quiet signal (' + pct + '%). Move closer or raise the input level in Windows, then press the mic.';
+      voiceSetStatus('Mic is very quiet');
+    } else {
+      voiceHint.innerHTML = 'The microphone is sending sound (' + pct + '%). If words still do not appear, the browser’s speech service is the problem, not your mic. Chrome or Edge handle it best; you can type below.';
+      voiceSetStatus('Mic works');
+    }
+  }, 4000);
+}
+
+voiceHint.addEventListener('click', (e) => {
+  if (e.target.closest('#voiceMicTest')) voiceTestMic();
+});
+
+async function voiceStartRec(){
+  if (voiceStarting) return;
+  if (voiceListening && voiceRec){
+    voiceManualStop = true;
+    voiceSetStatus('Stopping…');
+    try { voiceRec.stop(); } catch {}
+    return;
+  }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR){
-    voiceHint.textContent = 'Voice input is not available in this browser. Type your question below, or open Vouch in Edge or Chrome.';
+    voiceHint.innerHTML = 'Voice input is not available in this browser. Type your question below, or open Vouch in Chrome or Edge.';
     voiceMic.disabled = true;
     voiceSetStatus('Type instead');
     return;
   }
-  if (voiceListening){
-    try { voiceRec.stop(); } catch {}
+  voiceStarting = true;
+  if (voiceTesting){
+    voiceTesting = false;
+    if (voiceTestTimer){ clearTimeout(voiceTestTimer); voiceTestTimer = null; }
+    voiceStopAudio();
+  }
+  voicePeak = 0;
+  stopVoiceSpeech();
+  voiceSetStatus('Opening microphone…');
+  if (voiceRec){ try { voiceRec.abort(); } catch {} }
+  try {
+    await voiceOpenMic();
+  } catch (err){
+    voiceStarting = false;
+    voiceInputError = true;
+    voiceHint.innerHTML = esc(voiceMicError(err)) + voiceTestLink();
+    voiceSetStatus('Microphone blocked');
     return;
   }
-  stopVoiceSpeech();
-  if (voiceRec){ try { voiceRec.abort(); } catch {} }
+
   voiceGotFinal = false;
+  voiceHeard = false;
+  voiceInputError = false;
+  voiceManualStop = false;
   const rec = new SR();
   voiceRec = rec;
   rec.lang = voiceLang;
   rec.interimResults = true;
-  rec.continuous = false;
+  rec.continuous = true;
   rec.maxAlternatives = 1;
 
   rec.onstart = () => {
+    voiceStarting = false;
     voiceInputError = false;
     voiceListening = true;
     voiceMicState();
     voiceSetStatus('Listening…', 'listening');
     voiceHint.innerHTML = 'Listening. Ask about this pack, or say <b>“open a case”</b>.';
+    voiceStartMeter();
+    voiceArmSilence(9000);
+    voiceHardStop = setTimeout(() => {
+      if (voiceListening && voiceRec){ try { voiceRec.stop(); } catch {} }
+    }, 25000);
   };
   rec.onresult = (ev) => {
     let interim = '';
@@ -3374,52 +3583,87 @@ function voiceStartRec(){
       if (r.isFinal) finalText += r[0].transcript;
       else interim += r[0].transcript;
     }
+    if (interim || finalText){
+      voiceHeard = true;
+      voiceArmSilence(7000);
+    }
     if (interim) voiceHint.innerHTML = '“' + esc(interim.trim()) + '”';
     if (finalText.trim()){
       voiceGotFinal = true;
       voiceHint.innerHTML = 'You said: <b>“' + esc(finalText.trim()) + '”</b>';
+      try { rec.stop(); } catch {}
       voiceAsk(finalText.trim());
     }
   };
   rec.onerror = (ev) => {
+    voiceStarting = false;
     voiceListening = false;
     voiceMicState();
     const err = (ev && ev.error) || '';
     if (err === 'language-not-supported' && voiceLang !== 'en-GB'){
       voiceLang = 'en-GB';
-      voiceHint.textContent = 'That language is not available here; trying British English.';
+      voiceInputError = false;
+      voiceHint.textContent = 'Nigerian English is not available here; trying British English.';
       setTimeout(() => { if (voiceOpen && !voiceListening) voiceStartRec(); }, 250);
       return;
     }
     if (err === 'aborted'){
+      voiceInputError = true;
       voiceHint.textContent = 'Listening stopped.';
       voiceSetStatus('Ready');
       return;
     }
     voiceInputError = true;
-    voiceHint.textContent =
-      err === 'not-allowed' || err === 'service-not-allowed'
-        ? 'Microphone permission is blocked. Allow it in the browser settings, or type your question below.'
-        : err === 'no-speech'
-          ? 'I did not hear anything. Press the mic and try again.'
-          : err === 'audio-capture'
-            ? 'No microphone was found. Type your question below.'
-            : err === 'network'
-              ? 'Speech recognition needs a connection and it is unavailable. Type your question below.'
-              : 'Speech recognition failed. Type your question below.';
+    if (err === 'not-allowed' || err === 'service-not-allowed'){
+      voiceHint.innerHTML = 'The browser blocked speech recognition. Allow the microphone for this site, then try again — or type below.' + voiceTestLink();
+    } else if (err === 'no-speech'){
+      voiceHint.innerHTML = (voicePeak >= 0.01
+        ? 'The mic is sending sound, but the browser heard no words. Move closer, cut background noise, and try again.'
+        : 'I did not hear anything. Check that the right microphone is selected, then try again.') + voiceTestLink();
+    } else if (err === 'audio-capture'){
+      voiceHint.innerHTML = 'No microphone was found. Plug one in or pick an input in Windows sound settings, or type below.' + voiceTestLink();
+    } else if (err === 'network'){
+      voiceHint.innerHTML = 'The browser’s speech service could not be reached — this is separate from your microphone. Check the connection, or type below.' + voiceTestLink();
+    } else {
+      voiceHint.innerHTML = 'Speech recognition failed' + (err ? ' (' + esc(err) + ')' : '') + '. You can type below.' + voiceTestLink();
+    }
     voiceSetStatus('Voice input problem');
   };
   rec.onend = () => {
+    voiceStarting = false;
     voiceListening = false;
     voiceMicState();
-    if (voiceOpen && !voiceSpeaking && !voiceInputError) voiceSetStatus('Ready');
+    voiceStopAudio();
+    const manual = voiceManualStop;
+    voiceManualStop = false;
+    if (manual && !voiceGotFinal){
+      voiceInputError = true;
+      voiceHint.textContent = 'Listening stopped. Press the mic when you are ready.';
+      voiceSetStatus('Ready');
+      if (voiceStopBtn) voiceStopBtn.disabled = !voiceSpeaking;
+      return;
+    }
+    if (voiceGotFinal){
+      if (voiceOpen && !voiceSpeaking) voiceSetStatus('Ready');
+      return;
+    }
+    if (!voiceInputError && voiceOpen){
+      voiceInputError = true;
+      voiceHint.innerHTML = (voiceHeard
+        ? 'I heard sound but no complete words. Try again a little closer to the mic.'
+        : 'I did not hear any words. Check the input level and the selected microphone, then try again.') + voiceTestLink();
+      voiceSetStatus('Nothing heard');
+    }
     if (voiceStopBtn) voiceStopBtn.disabled = !voiceSpeaking;
   };
   try { rec.start(); }
   catch (e){
+    voiceStarting = false;
     voiceListening = false;
     voiceMicState();
-    voiceHint.textContent = 'The microphone could not start. Type your question below.';
+    voiceStopAudio();
+    voiceInputError = true;
+    voiceHint.innerHTML = 'The microphone could not start. Type your question below.' + voiceTestLink();
     voiceSetStatus('Voice input problem');
   }
 }
@@ -3461,7 +3705,11 @@ function closeVoice(keepSpeech){
     try { voiceRec.abort(); } catch {}
   }
   voiceListening = false;
+  voiceStarting = false;
+  voiceTesting = false;
+  if (voiceTestTimer){ clearTimeout(voiceTestTimer); voiceTestTimer = null; }
   voiceMicState();
+  voiceStopAudio();
   voicePanel.classList.add('hidden');
   voiceFab.setAttribute('aria-expanded', 'false');
   voiceOpen = false;

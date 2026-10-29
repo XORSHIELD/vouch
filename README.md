@@ -80,7 +80,9 @@ authentic.
 - A voice agent: press the mic to ask about the result, or say “read my result”,
   “what should I do next?”, “open a case”, “show my reports” or “open the product
   guide”. It uses the browser's speech recognition and speech synthesis, always
-  keeps a typed fallback, and stores no audio.
+  keeps a typed fallback, and stores no audio. A **Test microphone** control
+  measures the actual input level, so a blocked or silent mic can be told apart
+  from a browser speech service that failed.
 - A product guide, privacy/terms pages, a report form and demo auth flows.
 
 ## Tests
@@ -113,7 +115,9 @@ conflict reporting and barcode/QR consensus.
 - Voice input depends on the browser's speech service, a microphone permission
   and a connection. It can mishear local accents or product names. The spoken
   answer is only a reading of the checks on screen; the typed box gives the same
-  answers when speech is blocked or unsupported.
+  answers when speech is blocked or unsupported. If the mic hears nothing, the
+  voice panel's **Test microphone** button reports whether any audio is reaching
+  the browser and names the likely Windows or browser setting.
 - Vouch is independent. NAFDAC, FCCPC and the open product databases are data
   sources, not partners or endorsers.
 
