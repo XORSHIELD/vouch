@@ -14,7 +14,9 @@ statement of what the check does not prove.
 
 ```powershell
 cd vouch
-pip install fastapi uvicorn httpx pillow requests   # once; requests is only for smoke.py
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt   # once; requests is only for smoke.py
 python server.py                 # http://127.0.0.1:8077
 $env:VOUCH_PORT = "8091"         # optional: run on another port
 python server.py

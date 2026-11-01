@@ -1,0 +1,6 @@
+# Vouch runtime dependencies. CI installs exactly this file.
+fastapi
+uvicorn
+httpx
+pillow
+requests  # smoke.py only
