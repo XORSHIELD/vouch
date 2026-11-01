@@ -33,6 +33,7 @@ import engine  # noqa: F401  (re-exported for Assessment/PackInput users)
 import manufacturer as M
 import mas
 import registry as R
+import scan as S
 import vision
 from engine import Assessment, PackInput
 
@@ -319,6 +320,202 @@ _OPENED = re.compile(
 _LAST_MONTH = re.compile(r"\blast month\b", re.IGNORECASE)
 
 
+_PIN_USSD = re.compile(r"\*(\d{3,6})\*\d+\*([A-Z0-9]{4,20})#")
+_PIN_TO_WINDOW = re.compile(
+    r"[^0-9]{0,12}(\d[\d\s-]{3,18}\d)\s+\bto\b\s+(\d{3,6})\b")
+_PIN_LOOSE_WINDOW = re.compile(r"[^0-9]{0,24}?\bto\b\s*(\d{3,6})\b")
+_PIN_SMS_WORDS = re.compile(r"\bsms\b|\btext\b|\bsend\b", re.IGNORECASE)
+_PIN_SHORTCODE = re.compile(r"short\s?code[^\d]{0,8}(\d{3,6})",
+                            re.IGNORECASE)
+_PIN_HARD = re.compile(
+    r"\bpin\b|\bscratch\b|\bsms\b|\btext\b|\bsend\b|verif\w*|short\s?code",
+    re.IGNORECASE)
+_SCRATCH = re.compile(r"\bscratch\b|\bpin\b|verification code",
+                      re.IGNORECASE)
+
+_ASK_PIN = ("To check a scratch panel I need the PIN itself — scratch it "
+            "off and type the number here, with the shortcode printed "
+            "beside it. I'll tell you exactly what to text and help you "
+            "read the reply. I still can't declare any pack genuine from "
+            "here either way; the SMS check asks the maker's own service.")
+
+
+def _mask_runs(msg: str, values) -> str:
+    """Blank runs already claimed as a PIN/shortcode, in place.
+
+    Each value is matched literally, allowing printed separators between
+    its characters; longer values go first so a shortcode never eats a
+    piece of its own PIN.
+    """
+    for v in sorted((x for x in values if x), key=len, reverse=True):
+        pat = ("(?<![A-Z0-9])"
+               + r"[\s-]*".join(re.escape(c) for c in v)
+               + "(?![A-Z0-9])")
+        msg = re.sub(pat, lambda m: " " * len(m.group(0)), msg,
+                     flags=re.IGNORECASE)
+    return msg
+
+
+def _chat_pin(msg: str) -> tuple[str, str]:
+    """A scratch PIN + shortcode typed in chat. Label-driven, else nothing.
+
+    Labelled PINs reuse the OCR reader's rule (scan.live_pins, strong
+    reads only); SMS instructions and USSD dial strings have their own
+    shapes because the shortcode pattern for print would read the PIN's
+    own head as the shortcode.
+    """
+    msg = msg or ""
+    m = _PIN_USSD.search(msg)
+    if m:
+        return re.sub(r"[\s-]+", "", m.group(2)).upper(), m.group(1)
+    shortcode = ""
+    for sm in _PIN_SMS_WORDS.finditer(msg):
+        window = msg[sm.end():sm.end() + 48]
+        m = _PIN_TO_WINDOW.match(window)
+        if m:
+            pin = re.sub(r"[\s-]+", "", m.group(1)).upper()
+            if 4 <= len(pin) <= 20:
+                return pin, m.group(2)
+            continue
+        m = _PIN_LOOSE_WINDOW.match(window)
+        if m and not shortcode:
+            shortcode = m.group(1)
+    pin = ""
+    hard = list(_PIN_HARD.finditer(msg))
+    if hard:
+        tail = msg[hard[0].start():]
+        for hit in S.live_pins(tail):
+            if hit["strength"] == "strong" and hit["value"] != shortcode:
+                pin = hit["value"]
+                break
+    if not shortcode:
+        m = _PIN_SHORTCODE.search(msg)
+        if m:
+            shortcode = m.group(1)
+    if pin and pin == shortcode:
+        pin = ""
+    return pin, shortcode
+
+
+def _history_pin(history) -> tuple[str, str]:
+    """A PIN named earlier in the chat. Either side may carry it."""
+    pin, shortcode = "", ""
+    for h in _clean_history(history):
+        f = _extract_fields(h.get("content", ""))
+        if f.get("pin"):
+            pin = f["pin"]
+        if f.get("shortcode"):
+            shortcode = f["shortcode"]
+    return pin, shortcode
+
+
+def _mas_note(pin: str, shortcode: str) -> str:
+    """Deterministic scratch-PIN guidance. Empty when there is no PIN."""
+    if not pin:
+        return ""
+    res = mas.verify(pin, shortcode or "")
+    if res.get("connected") and res.get("verdict") == "suspicious":
+        return ("\n\nThe maker's verification service"
+                f" ({res.get('provider') or 'unknown provider'}) flags "
+                f"this PIN: {res.get('detail') or 'suspicious'}. That is "
+                "the service's statement about the PIN, not this app's. "
+                "Keep the pack, the PIN and that reply together.")
+    if res.get("connected") and res.get("verdict") == "authentic":
+        return (f"\n\n{res.get('provider') or 'The verification service'} "
+                f"replies: {res.get('detail') or 'the PIN checks out'}. "
+                "That is the service's statement about the PIN — it speaks "
+                "for the code, not for what is inside the pack.")
+    if shortcode:
+        base = (f"\n\nThat scratch panel is verifiable. Text {pin} to "
+                f"{shortcode} (free) — the maker's service replies about "
+                "that PIN. Paste its exact reply here and I'll help you "
+                "read it.")
+    else:
+        base = ("\n\nThat scratch panel is verifiable. Text the PIN to the "
+                "shortcode printed beside the panel — the maker's service "
+                "replies about that PIN. Paste its exact reply here and "
+                "I'll help you read it.")
+    if res.get("connected") and res.get("detail"):
+        base += f" (The connected service says: {res.get('detail')})"
+    return base
+
+
+_REPLY_CUE = re.compile(
+    r"\bsay\b|\bsays\b|\bsaid\b|\breply\b|\breplied\b|\bresponse\b|"
+    r"\btold\b|\breads\b|\bshows\b|\bmessage\b", re.IGNORECASE)
+_REPLY_VERDICT = re.compile(
+    r"valid|invalid|genuine|original|authentic|congratulat\w*|"
+    r"\bused\b|expired|record|fail\w*|\bpass\w*|legit\w*|"
+    r"counterfeit|fake|sorry|verif\w*ed\b|error\w*", re.IGNORECASE)
+_REPLY_FAIL_HARD = re.compile(
+    r"invalid|not valid|not genuine|not authentic|not original|"
+    r"inauthentic|unverified|no record|could not verify|"
+    r"unable to verify|unsuccessful|"
+    r"expired|counterfeit|fake|sorry|fail\w*", re.IGNORECASE)
+_REPLY_FRESH = re.compile(
+    r"never been used|never used|not been used|not used\b|unused",
+    re.IGNORECASE)
+_REPLY_PASS = re.compile(
+    r"congratulat\w*|genuine|original(?!\s+(packag|box|pack|seal))|"
+    r"authentic|legit\w*|verif\w*ed\b|\bpass\w*|\bvalid\b",
+    re.IGNORECASE)
+_REPLY_NARRATION = re.compile(r"\bi\b[^.?!]{0,30}\bused\b", re.IGNORECASE)
+_REPLY_OPINION = re.compile(
+    r"\b(feel|feels|felt|look|looks|looked|seem|seems|sound|taste)\b"
+    r"[^.?!]{0,20}\b(genuine|original|authentic|real)\b", re.IGNORECASE)
+_REPLY_QUESTION = re.compile(
+    r"^(is|are|was|were|do|does|did|can|could|will|would|what|when|"
+    r"where|which|who|how|why)\b", re.IGNORECASE)
+_REPLY_REQUEST = re.compile(
+    r"\bconfirms?\b|\bcheck\b|\bverify\b|\bif\b|\bwhether\b",
+    re.IGNORECASE)
+
+_REPLY_PASS_TEXT = ("That reply reads as a pass from the maker's service — "
+                    "it says the PIN checks out. That speaks for the code "
+                    "on the panel, not for what's inside the pack, so keep "
+                    "the pack, the receipt and that reply together.")
+_REPLY_FAIL_TEXT = ("That reply reads as a fail from the maker's service. "
+                    "Don't buy or use that pack — keep the pack, the PIN "
+                    "and the exact reply together as evidence.")
+_REPLY_UNCLEAR_TEXT = ("I can't tell from that whether the service passed "
+                       "or failed the PIN — paste the service's full exact "
+                       "reply. I'm looking for words like valid, invalid, "
+                       "used or expired.")
+
+
+def _read_reply(message: str, fresh_pin: bool = False):
+    """A pasted verification-service reply: pass, fail, unclear, or None.
+
+    Only verdict language counts, never a bare question — and a verdict
+    glued to a PIN the user just typed needs quoting words, otherwise
+    the user's own claim would read as the service's answer.
+    """
+    msg = (message or "").strip()
+    if not msg or not _REPLY_VERDICT.search(msg):
+        return None
+    if _REPLY_REQUEST.search(msg):
+        return None
+    if msg.endswith("?") or _REPLY_QUESTION.match(msg):
+        return None
+    if _REPLY_OPINION.search(msg):
+        return None
+    if len(msg.split()) > 14 and not _REPLY_CUE.search(msg):
+        return None
+    if fresh_pin and not _REPLY_CUE.search(msg):
+        return None
+    if _REPLY_NARRATION.search(msg):
+        return None
+    if _REPLY_FAIL_HARD.search(msg):
+        return "fail"
+    if _REPLY_FRESH.search(msg):
+        return "pass"
+    if re.search(r"\bused\b", msg, re.IGNORECASE):
+        return "fail"
+    if _REPLY_PASS.search(msg):
+        return "pass"
+    return "unclear"
+
+
 def _extract_fields(text: str) -> dict:
     """Pack details named in one message: number, barcode, batch, brand.
 
@@ -330,8 +527,12 @@ def _extract_fields(text: str) -> dict:
     """
     out: dict = {"nafdac_number": "", "barcode": "", "batch": "",
                  "product_name": "", "kind_word": "", "denied": "",
-                 "correction": False}
+                 "correction": False, "pin": "", "shortcode": ""}
     msg = text or ""
+    pin, shortcode = _chat_pin(msg)
+    out["pin"], out["shortcode"] = pin, shortcode
+    if pin or shortcode:
+        msg = _mask_runs(msg, (pin, shortcode))
     up = msg.upper()
     squashed = re.sub(r"(?<=\d) (?=\d)", "", msg)
     batch_word = bool(re.search(
@@ -520,6 +721,21 @@ def _converse(pack: PackInput, fresh: dict, message: str,
                 "and I'll take it from there. The barcode alone can't "
                 "confirm a pack, so I'll still need the NAFDAC number or "
                 "the dates after.")
+    _hpin, _hsc = _history_pin(history)
+    if _SCRATCH.search(message or "") and not (fresh.get("pin") or _hpin):
+        return _ASK_PIN
+    if fresh.get("shortcode") and not (fresh.get("pin") or _hpin):
+        return (f"Got the shortcode — {fresh['shortcode']}. Now type "
+                "the scratch PIN itself and I'll tell you what to "
+                "text.")
+    if fresh.get("pin") or _hpin:
+        _reply = _read_reply(message, bool(fresh.get("pin")))
+        if _reply == "pass":
+            return _REPLY_PASS_TEXT
+        if _reply == "fail":
+            return _REPLY_FAIL_TEXT
+        if _reply == "unclear":
+            return _REPLY_UNCLEAR_TEXT
     if fresh.get("correction"):
         name = pack.product_name or "that"
         denied = fresh.get("denied") or ""
@@ -537,8 +753,11 @@ def _converse(pack: PackInput, fresh: dict, message: str,
         if cued and opened and not months:
             return ("Got the opening month. What does the open-jar symbol "
                     "say — 6M, 12M, 24M?")
-    if _is_question(message) and (pack.nafdac_number or pack.barcode
-                                  or pack.batch or pack.product_name):
+    _verdict_asked = bool(re.search(ai.VERDICT_INTENT,
+                                    (message or "").lower()))
+    if (_is_question(message) or _verdict_asked) and (
+            pack.nafdac_number or pack.barcode or pack.batch
+            or pack.product_name or fresh.get("pin") or _hpin):
         return ai.answer(message, assessment)
     if _CHECK_IT.search(message or "") and not (
             pack.nafdac_number or pack.barcode or pack.batch):
@@ -554,10 +773,26 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
         ctx["pack"] = _pack_from_text(message)
         ctx["assessment"] = _assess(ctx["pack"])
     if not answer:
-        answer, provider = ai.compose(ctx["assessment"], message)
-        _ex = ctx.get("extraction")
-        if _ex is not None and _extraction_empty(_ex):
-            answer = _PHOTO_UNREADABLE + answer
+        _ex0 = ctx.get("extraction")
+        _mf = _extract_fields(message or "")
+        _pin = (_ex0.pin if _ex0 else "") or _mf.get("pin", "")
+        if _SCRATCH.search(message or "") and not _pin:
+            answer, provider = _ASK_PIN, "vouch-composer"
+        else:
+            _reply = _read_reply(message, bool(_mf.get("pin"))) if _pin else None
+            if _reply == "pass":
+                answer, provider = _REPLY_PASS_TEXT, "vouch-composer"
+            elif _reply == "fail":
+                answer, provider = _REPLY_FAIL_TEXT, "vouch-composer"
+            elif _reply == "unclear":
+                answer, provider = _REPLY_UNCLEAR_TEXT, "vouch-composer"
+            else:
+                answer, provider = ai.compose(ctx["assessment"], message)
+                if _ex0 is not None and _extraction_empty(_ex0):
+                    answer = _PHOTO_UNREADABLE + answer
+                _sc = (_ex0.shortcode if _ex0 else "") or _mf.get(
+                    "shortcode", "")
+                answer += _mas_note(_pin, _sc)
     pack = confirmed_pack or ctx["pack"]
     proposal = None
     if pack is not None and (pack.nafdac_number or pack.barcode):
@@ -714,7 +949,7 @@ def _fragment_ack(pack: PackInput, fresh: dict,
 
 
 _PHOTO_FIELDS = ("nafdac_number", "barcode", "product_name", "manufacturer",
-                 "batch", "exp_date", "mfg_date")
+                 "batch", "exp_date", "mfg_date", "pin")
 
 _PHOTO_UNREADABLE = (
     "I received your photo, but I could not read the label from it — "
@@ -749,6 +984,11 @@ def _pipeline(message: str, image_bytes: bytes | None,
         text, who = ai.compose(assessment, message)
         if _extraction_empty(extraction):
             text = _PHOTO_UNREADABLE + text
+        _pin = extraction.pin or fresh.get("pin") or ""
+        _sc = extraction.shortcode or fresh.get("shortcode") or ""
+        if _pin and not _sc:
+            _, _sc = _history_pin(history)
+        text += _mas_note(_pin, _sc)
     else:
         assessment = _assess(pack)
         said = _converse(pack, fresh, message, assessment, history)
@@ -781,6 +1021,16 @@ def _pipeline(message: str, image_bytes: bytes | None,
                              "the NAFDAC number, barcode, batch or a "
                              "photo — or say 'help' and I'll walk you "
                              "through it.", "vouch-composer")
+    _pin = fresh.get("pin") or ""
+    _sc = fresh.get("shortcode") or ""
+    if not _pin or not _sc:
+        _hpin, _hsc = _history_pin(history)
+        if not _pin and (_SCRATCH.search(message or "") or _sc):
+            _pin = _hpin
+        if not _sc and (_pin or _SCRATCH.search(message or "")):
+            _sc = _hsc
+    if not (_pin and _read_reply(message, bool(fresh.get("pin")))):
+        text += _mas_note(_pin, _sc)
     proposal = None
     if (assessment.band == "high_risk"
             and (pack.nafdac_number or pack.barcode)

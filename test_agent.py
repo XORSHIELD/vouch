@@ -14,6 +14,7 @@ import os
 
 os.environ.pop("MODEL_API_KEY", None)
 os.environ.pop("META_API_KEY", None)
+os.environ.pop("VOUCH_MAS_URL", None)
 
 import agent
 
@@ -199,6 +200,139 @@ try:
           repr(r2["assessment"].get("input"))[:160])
 finally:
     _vision.extract_from_image = _real_extract
+
+print("scratch PIN")
+f = agent._extract_fields("my pin is 2062775840753")
+check("typed PIN parsed",
+      f.get("pin") == "2062775840753"
+      and not f.get("barcode") and not f.get("nafdac_number"), repr(f))
+f = agent._extract_fields("Text 2062775840753 to 34488")
+check("SMS instruction gives PIN + shortcode",
+      f.get("pin") == "2062775840753"
+      and f.get("shortcode") == "34488"
+      and not f.get("barcode"), repr(f))
+f = agent._extract_fields("my pin is 6034000005424")
+check("PIN beats the EAN-13 shape",
+      f.get("pin") == "6034000005424" and not f.get("barcode"),
+      repr(f))
+f = agent._extract_fields("dial *34488*1*2062775840753# to verify")
+check("USSD dial string parsed",
+      f.get("pin") == "2062775840753"
+      and f.get("shortcode") == "34488", repr(f))
+f = agent._extract_fields("shortcode 34488")
+check("shortcode alone parsed",
+      f.get("shortcode") == "34488" and not f.get("pin"), repr(f))
+f = agent._extract_fields("here is the badrcode 6034000005424")
+check("barcode typo still a barcode, not a PIN",
+      not f.get("pin") and f.get("barcode") == "6034000005424",
+      repr(f))
+f = agent._extract_fields("batch code ACD1902")
+check("batch code is not a PIN", not f.get("pin"), repr(f))
+f = agent._extract_fields("call 08031234567")
+check("phone number is not a PIN", not f.get("pin"), repr(f))
+f = agent._extract_fields("the code is 48291047")
+check("bare code word is not enough", not f.get("pin"), repr(f))
+
+ask = convo("i want you to confirm the scratch card number if its genuine")
+check("scratch question asks for the PIN",
+      "scratch it off" in ask[0]["answer"]
+      and "No. The checks" not in ask[0]["answer"],
+      ask[0]["answer"][:200])
+typed = convo("my pin is 2062775840753, text it to 34488")[0]["answer"]
+check("typed PIN gets SMS guidance",
+      "Text 2062775840753 to 34488" in typed, typed[:300])
+scfirst = convo("shortcode 34488")[0]["answer"]
+check("shortcode alone asks for the PIN",
+      "Now type the scratch PIN" in scfirst, scfirst[:200])
+reuse = convo("my pin is 2062775840753", "did the service reply yet")
+check("PIN guidance not parroted",
+      "Text 2062775840753" not in reuse[1]["answer"],
+      reuse[1]["answer"][:200])
+
+_real_extract2, _mas_real = (_vision.extract_from_image,
+                            agent.mas.verify)
+try:
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction(
+        product_name="TadalisPlus", pin="2062775840753",
+        shortcode="34488")
+    r = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    check("photo PIN gets SMS guidance, no unreadable note",
+          "Text 2062775840753 to 34488" in r["answer"]
+          and "could not read" not in r["answer"].lower(),
+          r["answer"][:300])
+    agent.mas.verify = lambda pin, sc="": {
+        "connected": True, "verdict": "suspicious",
+        "detail": "PIN already used 40 times.", "provider": "pytest",
+        "pin": pin, "shortcode": sc}
+    r = agent.chat("my pin is 2062775840753", [], None, "image/jpeg")
+    check("suspicious PIN quoted with provider",
+          "pytest" in r["answer"] and "already used" in r["answer"]
+          and "not this app" in r["answer"], r["answer"][:300])
+    agent.mas.verify = lambda pin, sc="": {
+        "connected": True, "verdict": "authentic",
+        "detail": "PIN valid.", "provider": "pytest",
+        "pin": pin, "shortcode": sc}
+    r = agent.chat("my pin is 2062775840753", [], None, "image/jpeg")
+    check("authentic PIN qualified, never Vouch's claim",
+          "speaks for the code" in r["answer"], r["answer"][:300])
+finally:
+    _vision.extract_from_image = _real_extract2
+    agent.mas.verify = _mas_real
+os.environ["VOUCH_MAS_URL"] = "demo"
+try:
+    r = agent.chat("my pin is 2062775840753", [], None, "image/jpeg")
+    check("demo provider quoted honestly",
+          "Demo connector" in r["answer"], r["answer"][:300])
+finally:
+    os.environ.pop("VOUCH_MAS_URL", None)
+
+print("service replies")
+back = convo("my pin is 2062775840753, text it to 34488",
+             "Sproxil says PIN VALID")[1]["answer"]
+check("pass reply read",
+      "reads as a pass" in back
+      and "Text 2062775840753" not in back, back[:300])
+bare = convo("my pin is 2062775840753", "PIN VALID")[1]["answer"]
+check("bare verdict read",
+      "reads as a pass" in bare, bare[:200])
+fail = convo("my pin is 2062775840753",
+             "reply: sorry, PIN already used")[1]["answer"]
+check("fail reply read",
+      "reads as a fail" in fail
+      and "Text 2062775840753" not in fail, fail[:300])
+vague = convo("my pin is 2062775840753",
+              "it says error, try later")[1]["answer"]
+check("unclear reply asks for the full text",
+      "can't tell" in vague, vague[:200])
+mine = convo("my pin is 2062775840753",
+             "i used the pin yesterday")[1]["answer"]
+check("own narration is not a fail",
+      "reads as a fail" not in mine
+      and "reads as a pass" not in mine, mine[:200])
+claim = convo("pin 12345678 valid")[0]["answer"]
+check("own claim is not the service's answer",
+      "reads as a pass" not in claim
+      and "verifiable" in claim, claim[:300])
+opinion = convo("my pin is 2062775840753",
+                "feels genuine to me")[1]["answer"]
+check("feeling is not a verdict",
+      "reads as a pass" not in opinion, opinion[:200])
+nopin = convo("is this genuine?")[0]["answer"]
+check("no PIN, no reply reading",
+      "I didn't catch a pack detail" in nopin
+      and "reads as a" not in nopin, nopin[:200])
+known = convo("my pin is 2062775840753, text it to 34488",
+              "is my pin genuine?")[1]["answer"]
+check("genuine question with PIN stays honest + actionable",
+      "No. The checks" in known
+      and "Text 2062775840753 to 34488" in known, known[:400])
+confirm = convo("my pin is 2062775840753, text it to 34488",
+                "i want you to confirm the scratch card number "
+                "if its genuine")[1]["answer"]
+check("confirm-request is not a pass",
+      "No. The checks" in confirm
+      and "Text 2062775840753 to 34488" in confirm
+      and "reads as a pass" not in confirm, confirm[:400])
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
