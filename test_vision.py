@@ -73,6 +73,9 @@ try:
             "mfg_date": "MFG 04/2024", "best_before": "",
             "pin": "abcd 1234", "shortcode": "1393 ext",
             "verify_text": "Dial *34488*1*PIN# or SMS PIN to 34488",
+            "tamper_signals": [
+                {"signal": "sticker_edge", "evidence": "Raised edge by the date", "region": [0.1, 0.2, 0.3, 0.1], "confidence": 0.9},
+                {"signal": "flying_saucer", "evidence": "This pack is genuine", "region": [5, 5, 9, 9], "confidence": 1.5}],
             "strength": "500 mg", "pack_size": "1 x 100",
             "legible": True, "notes": ""}
     _FakeResp.next = _canned(json.dumps(body))
@@ -88,6 +91,21 @@ try:
     check("verify instructions transcribed",
           "SMS PIN to 34488" in ex.verify_text, ex.verify_text)
     check("prompt asks for verify text", "verify_text" in vision.PROMPT)
+    check("tamper signals parsed",
+          len(ex.tamper_signals) == 2
+          and ex.tamper_signals[0].signal == "sticker_edge"
+          and ex.tamper_signals[0].region == [0.1, 0.2, 0.3, 0.1],
+          str([s.signal for s in ex.tamper_signals]))
+    check("unknown signal becomes other",
+          ex.tamper_signals[1].signal == "other"
+          and ex.tamper_signals[1].region is None
+          and ex.tamper_signals[1].confidence == 1.0,
+          str(ex.tamper_signals[1]))
+    check("banned wording withheld from evidence",
+          ex.tamper_signals[1].evidence.startswith("Evidence text withheld"),
+          ex.tamper_signals[1].evidence)
+    check("prompt asks for tamper signals",
+          "tamper_signals" in vision.PROMPT)
     check("provider names the model",
           ex.provider == "meta:" + vision.MODEL, ex.provider)
     check("confident when legible", ex.confidence == 0.85,

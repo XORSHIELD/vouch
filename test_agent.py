@@ -374,6 +374,41 @@ try:
 finally:
     _vision.extract_from_image = _real_extract4
 
+print("vision tamper")
+_real_extract5 = _vision.extract_from_image
+try:
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction(
+        product_name="TadalisPlus",
+        tamper_signals=[_vision.TamperSignal(
+            signal="sticker_edge",
+            evidence="Raised edge around the date",
+            region=None, confidence=0.9)])
+    r = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    integ = [c for c in r["assessment"]["checks"]
+             if c.get("id") == "integrity"][0]
+    check("tamper reaches the assessment",
+          "sticker" in integ.get("evidence", "").lower()
+          and integ.get("source") == "vision", repr(integ)[:200])
+    # The registry finding rightly leads this answer; lead-finding
+    # narration is proven in test_ai ("tamper narration") instead.
+    check("tamper finding is not an empty read",
+          "could not read" not in r["answer"].lower(),
+          r["answer"][:300])
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction(
+        product_name="TadalisPlus",
+        tamper_signals=[_vision.TamperSignal(
+            signal="sticker_edge", evidence="maybe", region=None,
+            confidence=0.4)])
+    r = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    integ = [c for c in r["assessment"]["checks"]
+             if c.get("id") == "integrity"][0]
+    check("low-confidence tamper stays out of the verdict",
+          integ.get("state") != "high_risk"
+          and "sticker" not in integ.get("evidence", "").lower(),
+          repr(integ)[:200])
+finally:
+    _vision.extract_from_image = _real_extract5
+
 print("project briefing")
 import knowledge as _know
 check("knowledge is present",

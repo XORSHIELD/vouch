@@ -23,6 +23,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, asdict, field
 
+import ai
 import expiry as E
 import registry as R
 
@@ -31,6 +32,57 @@ API_KEY = os.environ.get("MODEL_API_KEY") or os.environ.get("META_API_KEY") or "
 MODEL = os.environ.get("META_VISION_MODEL", "muse-spark-1.3")
 
 FIXTURE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+
+
+# --------------------------------------------------------------------------
+# Structured tamper observations (model path only — OCR text cannot see them)
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class TamperSignal:
+    signal: str = "other"
+    evidence: str = ""
+    region: list | None = None
+    confidence: float = 0.0
+
+
+_TAMPER_VOCAB = ("sticker_edge", "print_mismatch", "residue",
+                 "misalignment", "other")
+
+_WITHHELD = "Evidence text withheld by the wording filter."
+
+
+def _parse_tamper(raw) -> list:
+    """Model tamper claims, validated. Unknown names become "other"."""
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for item in raw[:8]:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("signal", "other"))
+        if name not in _TAMPER_VOCAB:
+            name = "other"
+        try:
+            conf = float(item.get("confidence", 0.0))
+        except (TypeError, ValueError):
+            conf = 0.0
+        conf = max(0.0, min(1.0, conf))
+        region = item.get("region")
+        if not (isinstance(region, list) and len(region) == 4 and all(
+                isinstance(v, (int, float)) and 0.0 <= v <= 1.0
+                for v in region)):
+            region = None
+        else:
+            region = [float(v) for v in region]
+        evidence = str(item.get("evidence", ""))[:300]
+        if evidence and any(re.search(p, evidence.lower())
+                            for p in ai.BANNED):
+            evidence = _WITHHELD
+        out.append(TamperSignal(signal=name, evidence=evidence,
+                                region=region, confidence=conf))
+    return out
 
 
 class VisionUnavailable(RuntimeError):
@@ -50,6 +102,7 @@ class Extraction:
     pin: str = ""
     shortcode: str = ""
     verify_text: str = ""
+    tamper_signals: list = field(default_factory=list)
     strength: str = ""
     pack_size: str = ""
     raw_text: str = ""
@@ -246,11 +299,19 @@ Return strict JSON with exactly these keys:
   "pin": "scratch-panel PIN exactly as printed, no spaces, or empty",
   "shortcode": "the number to text the PIN to, digits only, or empty",
   "verify_text": "the scratch-panel SMS and dial instructions exactly as printed, word for word, or empty",
+  "tamper_signals": [{"signal": "sticker_edge|print_mismatch|residue|misalignment|other", "evidence": string, "region": [x,y,w,h] normalized 0..1 or null, "confidence": 0..1}],
   "strength": "strength as printed, e.g. 500 mg",
   "pack_size": "pack size as printed, e.g. 10 x 10's",
   "legible": true,
   "notes": "anything unusual about the printing, or empty"
 }
+
+Also look for physical tampering of the printed label: a sticker edge over
+printed information, print that differs in style from the rest of the label,
+residue or scrape marks, visibly misaligned print. Report each sign you can
+point to with a short evidence sentence; if unsure, say so with low
+confidence. Do not judge dates here — expiry and manufacture dates are
+checked separately from your transcription.
 
 Do not state whether the product is real or fake. You are only transcribing.
 If the image is not a medicine pack, return all fields empty and legible=false."""
@@ -379,6 +440,7 @@ def _extract_meta(
         pin=re.sub(r"\s+", "", _s(body.get("pin"))).upper(),
         shortcode=re.sub(r"\D", "", _s(body.get("shortcode"))),
         verify_text=_s(body.get("verify_text")),
+        tamper_signals=_parse_tamper(body.get("tamper_signals")),
         strength=_s(body.get("strength")),
         pack_size=_s(body.get("pack_size")),
         raw_text=json.dumps(body, ensure_ascii=False),

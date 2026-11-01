@@ -2446,6 +2446,8 @@ $('#fileInput').onchange = async (e) => {
   e.target.value = '';
 };
 
+const TAMPER_LABELS = {sticker_edge:'sticker edge over print', print_mismatch:'print style mismatch', residue:'residue or scrape marks', misalignment:'misaligned print', other:'print oddity'};
+function tamperLabel(s){ return TAMPER_LABELS[s] || 'print oddity'; }
 async function readPhoto(fileOrBlob, name, isSample){
   const fd = new FormData();
   fd.append('file', fileOrBlob, name || 'pack.jpg');
@@ -2458,7 +2460,9 @@ async function readPhoto(fileOrBlob, name, isSample){
     if (!r.ok) throw new Error(body.detail || 'Could not read the image');
     state.scanEvidence = null;
     fillForm(body.extraction);
-    const warns = body.extraction.warnings || [];
+    const sigs = (body.extraction.tamper_signals || []).filter(s => (s.confidence || 0) >= 0.3);
+    const tamperLines = sigs.map(s => `Photo shows possible ${tamperLabel(s.signal)} (${Math.round((s.confidence || 0) * 100)}% sure)${s.evidence ? ' — ' + s.evidence : ''}`);
+    const warns = [...(body.extraction.warnings || []), ...tamperLines];
     toast(`Read by ${body.extraction.provider} — check the fields`);
     const box = $('#photoNotes');
     if (box) {

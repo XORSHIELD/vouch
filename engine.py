@@ -87,6 +87,7 @@ class PackInput:
     pack_size: str = ""
     strength: str = ""
     flags: list[str] = field(default_factory=list)
+    flags_source: str = "person"
     seller: str = ""
     location: str = ""
     price: str = ""
@@ -269,6 +270,9 @@ FLAG_LABELS = {
     "different_batch_print": "Batch and expiry printed in different styles",
     "loose_tablets": "Tablets or capsules loose or damaged in the pack",
     "no_leaflet": "No patient leaflet in a carton that should have one",
+    "print_mismatch": "Some print differs in style from the rest of the label",
+    "print_residue": "Residue or scrape marks around the print",
+    "print_misaligned": "Print is visibly misaligned",
 }
 
 FLAG_WEIGHT = {
@@ -282,11 +286,24 @@ FLAG_WEIGHT = {
     "no_expiry": 1.5,
     "loose_tablets": 1.0,
     "no_leaflet": 1.0,
+    "print_mismatch": 1.5,
+    "print_residue": 1.5,
+    "print_misaligned": 1.5,
 }
 
 
-def integrity_check(flags: list[str]) -> Check:
+def integrity_check(flags: list[str], source: str = "person") -> Check:
     picked = [f for f in flags if f in FLAG_LABELS]
+    if not picked and source == "vision":
+        return Check(
+            id="integrity", label="Pack integrity", state=NA, severity=0,
+            evidence="No tamper signals were found in these photos.",
+            proves="Nothing by itself.",
+            does_not_prove="That the pack is intact — angles and light "
+                           "hide things.",
+            source="vision",
+            detail=[],
+        )
     if not picked:
         return Check(
             id="integrity", label="Pack integrity", state=NA, severity=0,
@@ -298,13 +315,14 @@ def integrity_check(flags: list[str]) -> Check:
         )
     severity = min(3.0, sum(FLAG_WEIGHT.get(f, 1.0) for f in picked))
     state = HIGH if severity >= 2.5 else ATTENTION
+    seen = "The photo shows" if source == "vision" else "Someone observed"
     return Check(
         id="integrity", label="Pack integrity", state=state, severity=severity,
         evidence="; ".join(FLAG_LABELS[f] for f in picked),
-        proves="Someone observed physical inconsistencies on this pack.",
+        proves=f"{seen} physical inconsistencies on this pack.",
         does_not_prove="Who caused them, or when. Poor printing also happens on "
                        "properly licensed stock that was stored badly.",
-        source="person",
+        source=source,
         detail=[FLAG_LABELS[f] for f in picked],
     )
 
@@ -777,7 +795,7 @@ def assess(
         checks.append(maker)
 
     # 7. Pack integrity, as observed by the person or the vision layer.
-    checks.append(integrity_check(pack.flags))
+    checks.append(integrity_check(pack.flags, pack.flags_source))
 
     # ---- Score and band -------------------------------------------------
     score = sum(c.severity for c in checks if c.state in (ATTENTION, HIGH))

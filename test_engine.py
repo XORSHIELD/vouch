@@ -91,6 +91,25 @@ a = G.assess(fl, today=TODAY)
 check("band is high risk", a.band == G.BAND_HIGH, f"got {a.band}")
 check("integrity check is high", any(c.id == "integrity" and c.state == G.HIGH for c in a.checks))
 
+print("\nvision tamper flags")
+vt = G.PackInput(**{**GENUINE.__dict__, "flags": ["print_mismatch", "print_residue"], "flags_source": "vision"})
+a = G.assess(vt, today=TODAY)
+check("two tamper signals are high risk", a.band == G.BAND_HIGH, f"got {a.band}")
+check("vision source recorded", any(c.id == "integrity" and c.source == "vision" for c in a.checks))
+check("photo wording used", any(c.id == "integrity" and "photo shows" in c.proves.lower() for c in a.checks))
+vq = G.PackInput(**{**GENUINE.__dict__, "flags": ["print_misaligned"], "flags_source": "vision"})
+a = G.assess(vq, today=TODAY)
+check("single tamper signal scores 1.5",
+      any(c.id == "integrity" and c.severity == 1.5 for c in a.checks))
+vn = G.PackInput(**{**GENUINE.__dict__, "flags": [], "flags_source": "vision"})
+a = G.assess(vn, today=TODAY)
+check("clean photo says so honestly",
+      any(c.id == "integrity" and "No tamper signals" in c.evidence for c in a.checks))
+vp = G.PackInput(**{**GENUINE.__dict__, "flags": ["sticker_over_print"]})
+a = G.assess(vp, today=TODAY)
+check("person flags keep their wording",
+      any(c.id == "integrity" and c.source == "person" and "Someone observed" in c.proves for c in a.checks))
+
 print("\nincomplete input")
 a = G.assess(G.PackInput(), today=TODAY)
 check("band is incomplete", a.band == G.BAND_INCOMPLETE, f"got {a.band}")

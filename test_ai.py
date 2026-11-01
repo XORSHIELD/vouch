@@ -17,7 +17,7 @@ os.environ.pop("MODEL_API_KEY", None)
 os.environ.pop("META_API_KEY", None)
 
 import ai
-from engine import Assessment
+from engine import Assessment, Check
 
 ai.API_KEY = ""
 
@@ -72,6 +72,18 @@ check("stream ends done",
       and chunks[0].get("meta", {}).get("provider") == "vouch-composer")
 check("stream text reassembles",
       "".join(c.get("delta", "") for c in chunks) == text)
+
+print("tamper narration")
+T = _a()
+T.checks = [Check(id="integrity", label="Pack integrity", state="attention",
+                  severity=1.5,
+                  evidence="Sticker or label pasted over the original print.",
+                  proves="The photo shows physical inconsistencies on this pack.",
+                  does_not_prove="Who caused them, or when.",
+                  source="vision")]
+ttext, _ = ai.compose(T)
+check("tamper quoted when it leads",
+      "sticker or label pasted over" in ttext.lower(), ttext[:200])
 
 print("transport guard")
 _old_key, _old_base = ai.API_KEY, ai.API_BASE

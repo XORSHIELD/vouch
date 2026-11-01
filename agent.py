@@ -1005,6 +1005,14 @@ def _fragment_ack(pack: PackInput, fresh: dict,
 _PHOTO_FIELDS = ("nafdac_number", "barcode", "product_name", "manufacturer",
                  "batch", "exp_date", "mfg_date", "pin")
 
+# Model tamper signals become engine flags at confidence 0.6 and up.
+# impossible_date is owned by the expiry engine via the transcribed date;
+# "other" stays visible in the extraction but carries no engine weight.
+_TAMPER_FLAGS = {"sticker_edge": "sticker_over_print",
+                 "print_mismatch": "print_mismatch",
+                 "residue": "print_residue",
+                 "misalignment": "print_misaligned"}
+
 _PHOTO_UNREADABLE = (
     "I received your photo, but I could not read the label from it — "
     "no name, number, date or batch came through. "
@@ -1014,6 +1022,8 @@ _PHOTO_UNREADABLE = (
 
 def _extraction_empty(ex) -> bool:
     """Nothing usable came off the photo: say so, don't ignore it."""
+    if getattr(ex, "tamper_signals", None):
+        return False
     return not any(getattr(ex, f, "") for f in _PHOTO_FIELDS)
 
 
@@ -1034,6 +1044,14 @@ def _pipeline(message: str, image_bytes: bytes | None,
         for key, val in extraction.to_pack_kwargs().items():
             if val and hasattr(pack, key):
                 setattr(pack, key, val)
+        # Agent packs start flagless; vision tamper is the only source here.
+        _tflags = sorted({_TAMPER_FLAGS[s.signal]
+                          for s in extraction.tamper_signals
+                          if s.signal in _TAMPER_FLAGS
+                          and (s.confidence or 0.0) >= 0.6})
+        if _tflags:
+            pack.flags = _tflags
+            pack.flags_source = "vision"
         assessment = _assess(pack)
         text, who = ai.compose(assessment, message)
         if _extraction_empty(extraction):
