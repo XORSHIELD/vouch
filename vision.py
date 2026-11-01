@@ -24,6 +24,7 @@ import urllib.request
 from dataclasses import dataclass, asdict, field
 
 import expiry as E
+import registry as R
 
 API_BASE = os.environ.get("META_BASE", "https://api.meta.ai/v1")
 API_KEY = os.environ.get("MODEL_API_KEY") or os.environ.get("META_API_KEY") or ""
@@ -90,6 +91,40 @@ _MFG_RE = re.compile(
     r"(?:MANUFACTURED|MADE|PRODUCED)\s+(?:BY|FOR)[^A-Z0-9]{0,4}([A-Z0-9][A-Z0-9&.,'\- ]{2,60})",
     re.IGNORECASE,
 )
+# A number without its NAFDAC label. Dashed is intent (agent's rule);
+# dashless is only accepted when the register confirms it exists.
+_STANDALONE_NUMBER = re.compile(r"\b([A-Z]{1,2}\d{1,2}-\d{3,7})\b")
+_DASHLESS_NUMBER = re.compile(r"\b([A-Z]{1,2}\d{4,7})\b")
+_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
+def _clean_text(s: str) -> str:
+    """OCR and models both leak control characters; answers must not."""
+    return re.sub(r"[ \t]{2,}", " ", _CONTROL.sub("", s or ""))
+
+
+def _confirmed(cand: str, confirm=None) -> bool:
+    """Is this dashless candidate a real registration? Never a guess.
+
+    Tests inject confirm; production asks the local mirror only — no
+    network, so the offline OCR path stays offline. Any doubt refuses.
+    """
+    if confirm is not None:
+        try:
+            return bool(confirm(cand))
+        except Exception:
+            return False
+    try:
+        if not R.mirror_ready():
+            return False
+        want = set(R.normalise(cand))
+        for d in R._mirror_exact(cand):
+            got = set(R.normalise(R.Record.from_api(d).nafdac))
+            if want & got:
+                return True
+        return False
+    except Exception:
+        return False
 _STRENGTH_RE = re.compile(r"\b(\d+(?:\.\d+)?\s*(?:MG|ML|MCG|G|%|IU))\b", re.IGNORECASE)
 _PACK_RE = re.compile(
     r"\b(\d{1,3}\s*[X×]\s*\d{1,3}|\d{1,3}\s*(?:TABLETS?|CAPSULES?|SACHETS?|PIECES?|BOTTLES?))\b",
@@ -147,9 +182,14 @@ def find_barcode(text: str) -> str:
     return candidates[0][0]
 
 
-def parse_label_text(text: str) -> Extraction:
-    """Deterministic extraction from label text pasted or OCR'd elsewhere."""
-    raw = (text or "").strip()
+def parse_label_text(text: str, confirm=None) -> Extraction:
+    """Deterministic extraction from label text pasted or OCR'd elsewhere.
+
+    OCR drops labels and dashes, so a bare number gets two more chances:
+    dashed is intent, dashless needs register confirmation (confirm
+    overrides the mirror lookup in tests).
+    """
+    raw = _clean_text(text or "").strip()
     if not raw:
         raise VisionUnavailable("No label text supplied.")
 
@@ -158,6 +198,15 @@ def parse_label_text(text: str) -> Extraction:
     m = _NAFDAC_RE.search(raw)
     nafdac = re.sub(r"\s+", "", m.group(1)).upper() if m else ""
     if not nafdac:
+        m = _STANDALONE_NUMBER.search(raw)
+        if m:
+            nafdac = m.group(1).upper()
+    if not nafdac:
+        for cand in _DASHLESS_NUMBER.findall(raw):
+            if _confirmed(cand, confirm):
+                nafdac = cand.upper()
+                break
+    if not nafdac:
         warnings.append("No NAFDAC number found in the text.")
 
     m = _BATCH_RE.search(raw)
@@ -165,11 +214,11 @@ def parse_label_text(text: str) -> Extraction:
     if not batch:
         warnings.append("No batch number found in the text.")
 
-    exp = E.parse_labelled(raw, E.EXP_LABELS)
+    exp = E.parse_labelled(raw, E.EXP_LABELS, fallback=False)
     if exp is None:
         warnings.append("No expiry date found in the text.")
 
-    mfg = E.parse_labelled(raw, E.MFG_LABELS)
+    mfg = E.parse_labelled(raw, E.MFG_LABELS, fallback=False)
 
     m = _MFG_RE.search(raw)
     manufacturer = m.group(1).strip(" .,-") if m else ""
@@ -285,7 +334,7 @@ def extract_from_image(
     ex = parse_label_text(text)
     ex.provider = "windows-ocr"
     ex.confidence = min(ex.confidence, 0.7)
-    ex.raw_text = text
+    ex.raw_text = _clean_text(text)
     ex.warnings.insert(
         0,
         "Read offline by the Windows OCR engine. OCR confuses similar "
@@ -387,7 +436,7 @@ def _strip_maker(name: str) -> str:
 
 
 def _s(v) -> str:
-    return "" if v is None else str(v).strip()
+    return "" if v is None else _clean_text(str(v)).strip()
 
 
 # --------------------------------------------------------------------------

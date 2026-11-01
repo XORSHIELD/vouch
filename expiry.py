@@ -154,8 +154,14 @@ def parse_date(text: str | None, today: date | None = None) -> ParsedDate | None
     return None
 
 
-def parse_labelled(text: str, labels: str) -> ParsedDate | None:
-    """Find the date that follows a label such as EXP or MFG."""
+def parse_labelled(text: str, labels: str,
+                   fallback: bool = True) -> ParsedDate | None:
+    """Find the date that follows a label such as EXP or MFG.
+
+    With fallback, a missing label still returns any date in the text —
+    right for a field known to hold one date, wrong when EXP and MFG are
+    parsed from the same text (each would steal the other's date).
+    """
     if not text:
         return None
     s = str(text).upper()
@@ -164,7 +170,7 @@ def parse_labelled(text: str, labels: str) -> ParsedDate | None:
         got = parse_date(m.group(1))
         if got:
             return got
-    return parse_date(s)
+    return parse_date(s) if fallback else None
 
 
 # --------------------------------------------------------------------------

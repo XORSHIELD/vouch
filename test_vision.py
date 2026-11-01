@@ -161,6 +161,36 @@ try:
     except vision.VisionUnavailable:
         check("empty text refused", True)
 
+    print("ocr-hardened parser")
+    ex = vision.parse_label_text(
+        "AC-Drex Tablet\nA110551\nBatch: ACD2401\nEXP 06/2028\n",
+        confirm=lambda c: c == "A110551")
+    check("dashless number confirmed, not guessed",
+          ex.nafdac_number == "A110551", ex.nafdac_number)
+    ex = vision.parse_label_text(
+        "AC-Drex Tablet\nA110551\nEXP 06/2028\n",
+        confirm=lambda c: False)
+    check("unconfirmed dashless number refused",
+          ex.nafdac_number == ""
+          and any("No NAFDAC number" in w for w in ex.warnings),
+          ex.nafdac_number)
+    ex = vision.parse_label_text("AC-Drex Tablet\nA11-0551\nEXP 06/2028\n")
+    check("dashed standalone number accepted",
+          ex.nafdac_number == "A11-0551", ex.nafdac_number)
+    ex = vision.parse_label_text("AC-Drex Tablet\nEXP 06/2028\n")
+    check("mfg never steals the exp date", ex.mfg_date == "", ex.mfg_date)
+    ex = vision.parse_label_text("AC-Drex Tablet\nMFG 06/2025\n")
+    check("exp never steals the mfg date", ex.exp_date == "", ex.exp_date)
+    ex = vision.parse_label_text("k \x07 Drex Tablet\nEXP 06/2028\n")
+    check("control characters stripped",
+          "\x07" not in ex.product_name and "\x07" not in ex.raw_text,
+          repr(ex.product_name))
+    dirty = dict(body, product_name="AC-DREX\x07 Tablet")
+    _FakeResp.next = _canned(json.dumps(dirty))
+    ex = vision._extract_meta(b"x", "image/png")
+    check("model control characters stripped",
+          "\x07" not in ex.product_name, repr(ex.product_name))
+
     print("fixtures")
     ex = vision.from_fixture("genuine")
     check("fixture loads",
