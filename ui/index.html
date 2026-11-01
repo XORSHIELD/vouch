@@ -1439,7 +1439,7 @@
         <div style="display:flex;gap:8px;align-items:center">
           <div class="attach-cluster">
           <label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" id="agentPhoto" accept="image/*" class="hidden"></label>
-          <button class="hero-ask-mic" id="agentMic" type="button" aria-label="Dictate with your voice" style="width:40px;flex:0 0 40px;align-self:stretch">
+          <button class="hero-ask-mic" id="agentMic" type="button" aria-label="Talk to the agent" style="width:40px;flex:0 0 40px;align-self:stretch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
           </button>
           </div>
@@ -1966,10 +1966,12 @@ async function agentSend(){
     thinking.className = 'vmsg bot';
     thinking.textContent = r.answer || '(no answer)';
     agentHist.push({role:'assistant', text:r.answer || ''});
+    if (agentVoiceReply){ agentVoiceReply = false; if (r.answer) agentSpeak(r.answer); }
     if (r.proposal) agentProposalCard(r.proposal);
   } catch(e){
     thinking.className = 'vmsg bot';
     thinking.textContent = e.message || 'The agent is unreachable.';
+    agentVoiceReply = false;
   }
   agentBusy = false;
 }
@@ -1977,15 +1979,36 @@ $('#agentSend').onclick = agentSend;
 $('#agentInput').addEventListener('keydown', e => { if (e.key === 'Enter') agentSend(); });
 
 /* ---------- agent mic ---------- */
-let agentRec = null, agentListening = false;
+let agentRec = null, agentListening = false, agentVoiceReply = false;
 function agentMicUI(){
   const b = $('#agentMic');
   b.classList.toggle('listening', agentListening);
-  b.setAttribute('aria-label', agentListening ? 'Stop listening' : 'Dictate with your voice');
+  b.setAttribute('aria-label', agentListening ? 'Stop listening' : 'Talk to the agent');
+}
+function agentMicErr(code){
+  const input = $('#agentInput');
+  input.placeholder = input.dataset.ph || input.placeholder;
+  if (!code || code === 'aborted') return;
+  if (code === 'not-allowed' || code === 'service-not-allowed') toast('Microphone blocked. Allow the mic for this site and try again.');
+  else if (code === 'no-speech') toast("Didn't catch that — try again.");
+  else if (code === 'network') toast('Speech service unreachable. Check your connection.');
+  else if (code === 'language-not-supported') toast('This speech language is not supported here.');
+  else toast('Listening failed (' + code + ').');
+}
+function agentSpeak(text){
+  try {
+    if (voiceMuted || !('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = voiceLang || 'en-NG';
+    speechSynthesis.speak(u);
+  } catch {}
 }
 function agentMicToggle(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
+  if (!SR){ toast('Voice input is not available in this browser.'); return; }
+  if (!window.isSecureContext){ toast('The mic needs a secure page: use localhost or HTTPS.'); return; }
+  if (agentBusy){ toast('Wait for the current answer to finish.'); return; }
   if (agentListening && agentRec){ try { agentRec.stop(); } catch {} return; }
   const rec = new SR();
   agentRec = rec;
@@ -1994,13 +2017,16 @@ function agentMicToggle(){
   rec.continuous = false;
   rec.onresult = (ev) => {
     let text = '';
-    for (let i = ev.resultIndex; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+    let _final = false;
+    for (let i = ev.resultIndex; i < ev.results.length; i++){ text += ev.results[i][0].transcript; if (ev.results[i].isFinal) _final = true; }
     $('#agentInput').value = text;
+    if (_final && text.trim()){ agentVoiceReply = true; agentSend(); }
   };
-  rec.onend = () => { agentListening = false; agentMicUI(); $('#agentInput').focus(); };
-  rec.onerror = () => { agentListening = false; agentMicUI(); };
+  rec.onend = () => { agentListening = false; agentMicUI(); const _in = $('#agentInput'); _in.placeholder = _in.dataset.ph || _in.placeholder; _in.focus(); };
+  rec.onerror = (ev) => { agentListening = false; agentMicUI(); agentMicErr(ev && ev.error); };
+  const _ai = $('#agentInput'); _ai.dataset.ph = _ai.placeholder; _ai.placeholder = 'Listening… speak now';
   try { rec.start(); agentListening = true; agentMicUI(); }
-  catch { agentListening = false; agentMicUI(); }
+  catch { agentListening = false; agentMicUI(); const _ai2 = $('#agentInput'); _ai2.placeholder = _ai2.dataset.ph || _ai2.placeholder; toast('Could not start listening.'); }
 }
 if (window.SpeechRecognition || window.webkitSpeechRecognition){ $('#agentMic').onclick = agentMicToggle; }
 else { $('#agentMic').style.display = 'none'; }

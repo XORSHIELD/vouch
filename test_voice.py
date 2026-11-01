@@ -52,5 +52,13 @@ check("manual stop exits", HTML.count("voiceHandsFree = false;") >= 3,
 check("vad-cut turns do not loop",
       "voiceHandsFree && !voiceVadCut && voiceRetries < 2" in HTML)
 
+print("agent mic")
+check("agent speak-back defined", "function agentSpeak(" in HTML)
+check("final result triggers a voice reply",
+      "agentVoiceReply = true;" in HTML)
+check("voice reply spoken after send", "if (agentVoiceReply)" in HTML)
+check("mic errors speak up", "function agentMicErr(" in HTML)
+check("secure context explained", "use localhost or HTTPS" in HTML)
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
