@@ -3,4 +3,7 @@ fastapi
 uvicorn
 httpx
 pillow
+winrt-Windows.Graphics.Imaging; sys_platform == "win32"  # in-process OCR; without these the PowerShell fallback is used
+winrt-Windows.Media.Ocr; sys_platform == "win32"
+winrt-Windows.Storage; sys_platform == "win32"
 requests  # smoke.py only

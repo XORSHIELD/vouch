@@ -29,8 +29,9 @@ Then open:
 - `http://127.0.0.1:8077/api/health` — service status
 
 No API key is required. Needs Python 3.10 or newer (CI runs 3.13). The product
-code is standard library plus FastAPI/Uvicorn/Pillow; the test client needs
-httpx and the smoke script needs requests.
+code is standard library plus FastAPI/Uvicorn/Pillow (and the `winrt-Windows.*`
+packages on Windows for in-process OCR — without them the PowerShell fallback
+is used); the test client needs httpx and the smoke script needs requests.
 
 ### Optional: use a model for explanations
 
@@ -96,6 +97,15 @@ authentic.
   the model, otherwise it answers deterministically — the engine owns
   every verdict either way, and case creation always needs sign-in.
 - A product guide, privacy/terms pages, a report form and demo auth flows.
+- Register search: find any of the 8,966 mirrored Greenbook products by
+  name, manufacturer or number, and fill the number into Verify in one tap.
+- A batch-code decoder: verified made-date patterns (Nivea, P&G, L'Oréal
+  groups), printed-date guidance for open-dated brands, an honest
+  243-brand directory with link-outs, and an after-opening (12M) calculator.
+- Five interface languages: English, Nigerian Pidgin, Hausa, Yorùbá, Igbo.
+- Staff tools: CSV case export with audit trail, backup/restore UI,
+  moderated public alerts, inspector analytics, and a first-run tour.
+- A WhatsApp inbound webhook, so packs can be checked from a chat thread.
 
 ## Tests
 
@@ -116,10 +126,20 @@ python test_mas.py
 python test_safety.py
 python test_vision.py
 python test_server.py
+python test_server_unit.py
 python test_agent.py
+python test_tour.py
+python test_i18n.py
+python test_voice.py
+python test_batchdecode.py
+python test_deploy.py
 python smoke.py
 python eval.py
 ```
+
+`test_server.py` needs socket permission (starlette TestClient); everything
+provable without sockets also runs in `test_server_unit.py`, so restricted
+sandboxes still prove the routes, gates and daemon wiring.
 
 Pushes also run the suite plus a server boot check in CI
 (`.github/workflows/ci.yml`).
@@ -212,9 +232,9 @@ carry on alone.
 - Absence of a record is a reason to escalate, not an accusation about a seller.
 - OCR misreads similar characters. The app shows the extracted text and asks you
   to confirm it.
-- Accounts, cloud storage, business team workspaces, multilingual UI and
-  spectroscopic analysis are **not built**. Demo auth and business forms store
-  data in the browser only. There is no mail server and no sales inbox.
+- Cloud storage, business team workspaces and spectroscopic analysis are
+  **not built**. Accounts, sessions and roles are server-side; there is no
+  mail server and no sales inbox.
 - Voice input depends on the browser's speech service, a microphone permission
   and a connection. It can mishear local accents or product names. The spoken
   answer is only a reading of the checks on screen; the typed box gives the same
@@ -247,11 +267,18 @@ vouch/
   sms.py           SMS/USSD inbound seam
   actions.py       seller/regulator document builders
   safety.py        safety reports, alerts, batch patterns
+  batchdecode.py   batch-code made-date decoders + brand directory
+  brands.json      243-brand reference directory (names, slugs, categories)
+  whatsapp.py      WhatsApp inbound webhook
   eval.py          release gate: calibration, OCR-noise stability
   visval.py        vision validation battery (dev tool)
+  smoke.py         API + lifecycle smoke suite
+  ocr.ps1          PowerShell OCR fallback for Windows
+  test_*.py        one focused suite per module (see Tests)
   ui/
     index.html     the application
     marketing.html the marketing site and docs pages
+    i18n/          en, pcm, ha, yo, ig interface strings
     vendor/        bundled ZXing decoder and its Apache-2.0 licence
   samples/img/     demo pack images used by the app
 ```

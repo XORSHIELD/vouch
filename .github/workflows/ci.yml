@@ -32,6 +32,9 @@ jobs:
           python test_tour.py
           python test_i18n.py
           python test_voice.py
+          python test_batchdecode.py
+          python test_deploy.py
+          python test_server_unit.py
       - run: python eval.py
       - run: |
           python server.py & echo $! > server.pid
