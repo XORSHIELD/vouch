@@ -31,7 +31,8 @@ from dataclasses import dataclass, field
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURE_PATH = os.path.join(HERE, "fixtures", "barcodes.json")
-CACHE_DIR = os.path.join(HERE, ".cache")
+CACHE_DIR = (os.environ.get("VOUCH_CACHE_DIR")
+             or os.path.join(HERE, ".cache"))
 CACHE_TTL = 7 * 24 * 3600
 TIMEOUT = 12
 

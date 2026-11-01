@@ -3,17 +3,22 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z' fill='%23126B45'/%3E%3Cpath d='M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z' fill='%23fff'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/ui/favicon.png" />
+<link rel="apple-touch-icon" href="/ui/apple-touch-icon.png" />
+<meta name="theme-color" content="#0D1310" id="metaTheme" />
+<script>try{if((localStorage.getItem("vouch.theme")||"dark")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
 <title>Vouch — Check it. Chase it. | Medicine Verification for Nigeria</title>
 <meta name="description" content="Verify medicines against the NAFDAC registry, spot counterfeit and expired packs, and follow through with regulator reports." />
 <style>
   :root{
-    --ink:#202923; --ink-2:#202923; --ink-3:#66736B;
-    --paper:#F7F8F5; --card:#FFFFFF; --line:#E5E9E4;
-    --green:#126B45; --green-deep:#073B2E; --green-bg:#E5F5EA; --sage:#DFF3E5;
-    --amber:#B7791F; --amber-bg:#FFF4D6;
-    --red:#C62828; --red-bg:#FDECEC;
-    --grey:#66736B; --grey-bg:#F7F8F5;
+    --ink:#1E2723; --ink-2:#2C3833; --ink-3:#5F6E66;
+    --paper:#F5F7F4; --card:#FFFFFF; --line:#E2E8E3; --bg:#EFF3EF;
+    --green:#126B45; --green-deep:#073B2E; --green-bg:#E4F4E9; --sage:#D9F0E1;
+    --ok:#18794E;
+    --amber:#9A6B14; --amber-bg:#FFF3D4;
+    --red:#C62828; --red-bg:#FCEAEA; --err:#B3261E;
+    --line-ok:#C9E6D4; --line-warn:#EBD9AE; --line-err:#EFD0D0;
+    --grey:#5F6E66; --grey-bg:#EFF3EF;
     --accent:#126B45;
     --radius:14px; --radius-sm:10px;
     --shadow:0 1px 1px rgba(32,41,35,.02),0 4px 10px rgba(32,41,35,.04),0 16px 40px rgba(32,41,35,.06);
@@ -43,6 +48,7 @@
   .brand-mark{display:flex;align-items:center;gap:9px}
   .shield{width:22px;height:22px;position:relative;display:inline-flex;align-items:center;justify-content:center}
   .shield svg{width:22px;height:22px;display:block}
+  .brand-logo{height:42px;width:auto;display:block}
   .brand small{font-weight:600;font-size:12px;color:var(--ink-3);letter-spacing:.02em;text-transform:uppercase;margin-left:6px}
   nav.tabs{display:flex;gap:4px;margin-left:auto;background:transparent;padding:0}
   nav.tabs button{
@@ -52,14 +58,38 @@
   nav.tabs button:hover{color:var(--ink);background:var(--sage)}
   nav.tabs button[aria-selected="true"]{background:var(--green);color:#fff;box-shadow:none}
   .cta{margin-left:14px;padding:9px 16px;border-radius:999px;background:var(--green);color:#fff;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px;border:1px solid transparent}
+  .queue-badge{margin-left:14px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--amber);background:var(--amber-bg);border:1px solid var(--line-warn);border-radius:999px;padding:4px 10px;white-space:nowrap}
   .cta:hover{filter:brightness(1.02)}
 
   main{padding:28px 0 100px}
   .hero{margin:10px 0 34px;text-align:left}
   .hero-inner{display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:28px;align-items:center}
   .hero h1{font-size:clamp(38px,6vw,62px);font-weight:800;letter-spacing:-.05em;line-height:1.02;margin:0 0 14px;color:var(--ink)}
+  .hero h1 .acc{color:var(--green);text-shadow:0 0 26px rgba(61,165,104,.35)}
   .hero p{font-size:18px;color:var(--ink-3);margin:0;max-width:620px}
   .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+  .hero-ask{display:flex;gap:8px;margin-top:16px;max-width:560px}
+  .hero-ask input{flex:1;min-width:0;border-radius:12px}
+  .hero-ask .btn{border-radius:12px}
+  .hero-ask-mic{
+    width:44px;flex:0 0 44px;border-radius:12px;border:1px solid var(--line);
+    background:#fff;color:var(--green);display:grid;place-items:center;transition:all .16s ease
+  }
+  .hero-ask-mic:hover{background:var(--sage);border-color:transparent}
+  .hero-ask-mic svg{width:19px;height:19px}
+  .hero-ask-note{font-size:12.5px;color:var(--ink-3);margin:8px 0 0}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:12px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:17px;color:var(--green);margin:0 0 14px}
+  .hero-eyebrow::after{content:"";width:52px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--green),transparent)}
+  .hero-rule{width:96px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--green),transparent);margin:20px 0 0;box-shadow:0 0 12px rgba(18,107,69,.25)}
+  .flow-card{margin-bottom:28px}
+  .flow{display:flex;align-items:center;gap:16px 20px;flex-wrap:wrap;padding:18px 26px}
+  .flow-step{display:flex;align-items:center;gap:12px;flex:1;min-width:180px}
+  .flow-n{width:36px;height:36px;flex:0 0 36px;border-radius:12px;background:var(--sage);color:var(--ok);display:grid;place-items:center;font-weight:800;font-size:15px}
+  .flow-step b{display:block;font-size:14.5px;letter-spacing:-.01em}
+  .flow-step span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+  .flow-arrow{color:var(--line);font-size:20px;font-weight:800}
+  .empty-disc{width:88px;height:88px;border-radius:50%;background:var(--sage);display:grid;place-items:center;margin:0 auto 18px}
+  @media (max-width:640px){.flow-arrow{display:none}.flow-step{min-width:100%}}
   .hero-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px;display:flex;flex-direction:column;gap:10px}
   .hero-card-row{display:flex;align-items:center;gap:12px}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--green)}
@@ -73,13 +103,15 @@
   .card .bd{padding:22px}
 
   label.f{display:block;margin:0 0 16px}
-  label.f span{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  label.f span{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#3D4A44;margin-bottom:6px}
   input,select,textarea{
-    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;
-    background:#fff;color:var(--ink);font-size:15px;outline:none;transition:all .18s ease;font-family:inherit
+    width:100%;padding:11px 14px;border:1.5px solid #CBD6CE;border-radius:12px;
+    background:#EFF3EF;color:var(--ink);font-size:15px;outline:none;transition:all .18s ease;font-family:inherit
   }
-  input:hover,select:hover,textarea:hover{border-color:#c9d2cc}
-  input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(18,107,69,0.08);background:#fff}
+  input:hover,select:hover,textarea:hover{border-color:#A9BBAE;background:#fff}
+  input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(18,107,69,0.13);background:#fff}
+  input::placeholder,textarea::placeholder{color:#9AA7A0}
+  input[type=checkbox],input[type=radio]{width:auto;background:none;border:0;padding:0;box-shadow:none}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .hint{font-size:13px;color:var(--ink-3);margin:-6px 0 16px;line-height:1.6}
 
@@ -113,14 +145,58 @@
   .band h1{margin:0 0 6px;font-size:26px;letter-spacing:-.02em;line-height:1.25;font-weight:800;color:var(--ink)}
   .band p{margin:0;font-size:14px;color:var(--ink-3)}
   .band .tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;padding:4px 10px;border-radius:999px;background:var(--sage);color:var(--green)}
-  .band.clear{border-color:#cfe7d8}
+  .band.clear{border-color:var(--line-ok)}
   .band.clear::before{background:var(--green)}
-  .band.review{border-color:#f0e2bf}
+  .band.review{border-color:var(--line-warn)}
   .band.review::before{background:var(--amber)}
-  .band.high_risk{border-color:#f2d6d6}
+  .band.high_risk{border-color:var(--line-err)}
   .band.high_risk::before{background:var(--red)}
   .band.incomplete{border-color:var(--line)}
   .band.incomplete::before{background:var(--ink-3)}
+
+  /* ---------- five layers ---------- */
+  .layers{border:1px solid var(--line);background:#fff;border-radius:14px;margin-bottom:22px;overflow:hidden}
+  .layers>.hd{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .layers>.hd h2{margin:0;font-size:14px;letter-spacing:-.01em}
+  .layers>.hd span{margin-left:auto;font-size:11px;color:var(--ink-3)}
+  .layer{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:11px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:start}
+  .layer:last-child{border-bottom:0}
+  .layer .ln{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--sage);color:var(--green);border:1px solid #cfe9d8}
+  .layer b{display:block;font-size:13px;letter-spacing:-.01em}
+  .layer small{display:block;margin-top:2px;font-size:11.5px;line-height:1.5;color:var(--ink-3)}
+  .layer .st{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-radius:999px;padding:4px 8px;white-space:nowrap;margin-top:1px}
+  .st.live{color:#0b5c3c;background:var(--green-bg)}
+  .st.partial{color:#8a5a0c;background:#fff4d6}
+  .st.gap{color:var(--ink-3);background:var(--sage)}
+  .layer-note{padding:10px 16px;background:#fbfcf9;border-top:1px solid var(--line);font-size:11.5px;line-height:1.55;color:var(--ink-3)}
+
+  /* ---------- safety intelligence ---------- */
+  .safety-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:16px;align-items:start}
+  .safety-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .safety-form label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+  .safety-form input,.safety-form select,.safety-form textarea{font:inherit;font-size:13.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff;width:100%}
+  .safety-form textarea{min-height:82px;resize:vertical}
+  .safety-form .wide{grid-column:1/-1}
+  .safety-form .hint{font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3);line-height:1.45}
+  .safety-list{display:flex;flex-direction:column;gap:9px}
+  .safety-item{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:#fff}
+  .safety-item b{font-size:13px;display:block}
+  .safety-item small{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.5}
+  .safety-item p{margin:6px 0 0;font-size:12px;line-height:1.55;color:var(--ink-2)}
+  .safety-alert{border-left:3px solid var(--red);background:#fffafa}
+  .safety-alert b{color:var(--red)}
+  .pattern{border-left:3px solid var(--amber);background:#fffdf7}
+  .pattern b{color:#8a5a0c}
+  .safety-empty{border:1px dashed var(--line);border-radius:11px;padding:13px;font-size:12px;line-height:1.6;color:var(--ink-3);background:#fdfcf9}
+  .safety-h{margin:18px 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .safety-photo{width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line)}
+  .layer-safety{margin-top:4px;font-size:11.5px;line-height:1.5;color:var(--ink-2)}
+  @media (max-width:840px){
+    .safety-grid{grid-template-columns:1fr}
+    .layer{grid-template-columns:26px minmax(0,1fr)}
+    .layer .st{grid-column:2;justify-self:start}
+    .safety-form{grid-template-columns:1fr}
+  }
 
   .compare{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 4px rgba(13,27,30,0.02)}
   .compare>div{padding:16px 18px}
@@ -196,7 +272,8 @@
   .qmain small{font-size:13px;color:var(--ink-2);flex-basis:100%}
   .qmeta{font-size:11.5px;color:var(--ink-3);font-family:var(--mono);flex-basis:100%}
   .qbtns{display:flex;gap:6px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}
-  .lbl2{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
+  .lbl2{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .lbl2::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--line),transparent)}
   @media (max-width:640px){ .qitem{flex-direction:column} .qbtns{justify-content:flex-start} }
 
   .caseitem{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;margin-bottom:10px;cursor:pointer}
@@ -237,6 +314,10 @@
   .stats{display:flex;gap:28px;margin:0 0 24px;flex-wrap:wrap}
   .stat{padding:16px 20px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:120px}
   .stat b{display:block;font-size:28px;letter-spacing:-.03em;font-weight:800;background:linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .stat.bad b,.stat.warn b,.stat.ok b{background:none;-webkit-text-fill-color:currentColor}
+  .stat.bad b{color:var(--err)}
+  .stat.warn b{color:var(--amber)}
+  .stat.ok b{color:var(--ok)}
   .stat span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-top:4px;display:block}
   .hidden{display:none!important}
 
@@ -257,16 +338,16 @@
   .drop.over{border-color:var(--green);background:var(--sage);color:var(--green)}
   .drop strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
   .scan-note{margin:12px 0 0;font-size:12.5px;color:var(--ink-3);line-height:1.65}
-  .scan-status{margin-top:12px;font-size:13px;border-radius:10px;padding:9px 12px;background:var(--amber-bg);color:var(--amber);border:1px solid #f0e2bf}
-  .scan-status.ok{background:var(--green-bg);color:var(--ok);border-color:#cfe7d8}
-  .scan-status.err{background:var(--red-bg);color:var(--err);border-color:#f2d6d6}
+  .scan-status{margin-top:12px;font-size:13px;border-radius:10px;padding:9px 12px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--line-warn)}
+  .scan-status.ok{background:var(--green-bg);color:var(--ok);border-color:var(--line-ok)}
+  .scan-status.err{background:var(--red-bg);color:var(--err);border-color:var(--line-err)}
 
   /* ---------- guided AI scan ---------- */
   .ai-scan{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(268px,.68fr);gap:18px;align-items:start}
   .scan-stage-main{min-width:0}
   .camera-wrap{position:relative;border-radius:16px;overflow:hidden;background:var(--green-deep);aspect-ratio:4/3;display:grid;place-items:center;isolation:isolate}
   .camera-wrap video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .28s ease}
-  .camera-wrap .frame{position:absolute;inset:13% 10%;border:1.5px dashed rgba(255,255,255,.55);border-radius:16px;pointer-events:none;z-index:2}
+  .camera-wrap .frame{position:absolute;inset:13% 10%;border:1.5px dashed rgba(255,255,255,.55);border-radius:16px;pointer-events:none;z-index:2;display:none}
   .cam-empty{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;color:#dff3e5;padding:24px;font-size:13.5px;line-height:1.6;background:linear-gradient(160deg,var(--green-deep),#0b5840)}
   .cam-empty b{font-size:15px;letter-spacing:-.01em}
   .cam-overlay{position:absolute;inset:0;z-index:4;pointer-events:none}
@@ -277,17 +358,67 @@
     -webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000 40%,transparent 78%);
     mask-image:radial-gradient(70% 70% at 50% 50%,#000 40%,transparent 78%);
   }
-  .cam-beam{
-    position:absolute;left:7%;right:7%;top:0;height:30%;
-    background:linear-gradient(180deg,rgba(223,243,229,0),rgba(223,243,229,.14) 48%,rgba(223,243,229,.02) 58%,rgba(223,243,229,0));
-    animation:camSweep 3.4s cubic-bezier(.45,0,.55,1) infinite;
+  /* face-ID-style reticle: a rounded square, a progress ring and a sweep */
+  .scan-reticle{
+    position:absolute;left:50%;top:47%;height:60%;aspect-ratio:1;transform:translate(-50%,-50%);
+    z-index:3;pointer-events:none;
   }
-  .cam-beam::after{content:"";position:absolute;left:0;right:0;top:48%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(223,243,229,.85),transparent);box-shadow:0 0 14px rgba(223,243,229,.45)}
-  .cam-corners i{position:absolute;width:26px;height:26px;border:2px solid rgba(223,243,229,.75);border-radius:5px}
-  .cam-corners i:nth-child(1){top:15%;left:10%;border-right:0;border-bottom:0}
-  .cam-corners i:nth-child(2){top:15%;right:10%;border-left:0;border-bottom:0}
-  .cam-corners i:nth-child(3){bottom:15%;left:10%;border-right:0;border-top:0}
-  .cam-corners i:nth-child(4){bottom:15%;right:10%;border-left:0;border-top:0}
+  .reticle-ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .rg-track{fill:none;stroke:rgba(223,243,229,.18);stroke-width:3}
+  .rg-fill{
+    fill:none;stroke:#8ef0b4;stroke-width:3;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;
+    transform:rotate(-90deg);transform-origin:50% 50%;
+    transition:stroke-dashoffset .28s ease, stroke .2s ease;
+    filter:drop-shadow(0 0 7px rgba(142,240,180,.45));
+  }
+  .rg-corner{position:absolute;width:19%;height:19%;border:2.5px solid rgba(255,255,255,.86);transition:border-color .2s ease,box-shadow .2s ease}
+  .rg-corner.a{top:0;left:0;border-right:0;border-bottom:0;border-radius:16px 0 0 0}
+  .rg-corner.b{top:0;right:0;border-left:0;border-bottom:0;border-radius:0 16px 0 0}
+  .rg-corner.c{bottom:0;left:0;border-right:0;border-top:0;border-radius:0 0 0 16px}
+  .rg-corner.d{bottom:0;right:0;border-left:0;border-top:0;border-radius:0 0 16px 0}
+  .rg-sweep{
+    position:absolute;left:7%;right:7%;top:12%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(223,243,229,.92),transparent);
+    box-shadow:0 0 14px rgba(142,240,180,.55);
+    animation:rgScan 2.8s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  .rg-coach{
+    position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);
+    max-width:96%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:4px 10px;border-radius:999px;background:rgba(7,59,46,.64);border:1px solid rgba(223,243,229,.24);
+    color:#eaf4ee;font-size:11px;font-weight:650;letter-spacing:.005em;line-height:1.2;backdrop-filter:blur(10px);
+  }
+  .camera-wrap[data-state="seeing"] .rg-corner{border-color:#eaf4ee}
+  .camera-wrap[data-state="locked"] .rg-corner{border-color:#8ef0b4;box-shadow:0 0 16px rgba(142,240,180,.3)}
+  .camera-wrap[data-state="locked"] .rg-fill{stroke:#6ee7a8}
+  .camera-wrap[data-state="locked"] .scan-reticle{animation:rgLock .52s ease}
+  .camera-wrap[data-state="held"] .rg-fill{stroke:#f2c94c}
+  .camera-wrap[data-state="held"] .rg-corner{border-color:#f2c94c}
+  .mod-row{position:absolute;top:40px;left:0;right:0;display:flex;justify-content:center;gap:6px;z-index:6;pointer-events:none}
+  .mod{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    color:rgba(234,244,238,.6);background:rgba(7,59,46,.46);border:1px solid rgba(223,243,229,.16);border-radius:999px;
+    padding:3px 8px;backdrop-filter:blur(8px);transition:.18s}
+  .mod i{width:5px;height:5px;border-radius:50%;background:rgba(223,243,229,.3)}
+  .mod[data-state="seen"]{color:#fff;border-color:rgba(223,243,229,.42)}
+  .mod[data-state="seen"] i{background:#f2c94c;box-shadow:0 0 0 3px rgba(242,201,76,.16)}
+  .mod[data-state="lock"]{color:#073B2E;background:#bff4d3;border-color:#bff4d3}
+  .mod[data-state="lock"] i{background:#126b45}
+  .mod[data-state="off"]{opacity:.45}
+  .ai-read{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);font-size:12.5px}
+  .ai-read h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .ai-read .ai-grid{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;line-height:1.5}
+  .ai-read .ai-grid dt{color:var(--ink-3)}
+  .ai-read .ai-grid dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+  .ai-read .ai-warn{margin:6px 0 0;color:var(--amber)}
+  .conflict-line{
+    position:absolute;top:64px;left:10px;right:10px;z-index:6;
+    padding:5px 10px;border-radius:10px;text-align:center;
+    background:rgba(255,243,212,.94);border:1px solid rgba(154,107,20,.35);
+    color:#7A5410;font-size:10.5px;font-weight:650;line-height:1.45;
+    box-shadow:0 8px 22px rgba(7,59,46,.18);
+  }
+  @keyframes rgScan{0%,100%{top:12%;opacity:.18}50%{top:86%;opacity:.92}}
+  @keyframes rgLock{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.028)}100%{transform:translate(-50%,-50%) scale(1)}}
   .cam-top{position:absolute;top:10px;left:10px;right:10px;display:flex;align-items:center;gap:7px;z-index:6}
   .live-pill,.qual-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(12px)}
   .live-pill{background:rgba(7,59,46,.62);color:#dff3e5;border:1px solid rgba(223,243,229,.28)}
@@ -308,13 +439,26 @@
   .code-chip small{display:block;font-size:10.5px;color:var(--ink-3);margin-top:1px}
   .code-chip .ok{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);background:var(--green-bg);border-radius:999px;padding:4px 8px;white-space:nowrap}
   .code-chip.bad .ok{color:var(--err);background:var(--red-bg)}
+  .code-chip[data-kind="qr"] .ico{background:#e5f5ea;color:var(--green)}
+  .code-chip[data-kind="nafdac"] .ico{background:#fff4d6;color:#8a5a0c}
+  .code-chip .ok.warn{color:#8a5a0c;background:#fff4d6}
+  .code-chip .ok.wait{color:var(--ink-3);background:var(--sage)}
   .auto-count{
-    position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(7,59,46,.24);backdrop-filter:blur(2px);
+    position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(7,59,46,.12);
   }
   .auto-count span{
-    width:86px;height:86px;border-radius:50%;display:grid;place-items:center;font-size:38px;font-weight:800;color:#fff;
-    background:rgba(7,59,46,.72);border:1px solid rgba(223,243,229,.5);box-shadow:0 18px 50px rgba(0,0,0,.3);
+    width:74px;height:74px;border-radius:50%;display:grid;place-items:center;font-size:30px;font-weight:800;color:#fff;
+    background:rgba(18,107,69,.9);border:1px solid rgba(191,244,211,.8);box-shadow:0 18px 50px rgba(0,0,0,.25);
+    animation:lockPop .5s ease;
   }
+  .auto-count span svg{width:34px;height:34px}
+  @keyframes lockPop{0%{transform:perspective(400px) rotateX(-35deg) scale(.7);opacity:0}55%{transform:perspective(400px) rotateX(8deg) scale(1.05);opacity:1}100%{transform:none}}
+  @keyframes vz-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes vz-sheet{from{opacity:0;transform:translateY(26px) scale(.985)}to{opacity:1;transform:none}}
+  .anim-in{animation:vz-rise .45s ease both;animation-delay:var(--d,0s)}
+  .modal:not(.hidden) .sheet{animation:vz-sheet .32s ease both}
+  .voice-panel:not(.hidden){animation:vz-sheet .28s ease both}
+  .tilt{transform-style:preserve-3d;will-change:transform;transition:transform .18s ease-out}
   .cam-flash{position:absolute;inset:0;z-index:9;background:#fff;opacity:0;pointer-events:none}
   .cam-flash.on{animation:camFlash .42s ease-out}
   .rotate-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}
@@ -373,9 +517,9 @@
   .ev-coach{margin:0 0 12px;font-size:13px;line-height:1.6;color:var(--ink-2)}
   .ev-sides{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px}
   .ev-side{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 9px;background:var(--bg)}
-  .ev-side.good{border-color:#cfe7d8;background:var(--green-bg)}
-  .ev-side.fair{border-color:#f0e2bf;background:var(--amber-bg)}
-  .ev-side.poor{border-color:#f2d6d6;background:var(--red-bg)}
+  .ev-side.good{border-color:var(--line-ok);background:var(--green-bg)}
+  .ev-side.fair{border-color:var(--line-warn);background:var(--amber-bg)}
+  .ev-side.poor{border-color:var(--line-err);background:var(--red-bg)}
   .ev-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;margin-top:5px;background:var(--ink-3)}
   .ev-side.good .ev-dot{background:var(--ok)}
   .ev-side.fair .ev-dot{background:var(--amber)}
@@ -383,10 +527,12 @@
   .ev-side b{display:block;font-size:12px;letter-spacing:-.01em}
   .ev-side small{display:block;font-size:10.5px;line-height:1.45;color:var(--ink-3);margin-top:2px}
   .ev-side .ev-q{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink-3)}
-  .ev-conflict{margin-top:10px;border:1px solid #f0e2bf;background:var(--amber-bg);border-radius:10px;padding:9px 11px}
+  .ev-conflict{margin-top:10px;border:1px solid var(--line-warn);background:var(--amber-bg);border-radius:10px;padding:9px 11px}
   .ev-conflict b{font-size:12px;color:var(--amber)}
   .ev-conflict p{margin:3px 0 0;font-size:12px;line-height:1.55;color:var(--ink-2)}
   .ev-warn{margin-top:10px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 11px;font-size:11.5px;line-height:1.5;color:var(--ink-3)}
+  .ev-live{margin-top:10px;border:1px solid #cfe9d8;background:var(--green-bg);border-radius:10px;padding:8px 11px;font-size:11.5px;line-height:1.55;color:var(--ink-2)}
+  .ev-live b{color:var(--green)}
   .ev-limits{margin-top:10px;font-size:12px;color:var(--ink-3)}
   .ev-limits summary{cursor:pointer;font-weight:600;color:var(--ink-2)}
   .ev-limits ul{margin:7px 0 0;padding-left:18px;line-height:1.6}
@@ -407,14 +553,21 @@
     .side-list{grid-template-columns:1fr}
     .rotate-row .spacer{display:none}
     .cam-hint{font-size:10.5px}
+    .scan-reticle{height:56%;top:45%}
+    .rg-coach{font-size:10px;padding:3px 8px}
+    .mod-row{top:36px}
   }
   @media (prefers-reduced-motion: reduce){
-    .cam-beam{animation:none;opacity:0}
+    .rg-sweep{animation:none;opacity:0}
+    .camera-wrap[data-state="locked"] .scan-reticle{animation:none}
+    .auto-count span{animation:none}
     .live-pill i{animation:none}
+    .anim-in,.modal:not(.hidden) .sheet,.voice-panel:not(.hidden){animation:none}
+    .tilt{transition:none}
   }
 
   /* ---------- history / guide / settings ---------- */
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
   .toolbar input{max-width:320px}
   .filters{display:flex;gap:6px;flex-wrap:wrap}
   .filters button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
@@ -429,7 +582,21 @@
   .hpill.review{background:var(--amber-bg);color:var(--amber)}
   .hpill.high_risk{background:var(--red-bg);color:var(--err)}
   .hpill.incomplete{background:var(--bg);color:var(--ink-3)}
+  .sample-pill{
+    display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--amber);background:var(--amber-bg);border:1px solid var(--line-warn);border-radius:999px;
+    padding:1px 8px;margin-right:6px;vertical-align:2px;white-space:nowrap;
+  }
+  h3 .sample-pill{margin-left:6px;margin-right:0}
+  .scratch-pin{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.14em;text-align:center;padding:14px 10px;background:var(--bg);border:1px dashed var(--line-warn);border-radius:12px;margin-bottom:10px;overflow-wrap:anywhere}
+  .scratch-route{margin:0 0 12px;font-size:13.5px;color:var(--ink-2);text-align:center}
+  .mas-out{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);font-size:13.5px}
+  .mas-out p{margin:6px 0 0;color:var(--ink-2);line-height:1.55}
+  .mas-verdict{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:3px 10px;background:var(--sage);color:var(--ink-3)}
+  .mas-verdict.ok{background:var(--green-bg);color:var(--ok)}
+  .mas-verdict.bad{background:var(--red-bg);color:var(--err)}
   .guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  @media (max-width:640px){.guide-grid{grid-template-columns:1fr}}
   .guide-item{border:1px solid var(--line);border-radius:12px;background:#fff;padding:0;overflow:hidden}
   .guide-item summary{cursor:pointer;padding:15px 16px;font-weight:700;font-size:14.5px;list-style:none;display:flex;gap:10px;align-items:center}
   .guide-item summary::-webkit-details-marker{display:none}
@@ -439,6 +606,9 @@
   .guide-item .g-body p{margin:0 0 8px}
   .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .settings-grid .card{margin:0}
+  .check-row{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:12px;cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:10px;transition:border-color .15s ease}
+  .check-row:hover{border-color:var(--green)}
+  .check-row input{margin-top:3px;flex:0 0 auto}
   @media (max-width:760px){
     .top-in{height:auto;padding:12px 0;flex-wrap:wrap;gap:10px}
     .brand{font-size:20px}
@@ -586,16 +756,17 @@
     backdrop-filter:blur(12px) saturate(150%);
   }
   input,select,textarea{
-    background:rgba(255,255,255,.68);
+    background:rgba(238,243,239,.88);
     box-shadow:0 1px 0 rgba(255,255,255,.9) inset;
-    border-color:rgba(255,255,255,.9);
+    border-color:#B9C8BE;
     -webkit-backdrop-filter:blur(12px);
     backdrop-filter:blur(12px);
   }
-  input:focus,select:focus,textarea:focus{background:rgba(255,255,255,.9)}
+  input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--green);box-shadow:0 0 0 4px rgba(18,107,69,0.13)}
+  input[type=checkbox],input[type=radio]{background:none;border:0;box-shadow:none}
   .btn.ghost{
-    background:rgba(255,255,255,.55);
-    border-color:rgba(255,255,255,.85);
+    background:rgba(255,255,255,.94);
+    border-color:#CBD6CE;
     -webkit-backdrop-filter:blur(12px) saturate(150%);
     backdrop-filter:blur(12px) saturate(150%);
   }
@@ -730,31 +901,132 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
     .card,header.top,nav.tabs,.voice-panel,.sheet,.stat,.caseitem,.hero-scan,.band{background:#fff}
   }
+
+  /* theme toggle */
+  .theme-toggle{margin-left:14px;width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;display:grid;place-items:center;transition:.15s}
+  .theme-toggle:hover{border-color:var(--green);color:var(--green)}
+  .theme-toggle svg{width:18px;height:18px}
+  .theme-toggle .moon{display:none}
+  [data-theme="dark"] .theme-toggle .sun{display:none}
+  [data-theme="dark"] .theme-toggle .moon{display:block}
+
+  /* ---------- dark mode ---------- */
+  [data-theme="dark"]{
+    color-scheme:dark;
+    --paper:#0D1310; --card:#141D18; --line:#26332B; --bg:#0F1612;
+    --ink:#E9F0EB; --ink-2:#C2CFC6; --ink-3:#8FA199;
+    --green:#3DA568; --green-deep:#0A2E22; --green-bg:#12291F; --sage:#18372A;
+    --ok:#4CC38A;
+    --amber:#D9A441; --amber-bg:#332913;
+    --red:#E57373; --red-bg:#371B1B; --err:#E57373;
+    --grey:#8FA199; --grey-bg:#0F1612;
+    --accent:#3DA568;
+    --line-ok:#1E4A38; --line-warn:#5A4A1E; --line-err:#5E2626;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px rgba(0,0,0,.4);
+    --glass-hi:rgba(20,29,24,.94); --glass-mid:rgba(20,29,24,.7); --glass-low:rgba(20,29,24,.5);
+    --glass-edge:rgba(38,51,43,.9);
+    --glass-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 0 0 1px rgba(38,51,43,.6),0 18px 44px rgba(0,0,0,.45);
+  }
+  /* green fills stay deep so white labels keep contrast */
+  [data-theme="dark"] .btn:not(.ghost),[data-theme="dark"] .cta,[data-theme="dark"] .voice-mic,
+  [data-theme="dark"] .scan-tabs button.on,[data-theme="dark"] .filters button.on,[data-theme="dark"] .vmsg.user,
+  [data-theme="dark"] nav.tabs button[aria-selected="true"],[data-theme="dark"] .side-row.captured .num{background:#14663F;border-color:#14663F}
+  [data-theme="dark"] .btn.ghost{background-color:rgba(20,29,24,.6);color:var(--ink)}
+  /* glass surfaces go dark-translucent */
+  [data-theme="dark"] header.top,[data-theme="dark"] nav.tabs,[data-theme="dark"] .voice-panel,
+  [data-theme="dark"] .sheet,[data-theme="dark"] .sheet-hd,[data-theme="dark"] .stat,
+  [data-theme="dark"] .caseitem,[data-theme="dark"] .chk,[data-theme="dark"] .chk[open],
+  [data-theme="dark"] .chip,[data-theme="dark"] .scan-tabs button,[data-theme="dark"] .voice-head,
+  [data-theme="dark"] .voice-controls,[data-theme="dark"] .voice-privacy,
+  [data-theme="dark"] .voice-suggests button,[data-theme="dark"] .vmsg.bot,
+  [data-theme="dark"] .mini-btn,[data-theme="dark"] .hero-ask-mic{background-color:rgba(20,29,24,.78)}
+  /* solid light surfaces -> card */
+  [data-theme="dark"] .layers,[data-theme="dark"] .safety-item,[data-theme="dark"] .compare>div:last-child,
+  [data-theme="dark"] .guide-item,[data-theme="dark"] .filters button,[data-theme="dark"] .photo-card,
+  [data-theme="dark"] .ev-warn,[data-theme="dark"] .voice-stop,[data-theme="dark"] .voice-list,
+  [data-theme="dark"] .todo li,[data-theme="dark"] .ai,[data-theme="dark"] .qitem{background:var(--card)}
+  [data-theme="dark"] .ai{border-color:var(--line)}
+  [data-theme="dark"] .ai .hd{background:var(--bg)}
+  [data-theme="dark"] .card .hd{border-bottom-color:var(--line)}
+  /* inputs */
+  [data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background-color:#1B2620;border-color:#33443A;color:var(--ink)}
+  [data-theme="dark"] input:hover,[data-theme="dark"] select:hover,[data-theme="dark"] textarea:hover{border-color:#4A5F53;background-color:#202E26}
+  [data-theme="dark"] input:focus,[data-theme="dark"] select:focus,[data-theme="dark"] textarea:focus{border-color:var(--green);background-color:#202E26;box-shadow:0 0 0 4px rgba(61,165,104,.22)}
+  [data-theme="dark"] input::placeholder,[data-theme="dark"] textarea::placeholder{color:#82968C}
+  [data-theme="dark"] input[type=checkbox],[data-theme="dark"] input[type=radio]{background:none;border:0;box-shadow:none}
+  /* badges, pills, queues */
+  [data-theme="dark"] .badge{background:#1B2620;color:#9DB5AA;border-color:#33443A}
+  [data-theme="dark"] .badge.rail{background:#16222C;color:#8FB4D6;border-color:#274052}
+  [data-theme="dark"] .pill.overdue{background:#371B1B}
+  [data-theme="dark"] .pill.open{background:#1B2620;color:#9DB5AA}
+  [data-theme="dark"] .qitem.over{border-color:var(--line-err)}
+  [data-theme="dark"] .qitem.today,[data-theme="dark"] .cluster{border-color:var(--line-warn)}
+  [data-theme="dark"] .st.partial{color:#E8C06A;background-color:#332913}
+  [data-theme="dark"] .pattern b{color:#E8C06A}
+  [data-theme="dark"] .todo .n{background:#14663F}
+  [data-theme="dark"] .toast{background:linear-gradient(135deg,#1B2620 0%,#24332B 100%)}
+  /* scanner side panel */
+  [data-theme="dark"] .side-panel{background-color:rgba(20,29,24,.85);border-color:var(--line);box-shadow:none}
+  [data-theme="dark"] .side-row:hover{background-color:rgba(27,38,32,.7)}
+  [data-theme="dark"] .side-row.on{background-color:#1B2620;border-color:rgba(61,165,104,.35)}
+  [data-theme="dark"] .photo-card .pc-x{background-color:rgba(20,29,24,.92)}
+  [data-theme="dark"] .brand-logo{background:#fff;border-radius:10px;padding:3px 8px}
+  /* hero scanner becomes a dark viewfinder; the pack stays lit like a product under scan light */
+  [data-theme="dark"] .hero-scan{background-image:linear-gradient(160deg,rgba(20,29,24,.94),rgba(15,22,18,.66));border-color:rgba(38,51,43,.9);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 20px 50px rgba(0,0,0,.4)}
+  [data-theme="dark"] .hs-view{background:radial-gradient(120% 90% at 50% 0%,#1B2A22,#101815 64%,#0B100E);border-color:rgba(61,165,104,.25);box-shadow:0 8px 22px rgba(0,0,0,.35) inset}
+  [data-theme="dark"] .hs-view::before{background-image:linear-gradient(rgba(61,165,104,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(61,165,104,.13) 1px,transparent 1px)}
+  [data-theme="dark"] .hs-brand{color:#126B45}
+  [data-theme="dark"] .hs-rule{background:#126B45}
+  [data-theme="dark"] .hs-name,[data-theme="dark"] .hs-exp{color:#0D1B1E}
+  [data-theme="dark"] .hs-reg{color:#5F6F68}
+  [data-theme="dark"] .hs-bars{background:repeating-linear-gradient(90deg,#0D1B1E 0 1.2px,transparent 1.2px 2.4px,#0D1B1E 2.4px 4px,transparent 4px 5.6px)}
+  [data-theme="dark"] .hs-beam{background:linear-gradient(180deg,rgba(61,165,104,0),rgba(61,165,104,.08) 40%,rgba(61,165,104,.32) 50%,rgba(61,165,104,.08) 60%,rgba(61,165,104,0))}
+  [data-theme="dark"] .hs-beam::after{background:linear-gradient(90deg,transparent,rgba(76,195,138,.9),transparent);box-shadow:0 0 12px rgba(76,195,138,.4)}
+  [data-theme="dark"] .hs-corner{border-color:rgba(76,195,138,.55)}
+  [data-theme="dark"] .hs-sample{color:#5F6F68}
+  [data-theme="dark"] .hs-read{color:#126B45}
+  [data-theme="dark"] .hs-view:focus-visible,[data-theme="dark"] .hs-hit:focus-visible{outline-color:rgba(61,165,104,.5)}
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+    [data-theme="dark"] .card,[data-theme="dark"] header.top,[data-theme="dark"] nav.tabs,[data-theme="dark"] .voice-panel,[data-theme="dark"] .sheet,[data-theme="dark"] .stat,[data-theme="dark"] .caseitem,[data-theme="dark"] .hero-scan,[data-theme="dark"] .band{background:var(--card)}
+  }
+  /* ---- app shell: sidebar + chat-first main ---- */
+  .app-shell{display:flex;align-items:stretch;min-height:calc(100vh - 69px)}
+  aside.side{width:248px;flex:0 0 248px;background:var(--card);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:69px;height:calc(100vh - 69px);overflow:auto}
+  aside.side nav.tabs{display:flex;flex-direction:column;gap:4px;margin:0}
+  aside.side nav.tabs button{text-align:left;border-radius:10px;padding:10px 14px;font-size:15px}
+  .side-foot{margin-top:auto;padding-top:14px}
+  .app-main{flex:1;min-width:0}
+  body.side-collapsed aside.side{display:none}
+  .side-toggle{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink-2);flex:0 0 40px}
+  .side-toggle:hover{background:var(--sage)}
+  .side-toggle svg{width:20px;height:20px}
+  .side-backdrop{display:none}
+  .hero-ask-mic.listening{background:var(--err);color:#fff;border-color:transparent}
+  [data-theme="dark"] aside.side{background:rgba(20,29,24,.78)}
+  @media (max-width:900px){
+    aside.side{position:fixed;left:0;top:0;bottom:0;height:100dvh;z-index:60;width:270px;transform:translateX(-105%);transition:transform .22s ease;box-shadow:var(--shadow)}
+    body.side-open aside.side{transform:none}
+    body.side-open .side-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(10,18,14,.45)}
+  }
+  @media (prefers-reduced-motion: reduce){ aside.side{transition:none} }
 </style>
 </head>
 <body>
 
 <header class="top">
   <div class="wrap top-in">
+    <button class="side-toggle" id="sideToggle" type="button" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
     <div class="brand">
-      <span class="brand-mark">
-        <span class="shield">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 3L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 3Z" fill="var(--green)"/>
-            <path d="M10 14.17L7.83 12L6.41 13.41L10 17L17.59 9.41L16.17 8L10 14.17Z" fill="#FFFFFF"/>
-          </svg>
-        </span>
-        <span>Vouch</span>
-      </span>
+      <img class="brand-logo" src="/ui/logo.png" alt="Vouch" />
       <small>Check it. Chase it.</small>
     </div>
-    <nav class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="check">Verify</button>
-      <button role="tab" aria-selected="false" data-tab="history">History</button>
-      <button role="tab" aria-selected="false" data-tab="guide">Product guide</button>
-      <button role="tab" aria-selected="false" data-tab="cases">Reports <span id="caseCount"></span></button>
-      <button role="tab" aria-selected="false" data-tab="settings">Settings</button>
-    </nav>
+    <span class="queue-badge hidden" id="queueBadge" role="status"></span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.3" y1="5.3" x2="7" y2="7"/><line x1="17" y1="17" x2="18.7" y2="18.7"/><line x1="5.3" y1="18.7" x2="7" y2="17"/><line x1="17" y1="7" x2="18.7" y2="5.3"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.2A8.2 8.2 0 0 1 10.8 4 8.2 8.2 0 1 0 20 13.2z"/></svg>
+    </button>
     <button class="cta" id="btnScanTop" type="button">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg>
       Scan product
@@ -762,17 +1034,44 @@
   </div>
 </header>
 
+<div class="app-shell">
+  <div class="side-backdrop" id="sideBackdrop"></div>
+  <aside class="side" aria-label="Sections">
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="agent">Agent</button>
+      <button role="tab" aria-selected="false" data-tab="check">Verify</button>
+      <button role="tab" aria-selected="false" data-tab="history">History</button>
+      <button role="tab" aria-selected="false" data-tab="guide">Product guide</button>
+      <button role="tab" aria-selected="false" data-tab="cases">Reports <span id="caseCount"></span></button>
+      <button role="tab" aria-selected="false" data-tab="settings">Settings</button>
+    </nav>
+    <div class="side-foot">
+      <button class="btn ghost sm" id="btnNewChat" type="button" style="width:100%">New chat</button>
+    </div>
+  </aside>
+  <div class="app-main">
 <main class="wrap">
 
-  <div class="hero">
+  <div class="hero hidden">
     <div class="hero-inner">
       <div>
-        <h1>Real Products. Real Dates. Real Safety.</h1>
-        <p>Verify medicines, foods, beverages and everyday consumables against the NAFDAC registry and trusted product databases. Spot copied numbers, altered dates and lapsed registrations — with evidence, not guesses.</p>
+        <span class="hero-eyebrow">Verify before you buy</span>
+        <h1>Scan the pack. Read the <span class="acc">evidence.</span></h1>
+        <p>Vouch reads the barcode, NAFDAC number, batch and dates from the pack, then checks them against the registry and product databases — evidence, not guesses.</p>
+        <div class="hero-rule" aria-hidden="true"></div>
         <div class="hero-actions">
-          <a class="btn accent" href="#form">Check a product</a>
+          <button class="btn accent" id="btnHeroScan" type="button">Scan product</button>
+          <button class="btn ghost" id="btnHeroAsk" type="button">Ask Vouch</button>
           <button class="btn ghost" id="btnJumpCases">View cases</button>
         </div>
+        <form class="hero-ask" id="heroAsk" autocomplete="off">
+          <input id="heroAskInput" placeholder="Ask about a product — e.g. what does this expiry mean?" aria-label="Ask Vouch AI about a product" />
+          <button class="btn sm" type="submit">Ask</button>
+          <button class="hero-ask-mic" id="heroAskMic" type="button" aria-label="Ask with your voice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+          </button>
+        </form>
+        <p class="hero-ask-note">Vouch AI answers from the checks, not from memory. Voice included, typing always works.</p>
       </div>
       <div class="hero-scan">
         <div class="hs-top">
@@ -809,27 +1108,27 @@
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:28px">
-    <div class="bd" style="padding:18px 26px;display:flex;gap:28px;align-items:center;flex-wrap:wrap;justify-content:flex-start">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:36px;height:36px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800">1</div>
-        <div><div style="font-weight:700">Check</div><div style="font-size:13px;color:var(--ink-3)">Scan, paste or enter details</div></div>
+  <div class="card flow-card hidden">
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-n">1</div>
+        <div><b>Check</b><span>Scan, paste or enter details</span></div>
       </div>
-      <div style="color:var(--line);font-size:22px">→</div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:36px;height:36px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800">2</div>
-        <div><div style="font-weight:700">Verify</div><div style="font-size:13px;color:var(--ink-3)">Against NAFDAC or barcode</div></div>
+      <div class="flow-arrow" aria-hidden="true">→</div>
+      <div class="flow-step">
+        <div class="flow-n">2</div>
+        <div><b>Verify</b><span>Against NAFDAC or barcode</span></div>
       </div>
-      <div style="color:var(--line);font-size:22px">→</div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:36px;height:36px;border-radius:10px;background:var(--sage);color:var(--green);display:grid;place-items:center;font-weight:800">3</div>
-        <div><div style="font-weight:700">Chase</div><div style="font-size:13px;color:var(--ink-3)">Report, demand, escalate</div></div>
+      <div class="flow-arrow" aria-hidden="true">→</div>
+      <div class="flow-step">
+        <div class="flow-n">3</div>
+        <div><b>Chase</b><span>Report, demand, escalate</span></div>
       </div>
     </div>
   </div>
 
   <!-- CHECK -->
-  <section id="tab-check">
+  <section id="tab-check" class="hidden">
     <div class="grid">
 
       <div>
@@ -842,15 +1141,13 @@
           </div>
           <div class="bd">
             <div class="demos" id="demos"></div>
-            <p class="hint" style="margin:14px 0 0">See how Vouch catches copied numbers, expired stock, lapsed registrations, and more.</p>
+            <p class="hint" style="margin:14px 0 0">See Vouch catch copied numbers, expired stock and lapsed registrations.</p>
             <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
               <div class="lbl2">Food, drink &amp; everyday products — checked by barcode</div>
               <div class="demos" id="foodDemos">
                 <span class="hint" style="margin:0">Loading…</span>
               </div>
-              <p class="hint" style="margin:10px 0 0">NAFDAC regulates food and cosmetics but does not publish
-                those registrations in the open register, so Vouch checks the code on the pack instead —
-                and says exactly what that does and does not prove.</p>
+              <p class="hint" style="margin:10px 0 0">Those registrations aren't in the open register, so Vouch checks the code on the pack — and says what that proves and doesn't.</p>
             </div>
           </div>
         </div>
@@ -864,13 +1161,13 @@
           </div>
           <div class="bd">
             <div class="row2">
-              <button class="btn ghost sm" id="btnPhoto">Upload photo</button>
-              <button class="btn ghost sm" id="btnPaste">Paste label text</button>
+              <button class="btn ghost sm" id="btnPhoto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload photo</button>
+              <button class="btn ghost sm" id="btnPaste"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Paste label text</button>
             </div>
             <div style="margin-top:12px">
               <div class="lbl2">No pack on the table? Try a sample photo</div>
               <div class="demos" id="samples">
-                <button class="chip" data-sample="sample-genuine.png">Genuine pack</button>
+                <button class="chip" data-sample="sample-genuine.png">Registered pack</button>
                 <button class="chip" data-sample="sample-expired.png">Expired pack</button>
                 <button class="chip" data-sample="sample-copied.png">Copied number</button>
               </div>
@@ -892,14 +1189,19 @@
                 <input name="nafdac_number" placeholder="e.g. A11-0551 or 04-0271" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
               <label class="f"><span>Barcode <em style="font-style:normal;color:var(--ink-3);text-transform:none;letter-spacing:0">— food, drink, cosmetics &amp; household</em></span>
                 <input name="barcode" placeholder="e.g. 5010162000164" inputmode="numeric" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
-              <label class="f"><span>Product Name on Pack</span>
-                <input name="product_name" placeholder="e.g. AC-Drex Tablet" /></label>
-              <label class="f"><span>Manufacturer on Pack</span>
-                <input name="manufacturer" placeholder="As printed on the packaging" /></label>
+              <div class="row2">
+                <label class="f"><span>Product Name on Pack</span>
+                  <input name="product_name" placeholder="e.g. AC-Drex Tablet" /></label>
+                <label class="f"><span>Manufacturer on Pack</span>
+                  <input name="manufacturer" placeholder="As printed on the pack" /></label>
+              </div>
               <div class="row2">
                 <label class="f"><span>Batch / lot</span><input name="batch" placeholder="e.g. ACD2401" /></label>
                 <label class="f"><span>Expiry</span><input name="exp_date" placeholder="e.g. EXP 06/2028" /></label>
               </div>
+              <label class="f"><span>Serial (scratch panel)</span>
+                <input name="serial" placeholder="As printed, if the pack has one" /></label>
+              <span class="hint" style="display:block;margin:-6px 0 12px">Only used when a manufacturer service is connected.</span>
               <div class="row2">
                 <label class="f"><span>Manufactured</span><input name="mfg_date" placeholder="optional" /></label>
                 <label class="f"><span>Price paid</span><input name="price" placeholder="optional" /></label>
@@ -926,12 +1228,14 @@
       <div id="result">
         <div class="card">
           <div class="bd empty">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 16px;display:block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            <div class="empty-disc">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            </div>
             <p style="font-size:16px;color:var(--ink-2);max-width:50ch;margin:0 auto;line-height:1.7">
               <strong>Check it. Chase it.</strong><br/>
-              Vouch verifies your medicine against the live NAFDAC Greenbook, inspects dates and batches, spots red flags, and helps you take action if something's wrong.
+              Vouch checks your medicine against the live NAFDAC Greenbook — dates, batches and red flags — then helps you act if something's wrong.
             </p>
-            <p style="margin-top:16px;color:var(--ink-3);font-size:14px">Pick a demo scenario above, or enter the details from a real pack.</p>
+            <p style="margin-top:16px;color:var(--ink-3);font-size:14px">Pick a demo, or enter a real pack's details.</p>
           </div>
         </div>
       </div>
@@ -962,7 +1266,7 @@
           <button class="btn ghost sm" id="btnClearHistory" type="button" style="margin-left:auto">Clear history</button>
         </div>
         <div id="historyTable"></div>
-        <p class="scan-note">History is stored in this browser only. Nothing is uploaded or shared. Opening a past scan re-runs the same checks against today’s data.</p>
+        <p class="scan-note">Stored in this browser only — never uploaded. Opening a past scan re-runs the checks against today’s data.</p>
       </div>
     </div>
   </section>
@@ -979,21 +1283,21 @@
       <details class="guide-item" open>
         <summary>How to find the expiry date</summary>
         <div class="g-body">
-          <p>Look on the crimp of a tube, the base of a bottle, the sealed end of a sachet, and the back or bottom of a carton. It is often stamped in the same colour as the pack, so tilt it towards the light.</p>
+          <p>Check tube crimps, bottle bases, sachet seals, and carton backs and bottoms — often stamped in the pack's own colour, so tilt it to the light.</p>
           <p>Common formats: <b>EXP 06/2028</b>, <b>06 2028</b>, <b>2028-06</b>, <b>JUN 28</b>. A date without a day usually means the last day of that month.</p>
         </div>
       </details>
       <details class="guide-item">
         <summary>Best-before vs use-by</summary>
         <div class="g-body">
-          <p><b>Use-by</b> is a safety limit. Do not eat or use the product after it, even if it looks fine.</p>
-          <p><b>Best-before</b> is a quality limit. The product may still be safe afterwards, but taste, texture or potency may have changed. Medicines use an expiry date, which is a potency and safety limit.</p>
+          <p><b>Use-by</b> is a hard limit. Do not eat or use the product after it, even if it looks fine.</p>
+          <p><b>Best-before</b> is a quality limit. After it, taste, texture or potency may have changed. Medicines carry an expiry date instead, which is a hard limit.</p>
         </div>
       </details>
       <details class="guide-item">
         <summary>How to identify a batch number</summary>
         <div class="g-body">
-          <p>A batch or lot number is usually 4–10 letters and digits printed near the expiry date, often with <b>LOT</b>, <b>BATCH</b> or <b>BN</b> in front. It identifies the production run, and it is how a recall reaches the right packs.</p>
+          <p>Usually 4–10 letters and digits near the expiry date, often after <b>LOT</b>, <b>BATCH</b> or <b>BN</b>. It identifies the production run — how a recall reaches the right packs.</p>
           <p>If the batch and the expiry are printed in different styles, or one looks stuck on, treat that as a reason to look closer — not proof on its own.</p>
         </div>
       </details>
@@ -1001,13 +1305,13 @@
         <summary>Common packaging irregularities</summary>
         <div class="g-body">
           <p>Watch for: a sticker over printed text; expiry printed over a different date; a seal or tamper band already broken; a missing hologram where the brand normally has one; blurred or uneven print; spelling errors in the brand or manufacturer name; loose or damaged tablets.</p>
-          <p>Each of these is an indicator. Vouch records them as findings with evidence and explains what they do not prove.</p>
+          <p>Each is an indicator. Vouch records it as a finding and states what it does not prove.</p>
         </div>
       </details>
       <details class="guide-item">
         <summary>What a barcode can and cannot prove</summary>
         <div class="g-body">
-          <p>A barcode identifies a product record, not a physical pack. A copied barcode is trivial to reprint, so a match does not prove the item in your hand is genuine.</p>
+          <p>A barcode identifies a product record, not a physical pack — and copies reprint trivially. A match does not prove who made the pack in your hand.</p>
           <p>A barcode that is absent from public databases may simply be a small local producer, or a product not yet catalogued. Vouch never treats absence alone as proof of falsification.</p>
         </div>
       </details>
@@ -1040,7 +1344,7 @@
     <div class="card" style="margin-bottom:18px">
       <div class="bd">
         <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Settings</h2>
-        <p style="margin:0;color:var(--ink-3);font-size:15px">This build stores preferences in this browser. There is no account server, so nothing here is sent anywhere.</p>
+        <p style="margin:0;color:var(--ink-3);font-size:15px">Preferences stay in this browser. This build has no account server, so nothing here is sent anywhere.</p>
       </div>
     </div>
     <div class="settings-grid">
@@ -1062,12 +1366,12 @@
       <div class="card">
         <div class="hd"><h2>Notifications</h2></div>
         <div class="bd">
-          <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:12px">
-            <input type="checkbox" id="setReminders" style="width:auto;margin-top:4px" />
+          <label class="check-row">
+            <input type="checkbox" id="setReminders" />
             <span>Remind me when a case deadline falls due</span>
           </label>
-          <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:12px">
-            <input type="checkbox" id="setSummary" style="width:auto;margin-top:4px" />
+          <label class="check-row">
+            <input type="checkbox" id="setSummary" />
             <span>Show a summary of unresolved cases on the dashboard</span>
           </label>
           <label class="f"><span>Language</span>
@@ -1093,21 +1397,128 @@
         </div>
       </div>
       <div class="card">
-        <div class="hd"><h2>Session</h2></div>
+        <div class="hd"><h2>Greenbook sync</h2></div>
         <div class="bd">
-          <p style="margin:0 0 14px;font-size:13.5px;color:var(--ink-2)">You are using Vouch in local demo mode. No sign-in is required and no data leaves this machine.</p>
-          <button class="btn ghost" id="btnSignOut" type="button">Return to website</button>
+          <p style="margin:0 0 10px;font-size:13.5px;color:var(--ink-2)" id="syncLine">Checking…</p>
+          <button class="btn" id="btnSyncNow" type="button">Sync now</button>
+          <p class="scan-note">Vouch keeps a local Greenbook copy so checks stay fast offline. A sync re-downloads the public listing — a few minutes, resumable if interrupted.</p>
         </div>
+      </div>
+      <div class="card">
+        <div class="hd"><h2>Session</h2></div>
+        <div class="bd" id="sessionBox">
+          <p style="margin:0;font-size:13.5px;color:var(--ink-2)">Checking session…</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENT -->
+  <section id="tab-agent">
+    <div class="card" style="margin-bottom:18px">
+      <div class="bd">
+        <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Ask the agent</h2>
+        <p style="margin:0;color:var(--ink-3);font-size:15px">Send a photo or a question. The agent runs the same checks as Verify, explains in words, and asks before opening any case.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="bd">
+        <div id="agentMsgs" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:420px;overflow:auto"></div>
+        <div id="agentProposal"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" id="agentPhoto" accept="image/*" class="hidden"></label>
+          <button class="hero-ask-mic" id="agentMic" type="button" aria-label="Dictate with your voice" style="width:40px;flex:0 0 40px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+          </button>
+          <input id="agentInput" placeholder="Ask about a pack, or attach a photo…" autocomplete="off" style="flex:1">
+          <button class="btn sm" id="agentSend" type="button">Send</button>
+        </div>
+        <p class="hint" style="margin:8px 0 0">Verdicts come from the check engine; the agent explains and proposes.</p>
       </div>
     </div>
   </section>
 
   <!-- CASES / REPORTS -->
   <section id="tab-cases" class="hidden">
-    <div class="card" style="margin-bottom:18px">
+    <div class="card" style="margin-bottom:18px" id="safetyCard">
+      <div class="hd">
+        <h2>Nigeria Product Safety Intelligence</h2>
+        <span class="who" id="safetySource" style="margin-left:auto">Checking alert source…</span>
+      </div>
       <div class="bd">
-        <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Reports and cases</h2>
-        <p style="margin:0;color:var(--ink-3);font-size:15px">A finding only matters if it is chased. Each case keeps the evidence, the deadline and every document generated from it.</p>
+        <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6;color:var(--ink-2)">
+          Search official batch warnings, watch a batch, and submit what you saw for review.
+          Submissions are evidence, not accusations — and a pattern needs several separate reports.
+        </p>
+        <div class="safety-grid">
+          <div>
+            <div class="toolbar" style="margin-bottom:10px">
+              <input id="safetySearch" placeholder="Search alerts by product, NAFDAC number, batch or barcode" autocomplete="off" aria-label="Search official alerts" />
+              <button class="btn accent" id="btnSafetySearch" type="button">Search alerts</button>
+              <button class="btn ghost" id="btnSafetyClear" type="button">Clear</button>
+            </div>
+            <div id="safetyResults" class="safety-list" aria-live="polite">
+              <div class="safety-empty">No search yet. Try a product name or a batch number.</div>
+            </div>
+
+            <details class="ev-limits" style="margin-top:16px">
+              <summary>Submit evidence for review</summary>
+              <form class="safety-form" id="safetyForm" style="margin-top:12px">
+                <label>Product
+                  <input name="product_name" id="sfProduct" placeholder="e.g. AC-Drex Tablet" autocomplete="off" />
+                </label>
+                <label>NAFDAC number
+                  <input name="nafdac_number" id="sfNafdac" placeholder="e.g. A11-0551" autocomplete="off" />
+                </label>
+                <label>Batch
+                  <input name="batch" id="sfBatch" placeholder="e.g. ACD1902" autocomplete="off" />
+                </label>
+                <label>Barcode
+                  <input name="barcode" id="sfBarcode" placeholder="EAN / UPC, if printed" autocomplete="off" />
+                </label>
+                <label>Seller or shop
+                  <input name="seller" id="sfSeller" placeholder="Name, not an accusation" autocomplete="off" />
+                </label>
+                <label>Location
+                  <input name="location" id="sfLocation" placeholder="Market, town or state" autocomplete="off" />
+                </label>
+                <label>What is wrong?
+                  <select name="issue" id="sfIssue">
+                    <option>suspected counterfeit</option>
+                    <option>expired or wrong date</option>
+                    <option>damaged or badly stored</option>
+                    <option>label or seal problem</option>
+                    <option>adverse reaction</option>
+                    <option>other</option>
+                  </select>
+                </label>
+                <label>Contact (optional, not published)
+                  <input name="contact" id="sfContact" placeholder="Phone or email" autocomplete="off" />
+                </label>
+                <label class="wide">What did you see?
+                  <textarea name="notes" id="sfNotes" placeholder="Describe the label, date, seal, price or reaction. Observed facts beat conclusions."></textarea>
+                  <span class="hint">Stored on this deployment only — never sent to NAFDAC automatically.</span>
+                </label>
+                <label class="wide">Photo (optional, up to 8 MB)
+                  <input name="file" id="sfPhoto" type="file" accept="image/*" />
+                  <span class="hint">A photo of the pack, batch or receipt helps a reviewer. Do not upload personal documents.</span>
+                </label>
+                <div class="wide" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <button class="btn accent" id="btnSafetySubmit" type="submit">Submit for review</button>
+                  <span class="hint" id="safetyFormNote">No automatic publication. A reviewer must look at it first.</span>
+                </div>
+              </form>
+            </details>
+          </div>
+          <aside>
+            <h3 class="safety-h" style="margin-top:0">Batch watch</h3>
+            <div id="safetyWatch" class="safety-empty">Check a product to see its batch.</div>
+            <h3 class="safety-h">Patterns for review</h3>
+            <div id="safetyPatterns" class="safety-list"></div>
+            <h3 class="safety-h">Recent submissions</h3>
+            <div id="safetyReportsList" class="safety-list"></div>
+          </aside>
+        </div>
       </div>
     </div>
     <div id="queueList"></div>
@@ -1117,6 +1528,8 @@
   </section>
 
 </main>
+  </div>
+</div>
 
 <!-- SCANNER -->
 <div class="modal hidden" id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanTitle">
@@ -1139,31 +1552,46 @@
       <div id="modeCamera">
         <div class="ai-scan">
           <div class="scan-stage-main">
-            <div class="camera-wrap" id="camWrap">
+            <div class="camera-wrap" id="camWrap" data-state="idle">
               <video id="cam" playsinline muted autoplay></video>
-              <div class="frame"></div>
               <div class="cam-empty" id="camEmpty">
                 <div>
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
-                  <div><b>Point the camera at the pack</b><br/>Capture the front, then turn the pack for the back, barcode and any damage. Frames stay on this device until you ask them to be read.</div>
+                  <div><b>Point the camera at the pack</b><br/>Vouch finds the barcode, QR code, NAFDAC number, dates and scratch PINs by itself. Turn the pack slowly; each side locks and captures when it is sharp.</div>
                 </div>
               </div>
-              <div class="cam-overlay">
-                <span class="cam-beam"></span>
-                <span class="cam-corners"><i></i><i></i><i></i><i></i></span>
+              <div class="cam-overlay" aria-hidden="true">
+                <div class="scan-reticle" id="scanReticle">
+                  <svg class="reticle-ring" viewBox="0 0 120 120" aria-hidden="true">
+                    <rect class="rg-track" x="3" y="3" width="114" height="114" rx="26" pathLength="100"></rect>
+                    <rect class="rg-fill" id="ringFill" x="3" y="3" width="114" height="114" rx="26" pathLength="100"></rect>
+                  </svg>
+                  <span class="rg-corner a"></span><span class="rg-corner b"></span>
+                  <span class="rg-corner c"></span><span class="rg-corner d"></span>
+                  <span class="rg-sweep"></span>
+                  <span class="rg-coach" id="scanCoach">Start the camera</span>
+                </div>
               </div>
               <div class="cam-top">
-                <span class="live-pill"><i></i>AI scan</span>
+                <span class="live-pill"><i></i>Live scan</span>
                 <span class="qual-pill" id="qualPill">Waiting for camera</span>
               </div>
+              <div class="mod-row" id="modRow" aria-hidden="true">
+                <span class="mod" id="modBarcode" data-state="idle"><i></i>Barcode</span>
+                <span class="mod" id="modQr" data-state="idle"><i></i>QR</span>
+                <span class="mod" id="modNafdac" data-state="idle"><i></i>NAFDAC</span>
+                <span class="mod" id="modDates" data-state="idle"><i></i>Dates</span>
+                <span class="mod" id="modPin" data-state="idle"><i></i>PIN</span>
+              </div>
+              <div class="conflict-line hidden" id="conflictLine" role="status"></div>
               <button class="code-chip hidden" id="codeChip" type="button" aria-live="polite">
-                <span class="ico">
+                <span class="ico" id="codeIcon">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5v14"></path><path d="M7 5v14"></path><path d="M11 5v14"></path><path d="M15 5v14"></path><path d="M19 5v14"></path></svg>
                 </span>
                 <span><b id="codeValue">—</b><small id="codeMeta">Barcode detected</small></span>
                 <span class="ok" id="codeOk">Ready</span>
               </button>
-              <div class="auto-count hidden" id="autoCount"><span>3</span></div>
+              <div class="auto-count hidden" id="autoCount"><span>✓</span></div>
               <div class="cam-hint" id="camHint"><b>Front panel</b> · Brand and product name</div>
               <div class="cam-flash" id="camFlash"></div>
             </div>
@@ -1199,13 +1627,17 @@
             <p class="coach" id="coachText">Start the camera. Each side is checked for focus and light before it is captured.</p>
             <div class="capture-actions">
               <button class="btn accent wide" id="btnCapture" type="button">Capture front panel</button>
-              <label class="auto-toggle"><input id="autoCapture" type="checkbox" /> Auto-capture when the frame is sharp</label>
+              <label class="auto-toggle"><input id="autoCapture" type="checkbox" checked /> Smart auto-capture when a code or label locks</label>
+              <label class="auto-toggle"><input id="fullAuto" type="checkbox" checked /> Full auto — read and verify when all sides lock</label>
+              <label class="auto-toggle"><input id="scanSound" type="checkbox" checked /> Soft chime when a side locks</label>
+              <label class="auto-toggle"><input id="scanVoice" type="checkbox" /> Spoken coach (reads locks aloud)</label>
+              <label class="auto-toggle"><input id="scanAi" type="checkbox" checked /> AI assist (reads the locked frame)</label>
               <button class="btn ghost wide" id="btnFinishScan" type="button" disabled>Read 0 sides with AI</button>
               <button class="mini-btn" id="btnAddSide" type="button">+ Add another side</button>
             </div>
           </aside>
         </div>
-        <p class="scan-note">The camera needs permission and a secure context (localhost or HTTPS). Captured frames stay in this tab; they are sent to the local reader only when you press <b>Read sides with AI</b>. If the camera is blocked, use <b>Photo files</b> or type the details.</p>
+        <p class="scan-note">The camera reads barcodes and QR codes on this device and sends a small crop to the local text reader to find the NAFDAC number, dates and scratch PINs. A field locks when two frames agree; disagreements stay on screen. Captured frames stay in this tab; they are sent to the reader only when you press <b>Read sides with AI</b>. If the camera is blocked, use <b>Photo files</b> or type the details.</p>
       </div>
 
       <div id="modeUpload" class="hidden">
@@ -1233,9 +1665,10 @@
           <button class="btn" id="btnBarcodeLookup" type="button">Look up barcode</button>
           <button class="btn ghost" id="btnBarcodeCamera" type="button">Scan with camera</button>
         </div>
-        <p class="scan-note">The camera reads EAN-8/13, UPC-A/E, Code 128, Data Matrix, Aztec and QR. A code must pass its check digit or be seen on more than one frame before it is used. A barcode match identifies a product record — it does not prove the pack in your hand is genuine.</p>
+        <p class="scan-note">The camera reads EAN-8/13, UPC-A/E, Code 128, Data Matrix, Aztec and QR. A code must pass its check digit or be seen on more than one frame before it is used. A barcode match identifies a product record — it does not prove the pack in your hand came from the listed maker.</p>
       </div>
 
+      <div class="ai-read hidden" id="aiReadBox" aria-live="polite"></div>
       <div id="scanStatus" class="scan-status hidden"></div>
     </div>
   </div>
@@ -1312,19 +1745,73 @@ const BAND = {
   clear:{label:"Clear", tag:"Checks passed"},
   review:{label:"Check further", tag:"Worth a closer look"},
   high_risk:{label:"High-risk signals", tag:"Act now"},
-  incomplete:{label:"Not enough to go on", tag:"Needs more detail"}
+  incomplete:{label:"Inconclusive", tag:"Needs more detail"}
 };
 
-let state = { assessment:null, caseId:null, packs:[], scanEvidence:null };
+let state = { assessment:null, caseId:null, packs:[], scanEvidence:null, pendingScratch:null };
+let lastPhotoSample = '';
 
 /* ---------- helpers ---------- */
 async function api(path, opts={}) {
-  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts});
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
+  try {
+    const token = localStorage.getItem('vouch.token') || '';
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+  } catch {}
+  let r;
+  try {
+    r = await fetch(path, Object.assign({}, opts, {headers}));
+  } catch (err) {
+    // The network itself failed. Case writes are queued and flushed later;
+    // reads and checks cannot be queued, so they fail honestly.
+    if (!opts._flush && (opts.method || 'GET') !== 'GET' && /^\/api\/cases(\/|$)/.test(path)){
+      enqueueWrite(path, opts);
+      toast('Offline. Saved — will send when back online.');
+      throw new Error('Offline. Saved to send later.');
+    }
+    throw err;
+  }
   const text = await r.text();
   let body; try { body = text ? JSON.parse(text) : {}; } catch { body = {detail:text}; }
   if (!r.ok) throw new Error(body.detail || `HTTP ${r.status}`);
   return body;
 }
+
+const QUEUE_KEY = 'vouch.queue.v1';
+function readQueue(){
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }
+  catch { return []; }
+}
+function enqueueWrite(path, opts){
+  const q = readQueue();
+  q.push({path, method:opts.method || 'POST', body:opts.body || null, at:Date.now()});
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-50))); } catch {}
+  paintQueueBadge();
+}
+async function flushQueue(){
+  if (!navigator.onLine) return;
+  let q = readQueue();
+  if (!q.length) return;
+  const rest = [];
+  for (const item of q){
+    try {
+      await api(item.path, {method:item.method, body:item.body, _flush:true});
+    } catch { rest.push(item); break; }
+  }
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(rest)); } catch {}
+  paintQueueBadge();
+  if (!rest.length && q.length) toast('Queued changes sent.');
+}
+function paintQueueBadge(){
+  const el = $('#queueBadge');
+  const n = readQueue().length;
+  if (!el) return;
+  el.classList.toggle('hidden', !n);
+  el.textContent = n + ' queued';
+}
+window.addEventListener('online', flushQueue);
+setInterval(flushQueue, 30000);
+paintQueueBadge();
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('on');
   clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('on'), 2600);
@@ -1342,7 +1829,7 @@ function formData(){
   o.flags = $$('#flags input:checked').map(i=>i.value);
   return o;
 }
-function fillForm(f={}){  for (const k of ['nafdac_number','barcode','product_name','manufacturer','batch','exp_date','mfg_date','price','seller','location','strength','pack_size']) {
+function fillForm(f={}){  for (const k of ['nafdac_number','barcode','product_name','manufacturer','batch','serial','exp_date','mfg_date','price','seller','location','strength','pack_size']) {
     const el = $(`#form [name="${k}"]`); if (el) el.value = f[k] || "";
   }
 }
@@ -1352,18 +1839,130 @@ if(jump){
   jump.onclick = () => goTab('cases');
 }
 
-const TABS = ['check','history','guide','cases','settings'];
+const TABS = ['check','history','guide','cases','settings','agent'];
 function goTab(name){
   const btn = $$('nav.tabs button').find(x => x.dataset.tab === name);
   if (!btn) return;
   $$('nav.tabs button').forEach(x => x.setAttribute('aria-selected', x === btn));
   TABS.forEach(t => { const sec = $('#tab-' + t); if (sec) sec.classList.toggle('hidden', t !== name); });
-  if (name === 'cases') loadCases();
+  const shown = $('#tab-' + name);
+  if (shown){ shown.classList.remove('anim-in'); void shown.offsetWidth; shown.classList.add('anim-in'); }
+  if (name === 'cases'){ loadCases(); loadSafety(); }
   if (name === 'history') renderHistory();
-  if (name === 'settings') loadSettings();
+  if (name === 'settings'){ loadSettings(); loadSyncStatus(); renderSession(); }
+  document.querySelectorAll('.hero,.flow-card').forEach(el => el.classList.toggle('hidden', name !== 'check'));
+  document.body.classList.remove('side-open');
   window.scrollTo({top:0, behavior:'smooth'});
 }
 $$('nav.tabs button').forEach(b => b.onclick = () => goTab(b.dataset.tab));
+
+/* ---------- sidebar ---------- */
+function sideToggle(){
+  if (window.innerWidth <= 900) document.body.classList.toggle('side-open');
+  else {
+    const collapsed = document.body.classList.toggle('side-collapsed');
+    try { localStorage.setItem('vouch.side', collapsed ? '0' : '1'); } catch {}
+  }
+}
+try { if (localStorage.getItem('vouch.side') === '0') document.body.classList.add('side-collapsed'); } catch {}
+$('#sideToggle').onclick = sideToggle;
+$('#sideBackdrop').onclick = () => document.body.classList.remove('side-open');
+$('#btnNewChat').onclick = () => { agentHist.length = 0; $('#agentMsgs').innerHTML = ''; $('#agentProposal').innerHTML = ''; goTab('agent'); };
+
+/* ---------- agent ---------- */
+const agentHist = [];
+let agentBusy = false;
+function agentBubble(who, text){
+  const d = document.createElement('div');
+  d.className = 'vmsg ' + who;
+  d.textContent = text;
+  $('#agentMsgs').appendChild(d);
+  d.scrollIntoView({block:'nearest'});
+  return d;
+}
+function agentProposalCard(p){
+  const box = $('#agentProposal');
+  box.innerHTML = '<div class="card" style="margin:0 0 14px"><div class="bd">'
+    + '<b>' + esc(p.title) + '</b>'
+    + '<p style="margin:6px 0 12px">' + esc(p.detail) + '</p>'
+    + '<div style="display:flex;gap:8px"><button class="btn sm" id="agentApprove" type="button">Open case</button>'
+    + '<button class="btn ghost sm" id="agentDismiss" type="button">Dismiss</button></div></div></div>';
+  $('#agentDismiss').onclick = () => { box.innerHTML = ''; };
+  $('#agentApprove').onclick = async () => {
+    $('#agentApprove').disabled = true;
+    try {
+      const r = await api('/api/agent/chat', {method:'POST', body:JSON.stringify({confirmed_action:p})});
+      box.innerHTML = '';
+      agentBubble('bot', 'Case ' + r.case_id + ' opened (' + r.band + '). ' + (r.headline || ''));
+      agentHist.push({role:'assistant', text:'Opened case ' + r.case_id});
+    } catch(e){ agentBubble('bot', e.message || 'Could not open the case. Sign in first.'); }
+  };
+}
+async function agentSend(){
+  if (agentBusy) return;
+  if (agentListening && agentRec){ try { agentRec.stop(); } catch {} }
+  const input = $('#agentInput');
+  const text = (input.value || '').trim();
+  const file = $('#agentPhoto').files[0];
+  if (!text && !file) return;
+  agentBusy = true;
+  if (text){ agentBubble('user', text); agentHist.push({role:'user', text}); }
+  else agentBubble('user', '(photo)');
+  input.value = '';
+  const thinking = agentBubble('bot thinking', 'Thinking');
+  try {
+    let image_b64 = '';
+    if (file){
+      const buf = await file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 8192)
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+      image_b64 = btoa(bin);
+      $('#agentPhoto').value = '';
+    }
+    const r = await api('/api/agent/chat', {method:'POST', body:JSON.stringify({message:text, history:agentHist.slice(-8), image_b64})});
+    thinking.className = 'vmsg bot';
+    thinking.textContent = r.answer || '(no answer)';
+    agentHist.push({role:'assistant', text:r.answer || ''});
+    if (r.proposal) agentProposalCard(r.proposal);
+  } catch(e){
+    thinking.className = 'vmsg bot';
+    thinking.textContent = e.message || 'The agent is unreachable.';
+  }
+  agentBusy = false;
+}
+$('#agentSend').onclick = agentSend;
+$('#agentInput').addEventListener('keydown', e => { if (e.key === 'Enter') agentSend(); });
+
+/* ---------- agent mic ---------- */
+let agentRec = null, agentListening = false;
+function agentMicUI(){
+  const b = $('#agentMic');
+  b.classList.toggle('listening', agentListening);
+  b.setAttribute('aria-label', agentListening ? 'Stop listening' : 'Dictate with your voice');
+}
+function agentMicToggle(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  if (agentListening && agentRec){ try { agentRec.stop(); } catch {} return; }
+  const rec = new SR();
+  agentRec = rec;
+  rec.lang = navigator.language || 'en-US';
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.onresult = (ev) => {
+    let text = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+    $('#agentInput').value = text;
+  };
+  rec.onend = () => { agentListening = false; agentMicUI(); $('#agentInput').focus(); };
+  rec.onerror = () => { agentListening = false; agentMicUI(); };
+  try { rec.start(); agentListening = true; agentMicUI(); }
+  catch { agentListening = false; agentMicUI(); }
+}
+if (window.SpeechRecognition || window.webkitSpeechRecognition){ $('#agentMic').onclick = agentMicToggle; }
+else { $('#agentMic').style.display = 'none'; }
 
 /* ---------- flags ---------- */
 $('#flags').innerHTML = Object.entries(FLAGS).map(([k,v]) =>
@@ -1376,9 +1975,9 @@ async function loadDemos(){
     const {packs} = await api('/api/demo/packs');
     state.packs = packs;
     $('#demos').innerHTML = packs.map(p => {
-      const col = p.scenario==='high' ? '#b4403a'
-                : p.scenario==='review' ? '#c08a1e'
-                : p.scenario==='clear' ? '#2c7a5b' : '#8a9a94';
+      const col = p.scenario==='high' ? 'var(--err)'
+                : p.scenario==='review' ? 'var(--amber)'
+                : p.scenario==='clear' ? 'var(--ok)' : 'var(--ink-3)';
       return `<button class="chip" data-pack="${esc(p.key)}" title="${esc(p.description)}">
         <span class="b" style="background:${col}"></span>${esc(p.chip || p.title)}</button>`;
     }).join('');
@@ -1391,8 +1990,8 @@ async function loadFoodDemos(){
   try {
     const {demos} = await api('/api/barcodes');
     $('#foodDemos').innerHTML = demos.map(d => {
-      const col = d.expect==='high_risk' ? '#b4403a'
-                : d.expect==='review' ? '#c08a1e' : '#2c7a5b';
+      const col = d.expect==='high_risk' ? 'var(--err)'
+                : d.expect==='review' ? 'var(--amber)' : 'var(--ok)';
       return `<button class="chip" data-bdemo="${esc(d.key)}" title="${esc(d.note||'')}">
         <span class="b" style="background:${col}"></span>${esc(d.chip)}</button>`;
     }).join('');
@@ -1436,7 +2035,12 @@ $('#form').onsubmit = async (ev) => {
     state.scanEvidence = null;
     const a = await api('/api/check', {method:'POST', body:JSON.stringify(formData())});
     state.assessment = a; state.caseId = null;
-    renderAssessment(a);
+    const meta = lastPhotoSample ? {sample:true, title:'Sample photo'} : {};
+    const pend = freshScratch();
+    state.pendingScratch = null;
+    if (pend) meta.scratch = pend;
+    renderAssessment(a, (meta.sample || meta.scratch) ? meta : undefined);
+    lastPhotoSample = '';
   } catch(e){ toast(e.message); }
   finally { b.disabled = false; b.innerHTML = label; }
 };
@@ -1448,9 +2052,10 @@ $('#fileInput').onchange = async (e) => {
   e.target.value = '';
 };
 
-async function readPhoto(fileOrBlob, name){
+async function readPhoto(fileOrBlob, name, isSample){
   const fd = new FormData();
   fd.append('file', fileOrBlob, name || 'pack.jpg');
+  lastPhotoSample = isSample ? (name || 'sample photo') : '';
   toast('Reading the pack…');
   scanStatus('Reading the label — this can take a few seconds…', 'ok');
   try {
@@ -1489,7 +2094,7 @@ const SCAN_FIELD_LABELS = {
   nafdac_number:'NAFDAC number', product_name:'product name',
   manufacturer:'manufacturer', batch:'batch', exp_date:'expiry date',
   mfg_date:'manufacture date', strength:'strength', pack_size:'pack size',
-  barcode:'barcode'
+  barcode:'barcode', pin:'scratch PIN', shortcode:'shortcode'
 };
 
 let camStream = null;
@@ -1497,12 +2102,40 @@ let camFacing = 'environment';
 let camRotation = 0;
 let camMirror = false;
 let scanLoopTimer = null;
-let scanDetectTimer = null;
+let smartLastQuality = 0;
+let smartLastOcr = 0;
 let autoCaptureTimer = null;
-let autoCapture = false;
+let smartAuto = true;
+let fullAuto = true;
+let autoFinishTimer = 0;
+let scanSoundOn = true;
+let scanVoiceOn = false;
+let scanAiOn = true;
+let aiBusy = false;
+let coachSpokeAt = 0;
+let announcedLocks = new Set();
 let lastProbe = null;
 let scanBusy = false;
+let scanCodeBusy = false;
+let scanDeepAt = 0;
 let liveVotes = new Map();
+let liveQrs = new Map();
+let liveNafdac = new Map();
+let liveDates = new Map();
+let livePins = new Map();
+let liveShortcode = {value:'', last:0};
+let registryChecks = new Map();
+let registryPending = new Set();
+let liveFields = {};
+let liveFieldsAt = 0;
+let ocrBusy = false;
+let ocrOff = false;
+let lastZxingAt = 0;
+let lockTimer = null;
+let lockOverlayTimer = null;
+let lastCaptureHash = '';
+let scanCooldownUntil = 0;
+let scanAudio = null;
 let zxingReader = null;
 let nativeDetector = null;
 let nativeDetectorTried = false;
@@ -1513,6 +2146,9 @@ let photoSeq = 0;
 const probeCanvas = document.createElement('canvas');
 const probeCtx = probeCanvas.getContext('2d', {willReadFrequently:true});
 const detectCanvas = document.createElement('canvas');
+const hashCanvas = document.createElement('canvas');
+hashCanvas.width = 9;
+hashCanvas.height = 8;
 
 function clamp(n, lo=0, hi=100){ return Math.max(lo, Math.min(hi, n)); }
 function currentSide(){ return scanSides[activeSide]; }
@@ -1645,14 +2281,33 @@ function checksumOk(code){
   return (10 - (sum % 10)) % 10 === check;
 }
 
+const ZXING_FORMATS = ['AZTEC','CODABAR','CODE_39','CODE_93','CODE_128','DATA_MATRIX',
+  'EAN_8','EAN_13','ITF','PDF_417','QR_CODE','UPC_A','UPC_E'];
+
 function prettyFormat(f){
   const map = {
     ean_13:'EAN-13', ean_8:'EAN-8', upc_a:'UPC-A', upc_e:'UPC-E',
     code_128:'Code 128', code_39:'Code 39', itf:'ITF',
     qr_code:'QR', data_matrix:'Data Matrix', aztec:'Aztec'
   };
-  const key = String(f || '').toLowerCase();
-  return map[key] || (key ? key.replace(/_/g, ' ').toUpperCase() : 'Code');
+  const key = String(f === undefined || f === null ? '' : f).toLowerCase();
+  if (map[key]) return map[key];
+  // The bundled ZXing build reports a numeric BarcodeFormat enum.
+  if (/^\d+$/.test(key)){
+    const Z = window.ZXing;
+    const name = Z && Z.BarcodeFormat
+      ? Object.keys(Z.BarcodeFormat).find(k => /^[A-Z][A-Z0-9_]*$/.test(k)
+          && Z.BarcodeFormat[k] === Number(key))
+      : '';
+    const pretty = {
+      AZTEC:'Aztec', CODABAR:'Codabar', CODE_39:'Code 39', CODE_93:'Code 93',
+      CODE_128:'Code 128', DATA_MATRIX:'Data Matrix', EAN_8:'EAN-8',
+      EAN_13:'EAN-13', ITF:'ITF', MAXICODE:'MaxiCode', PDF_417:'PDF417',
+      QR_CODE:'QR', RSS_14:'RSS-14', UPC_A:'UPC-A', UPC_E:'UPC-E'
+    };
+    if (name && pretty[name]) return pretty[name];
+  }
+  return key ? key.replace(/_/g, ' ').toUpperCase() : 'Code';
 }
 
 function getNativeDetector(){
@@ -1668,19 +2323,36 @@ function getNativeDetector(){
   return nativeDetector;
 }
 
+function zxingHints(Z){
+  const fast = new Map();
+  const deep = new Map();
+  const formatHint = Z.DecodeHintType ? Z.DecodeHintType.POSSIBLE_FORMATS : undefined;
+  if (formatHint !== undefined && Z.BarcodeFormat){
+    // Retail codes first: this is what makes a live frame decode in milliseconds.
+    const retail = ['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','CODE_39','ITF',
+                    'QR_CODE','DATA_MATRIX'];
+    const values = retail.map(n => Z.BarcodeFormat[n]).filter(v => v !== undefined);
+    if (values.length){ fast.set(formatHint, values); deep.set(formatHint, values); }
+  }
+  const harder = Z.DecodeHintType ? Z.DecodeHintType.TRY_HARDER : undefined;
+  if (harder !== undefined) deep.set(harder, true);
+  return {fast, deep};
+}
+
 function getZxingReader(){
   if (zxingReader) return zxingReader;
   if (!window.ZXing || !window.ZXing.MultiFormatReader) return null;
   try {
+    const Z = window.ZXing;
     zxingReader = {
-      reader: new window.ZXing.MultiFormatReader(),
-      hints: new Map([[window.ZXing.DecodeHintType.TRY_HARDER, true]])
+      reader: new Z.MultiFormatReader(),
+      hints: zxingHints(Z)
     };
   } catch { zxingReader = null; }
   return zxingReader;
 }
 
-function zxingFromCanvas(canvas){
+function zxingFromCanvas(canvas, deep){
   const z = getZxingReader();
   if (!z) return [];
   try {
@@ -1692,14 +2364,21 @@ function zxingFromCanvas(canvas){
     }
     const source = new window.ZXing.RGBLuminanceSource(lum, w, h);
     const bitmap = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(source));
-    const result = z.reader.decode(bitmap, z.hints);
+    let result = null;
+    try {
+      result = z.reader.decode(bitmap, deep ? z.hints.deep : z.hints.fast);
+    } catch {
+      result = null;
+    } finally {
+      try { z.reader.reset(); } catch {}
+    }
     const text = result && result.getText ? result.getText() : '';
     const fmt = result && result.getBarcodeFormat ? result.getBarcodeFormat() : 'code';
     return text ? [{rawValue:text, formatString:fmt}] : [];
   } catch { return []; }
 }
 
-async function detectOnCanvas(canvas){
+async function detectOnCanvas(canvas, forceZxing, deep){
   const out = {codes:[], qr:[]};
   function ingest(raw, fmt){
     const text = String(raw || '').trim();
@@ -1725,8 +2404,8 @@ async function detectOnCanvas(canvas){
       for (const c of found || []){ ingest(c.rawValue, c.format); readSomething = true; }
     } catch {}
   }
-  if (!readSomething) {
-    for (const c of zxingFromCanvas(canvas)){ ingest(c.rawValue, c.formatString); readSomething = true; }
+  if (!readSomething || forceZxing) {
+    for (const c of zxingFromCanvas(canvas, deep !== false)){ ingest(c.rawValue, c.formatString); readSomething = true; }
   }
   return out;
 }
@@ -1740,6 +2419,180 @@ function noteVote(code, format){
   return entry;
 }
 
+function noteQr(text){
+  const payload = String(text || '').trim();
+  if (payload.length < 4) return;
+  const entry = liveQrs.get(payload) || {count:0, last:0};
+  entry.count += 1;
+  entry.last = Date.now();
+  liveQrs.set(payload, entry);
+  while (liveQrs.size > 6){
+    let oldest = null;
+    for (const [key, val] of liveQrs){
+      if (!oldest || val.last < oldest.val.last) oldest = {key, val};
+    }
+    liveQrs.delete(oldest.key);
+  }
+}
+
+function noteNafdac(value, strength){
+  const key = String(value || '').toUpperCase();
+  if (!key) return;
+  const entry = liveNafdac.get(key) || {value:key, count:0, strength:'weak', last:0, registry:null};
+  entry.count += 1;
+  if (strength === 'strong') entry.strength = 'strong';
+  entry.last = Date.now();
+  liveNafdac.set(key, entry);
+}
+
+function parseQrPayload(text){
+  // A QR code is not automatically a product code. Only a GTIN-length number
+  // or a NAFDAC number the rest of the app understands counts as parsed.
+  const out = {gtin:'', nafdac:''};
+  const raw = String(text || '').trim();
+  if (raw.length < 4) return out;
+  if (/^\d+$/.test(raw) && [8, 12, 13, 14].includes(raw.length)){
+    out.gtin = raw;
+    return out;
+  }
+  const naf = raw.match(/NAFDAC[^A-Z0-9]{0,12}(?:REG\.?)?[^A-Z0-9]{0,8}(?:NO\.?)?[^A-Z0-9]{0,8}([A-Z]{0,2}\s?\d{1,2}\s?[-\s]?\s?\d{3,7})/i)
+    || raw.match(/(?<![A-Z0-9])([A-Z]{1,2}\s?\d{1,2}\s?-\s?\d{3,7})(?![\dA-Z])/)
+    || raw.match(/(?<![\dA-Z])(\d{1,2}\s?-\s?\d{3,7})(?![\dA-Z])/);
+  if (naf) out.nafdac = naf[1].replace(/\s+/g, '').toUpperCase();
+  if (!out.nafdac && raw.includes('://')){
+    const tail = raw.replace(/\/$/, '').split(/[?#/]/).pop();
+    if (/^\d+$/.test(tail) && [8, 12, 13, 14].includes(tail.length)) out.gtin = tail;
+  }
+  return out;
+}
+
+const DATE_KINDS = {exp:'Expiry', mfg:'Made', best_before:'Best before'};
+
+function noteDate(kind, month, text){
+  if (!kind || !month || !DATE_KINDS[kind]) return null;
+  const key = kind + ':' + month;
+  const entry = liveDates.get(key) || {kind, month, text:'', count:0, last:0};
+  entry.count += 1;
+  if (text) entry.text = text;
+  entry.last = Date.now();
+  liveDates.set(key, entry);
+  if (entry.count === 2) onFieldLock(kind, month);
+  return entry;
+}
+
+function liveDatesFresh(){
+  const now = Date.now();
+  const out = [];
+  for (const entry of liveDates.values()){
+    if (now - entry.last <= 15000) out.push(entry);
+  }
+  return out;
+}
+
+function bestDate(kind){
+  let best = null;
+  for (const entry of liveDatesFresh()){
+    if (entry.kind !== kind) continue;
+    if (!best || entry.count > best.count) best = entry;
+  }
+  return best;
+}
+
+function lockedDates(){
+  const out = {};
+  for (const kind of ['exp', 'mfg', 'best_before']){
+    const best = bestDate(kind);
+    if (best && best.count >= 2) out[kind] = best;
+  }
+  return out;
+}
+
+function dateConflicts(){
+  // Two different months for the same kind, both seen recently: both stay
+  // visible until one of them goes stale. Nothing is averaged away.
+  const found = [];
+  for (const kind of ['exp', 'mfg', 'best_before']){
+    const months = {};
+    for (const entry of liveDatesFresh()){
+      if (entry.kind !== kind) continue;
+      months[entry.month] = Math.max(months[entry.month] || 0, entry.count);
+    }
+    const keys = Object.keys(months);
+    if (keys.length > 1){
+      keys.sort((a, b) => months[b] - months[a]);
+      found.push({kind, label:DATE_KINDS[kind], values:keys.slice(0, 3)});
+    }
+  }
+  return found;
+}
+
+function notePin(value, strength){
+  const key = String(value || '').replace(/\s+/g, '').toUpperCase();
+  if (!key) return null;
+  const entry = livePins.get(key) || {value:key, count:0, strength:'weak', last:0};
+  entry.count += 1;
+  if (strength === 'strong') entry.strength = 'strong';
+  entry.last = Date.now();
+  livePins.set(key, entry);
+  if (entry.count === 2 && entry.strength === 'strong') onPinLock(key);
+  return entry;
+}
+
+function bestPin(){
+  let best = null;
+  for (const entry of livePins.values()){
+    if (Date.now() - entry.last > 15000) continue;
+    const score = entry.count * 10 + (entry.strength === 'strong' ? 45 : 0);
+    if (!best || score > best._score) best = Object.assign({_score:score}, entry);
+  }
+  return best;
+}
+
+function lockedPin(){
+  const best = bestPin();
+  return (best && best.strength === 'strong' && best.count >= 2) ? best : null;
+}
+
+function noteShortcode(value){
+  const v = String(value || '').replace(/\D/g, '');
+  if (!v) return;
+  liveShortcode = {value:v, last:Date.now()};
+}
+
+function bestShortcode(){
+  if (Date.now() - liveShortcode.last > 15000) return '';
+  return liveShortcode.value || '';
+}
+
+function onPinLock(value){
+  const key = 'pin:' + value;
+  if (announcedLocks.has(key)) return;
+  announcedLocks.add(key);
+  lockChime();
+  speakCoach('Scratch PIN locked.');
+}
+
+function liveConflictSummary(){
+  const out = [];
+  const nafs = [...liveNafdac.values()].filter(e => Date.now() - e.last <= 15000);
+  if (nafs.length > 1){
+    nafs.sort((a, b) => b.count - a.count);
+    out.push({kind:'nafdac', label:'NAFDAC', values:nafs.slice(0, 3).map(e => e.value)});
+  }
+  for (const c of dateConflicts()) out.push(c);
+  const pins = [...livePins.values()].filter(e => Date.now() - e.last <= 15000);
+  if (pins.length > 1){
+    pins.sort((a, b) => b.count - a.count);
+    out.push({kind:'pin', label:'Scratch PIN', values:pins.slice(0, 3).map(e => e.value)});
+  }
+  const codes = [...liveVotes.entries()]
+    .filter(([code, e]) => Date.now() - e.last <= 9000 && (checksumOk(code) || e.count >= 2));
+  if (codes.length > 1){
+    out.push({kind:'barcode', label:'Barcode', values:codes.slice(0, 3).map(([code]) => code)});
+  }
+  return out;
+}
+
 function bestLiveCode(){
   let best = null;
   for (const [code, entry] of liveVotes){
@@ -1750,35 +2603,384 @@ function bestLiveCode(){
   return best;
 }
 
-function showCodeChip(code, entry, format){
+function bestQr(){
+  let best = null;
+  for (const [text, entry] of liveQrs){
+    if (Date.now() - entry.last > 12000) continue;
+    if (!best || entry.count > best.count) best = Object.assign({text}, entry);
+  }
+  return best;
+}
+
+function bestNafdac(){
+  let best = null;
+  for (const entry of liveNafdac.values()){
+    if (Date.now() - entry.last > 15000) continue;
+    let score = entry.count * 10 + (entry.strength === 'strong' ? 45 : 0);
+    const verdict = entry.registry && entry.registry.verdict;
+    if (verdict === 'registered') score += 220;
+    else if (verdict === 'inactive') score += 140;
+    else if (verdict === 'not_found') score -= 40;
+    if (!best || score > best._score) best = Object.assign({_score:score}, entry);
+  }
+  return best;
+}
+
+function clearLiveEvidence(){
+  liveVotes = new Map();
+  liveQrs = new Map();
+  liveNafdac = new Map();
+  liveDates = new Map();
+  livePins = new Map();
+  liveShortcode = {value:'', last:0};
+  announcedLocks = new Set();
+  liveFields = {};
+  liveFieldsAt = 0;
+}
+
+function onFieldLock(kind, month){
+  const key = kind + ':' + month;
+  if (announcedLocks.has(key)) return;
+  announcedLocks.add(key);
+  lockChime();
+  speakCoach((DATE_KINDS[kind] || kind) + ' ' + month + ' locked.');
+}
+
+function speakCoach(text){
+  if (!scanVoiceOn) return;
+  if (!('speechSynthesis' in window)) return;
+  const now = Date.now();
+  if (now - coachSpokeAt < 4000) return;
+  coachSpokeAt = now;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.05;
+    speechSynthesis.speak(u);
+  } catch {}
+}
+
+function liveRegistry(entry){
+  if (!entry) return null;
+  if (entry.registry) return entry.registry;
+  const hit = registryChecks.get(entry.value);
+  return hit && hit.state === 'done' ? hit.body : null;
+}
+
+async function verifyNafdac(value){
+  if (!value) return;
+  const seen = registryChecks.get(value);
+  if (seen && seen.state !== 'error') return;
+  registryChecks.set(value, {state:'checking'});
+  try {
+    const r = await fetch('/api/registry/lookup/' + encodeURIComponent(value));
+    if (!r.ok) throw new Error('lookup failed');
+    const body = await r.json();
+    registryChecks.set(value, {state:'done', body});
+    const entry = liveNafdac.get(value);
+    if (entry) entry.registry = body;
+  } catch {
+    registryChecks.set(value, {state:'error'});
+  }
+  paintScanState();
+  evaluateLock();
+}
+
+const ICON_CODE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5v14"></path><path d="M7 5v14"></path><path d="M11 5v14"></path><path d="M15 5v14"></path><path d="M19 5v14"></path></svg>';
+const ICON_QR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14h3v3h-3zM21 14v3M14 21h3M21 21h.01"></path></svg>';
+const ICON_DOC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path><path d="M8 13h8M8 17h5"></path></svg>';
+
+function evidenceState(){
+  const q = (lastProbe && lastProbe.quality) || null;
+  const qScore = q ? q.score : 0;
+  const gate = clamp((qScore - 45) / 35, 0, 1);
+  const barcode = bestLiveCode();
+  const qr = bestQr();
+  const naf = bestNafdac();
+  const side = currentSide() || {label:'side'};
+
+  const barcodeOk = !!(barcode && (checksumOk(barcode.code) || barcode.count >= 2));
+  const qrOk = !!(qr && qr.text);
+  const verdict = naf ? (liveRegistry(naf) || {}).verdict : '';
+  const nafRegistered = verdict === 'registered' || verdict === 'inactive';
+  const nafOk = !!(naf && ((naf.strength === 'strong' && naf.count >= 2) || nafRegistered));
+  const locked = lockedDates();
+  let dateKind = '';
+  for (const k of ['exp', 'best_before', 'mfg']){ if (locked[k]){ dateKind = k; break; } }
+  const dateOk = !!dateKind;
+
+  let out = {kind:'', value:'', meta:'', ok:'', tone:'', locked:false, base:0, progress:0,
+             state:'idle', quality:qScore, side};
+
+  if (barcodeOk){
+    out.kind = 'barcode';
+    out.value = barcode.code;
+    out.meta = (barcode.format || 'Barcode') + ' · seen ' + barcode.count + '×';
+    out.ok = checksumOk(barcode.code) ? 'Check digit ok' : 'Seen twice';
+    out.tone = checksumOk(barcode.code) ? '' : 'wait';
+    out.base = checksumOk(barcode.code) ? 0.86 : 0.6;
+    out.locked = true;
+  } else if (qrOk){
+    out.kind = 'qr';
+    out.value = qr.text.length > 44 ? qr.text.slice(0, 44) + '…' : qr.text;
+    out.meta = 'QR payload · seen ' + qr.count + '×';
+    out.ok = 'QR read';
+    out.base = 0.9;
+    out.locked = true;
+  } else if (naf){
+    out.kind = 'nafdac';
+    out.value = naf.value;
+    if (verdict === 'registered'){
+      const rec = (liveRegistry(naf) || {}).matched || {};
+      out.meta = 'In the NAFDAC register' + (rec.product_name ? ' · ' + rec.product_name : '');
+      out.ok = 'Registered';
+      out.tone = '';
+    } else if (verdict === 'inactive'){
+      out.meta = 'Registered to ' + (((liveRegistry(naf) || {}).matched || {}).manufacturer || 'the holder')
+        + ' · status inactive';
+      out.ok = 'Inactive';
+      out.tone = 'warn';
+    } else if (verdict === 'not_found'){
+      out.meta = 'Not in the register · check the digits before relying on it';
+      out.ok = 'Not found';
+      out.tone = 'warn';
+    } else if (registryChecks.get(naf.value) && registryChecks.get(naf.value).state === 'checking'){
+      out.meta = 'Checking the NAFDAC register…';
+      out.ok = 'Reading';
+      out.tone = 'wait';
+    } else {
+      out.meta = (naf.strength === 'strong' ? 'Printed number' : 'Number-like text')
+        + ' · seen ' + naf.count + '×';
+      out.ok = nafOk ? 'Seen twice' : 'Check digits';
+      out.tone = nafOk ? 'wait' : 'warn';
+    }
+    out.base = nafOk ? 0.86 : Math.min(0.6, 0.25 + naf.count * 0.15);
+    out.locked = nafOk;
+  } else if (dateOk){
+    const d = locked[dateKind];
+    out.kind = 'date';
+    out.value = (DATE_KINDS[dateKind] || dateKind) + ' ' + d.month;
+    out.meta = 'Printed date · seen ' + d.count + '×';
+    out.ok = 'Seen twice';
+    out.base = 0.86;
+    out.locked = true;
+  } else if (lockedPin()){
+    const p = lockedPin();
+    out.kind = 'pin';
+    out.value = p.value;
+    out.meta = 'Scratch PIN · seen ' + p.count + '×';
+    out.ok = 'Seen twice';
+    out.base = 0.86;
+    out.locked = true;
+  }
+
+  if (!out.kind){
+    out.state = camStream ? 'idle' : 'idle';
+    out.progress = 0;
+  } else {
+    out.progress = out.locked ? 0.82 + 0.18 * gate : out.base * (0.5 + 0.5 * gate);
+    out.state = out.locked ? (qScore >= 55 ? 'locked' : 'held') : 'seeing';
+  }
+
+  const sameView = !!(lastCaptureHash && lastProbe && lastProbe.hash
+    && hashDistance(lastProbe.hash, lastCaptureHash) < 10);
+  out.sameView = sameView;
+  out.conflicts = liveConflictSummary();
+  if (!out.kind && ocrOff && !liveVotes.size){
+    out.hint = 'Text reader unavailable here. Barcode and QR still work.';
+  } else if (out.state === 'locked'){
+    out.hint = smartAuto
+      ? 'Locked — holding ' + String(side.label || 'side').toLowerCase()
+      : 'Locked · press Capture ' + String(side.label || 'side').toLowerCase();
+  } else if (out.state === 'held'){
+    out.hint = 'Read. Hold still — the picture is soft.';
+  } else if (out.kind === 'barcode'){
+    out.hint = 'Barcode in view — hold still.';
+  } else if (out.kind === 'qr'){
+    out.hint = 'QR code read — hold still.';
+  } else if (out.kind === 'nafdac'){
+    out.hint = nafOk ? 'NAFDAC number read — hold still.' : 'Number seen. Keep it steady.';
+  } else if (out.kind === 'date'){
+    out.hint = 'Date read — hold still.';
+  } else if (out.kind === 'pin'){
+    out.hint = 'Scratch PIN read — hold still.';
+  } else if (!camStream){
+    out.hint = 'Start the camera';
+  } else if (sameView && scanSides.some(s => s.frame)){
+    out.hint = 'Say turn the pack to ' + String(side.label || 'the next side').toLowerCase();
+  } else {
+    out.hint = 'Looking for a barcode, QR, number, date or scratch PIN';
+  }
+  return out;
+}
+
+function paintMod(el, state, title){
+  if (!el) return;
+  if (el.getAttribute('data-state') !== state) el.setAttribute('data-state', state);
+  if (title && el.title !== title) el.title = title;
+}
+
+function paintScanState(st){
+  st = st || evidenceState();
+  const wrap = $('#camWrap');
+  if (wrap) wrap.setAttribute('data-state', st.state);
+  const fill = $('#ringFill');
+  if (fill){
+    const offset = (100 - Math.round(st.progress * 1000) / 10).toFixed(1);
+    if (fill.style.strokeDashoffset !== offset) fill.style.strokeDashoffset = offset;
+  }
+  const coach = $('#scanCoach');
+  if (coach && coach.textContent !== st.hint) coach.textContent = st.hint;
+
+  const anyCode = liveVotes.size > 0;
+  const barcode = bestLiveCode();
+  const barcodeOk = !!(barcode && (checksumOk(barcode.code) || barcode.count >= 2));
+  const qr = bestQr();
+  const naf = bestNafdac();
+  const nafOk = st.kind === 'nafdac' && st.locked;
+  paintMod($('#modBarcode'), barcodeOk ? 'lock' : anyCode ? 'seen' : 'idle');
+  paintMod($('#modQr'), qr ? 'lock' : 'idle');
+  paintMod($('#modNafdac'), ocrOff ? 'off' : nafOk ? 'lock' : naf ? 'seen' : 'idle',
+    ocrOff ? 'The local text reader is not available on this machine.' : 'Printed NAFDAC number');
+  const dateSeen = liveDatesFresh().length > 0;
+  const dateLocked = st.kind === 'date' && st.locked;
+  paintMod($('#modDates'), ocrOff ? 'off' : dateLocked ? 'lock' : dateSeen ? 'seen' : 'idle',
+    ocrOff ? 'The local text reader is not available on this machine.' : 'Printed dates');
+  const pinSeen = bestPin() ? true : false;
+  const pinLocked = st.kind === 'pin' && st.locked;
+  paintMod($('#modPin'), ocrOff ? 'off' : pinLocked ? 'lock' : pinSeen ? 'seen' : 'idle',
+    ocrOff ? 'The local text reader is not available on this machine.' : 'Scratch PIN');
+
+  const clash = $('#conflictLine');
+  if (clash){
+    const list = st.conflicts || [];
+    if (!list.length){
+      clash.classList.add('hidden');
+      if (clash.textContent) clash.textContent = '';
+    } else {
+      clash.classList.remove('hidden');
+      const full = 'More than one read — '
+        + list.map(c => c.label + ': ' + c.values.join(' vs ')).join(' · ')
+        + '. Hold steady on one line.';
+      if (clash.textContent !== full){
+        clash.textContent = full;
+        speakCoach('Two readings disagree. Hold steady on one line.');
+      }
+    }
+  }
+
   const chip = $('#codeChip');
   if (!chip) return;
-  const valid = checksumOk(code);
-  $('#codeValue').textContent = code;
-  $('#codeMeta').textContent = (format || 'Barcode') + ' · seen ' + (entry.count || 1) + '×';
-  $('#codeOk').textContent = valid ? 'Check digit ok' : 'Consensus';
-  chip.classList.toggle('bad', !valid);
+  if (!st.kind){
+    if (!chip.classList.contains('hidden')) chip.classList.add('hidden');
+    return;
+  }
+  if (chip.dataset.kind !== st.kind){
+    chip.dataset.kind = st.kind;
+    const ico = $('#codeIcon');
+    if (ico) ico.innerHTML = (st.kind === 'nafdac' || st.kind === 'date' || st.kind === 'pin') ? ICON_DOC : st.kind === 'qr' ? ICON_QR : ICON_CODE;
+    chip.onclick = st.kind === 'nafdac'
+      ? () => useLiveNafdac(st.value)
+      : st.kind === 'date'
+        ? () => useLiveDate()
+        : st.kind === 'pin'
+          ? () => useLivePin()
+          : () => { stopCamera(); lookupBarcode(st.value); };
+  }
+  const valueEl = $('#codeValue');
+  if (valueEl && valueEl.textContent !== st.value) valueEl.textContent = st.value;
+  const metaEl = $('#codeMeta');
+  if (metaEl && metaEl.textContent !== st.meta) metaEl.textContent = st.meta;
+  const okEl = $('#codeOk');
+  if (okEl){
+    if (okEl.textContent !== st.ok) okEl.textContent = st.ok;
+    okEl.className = 'ok' + (st.tone ? ' ' + st.tone : '');
+  }
+  chip.classList.toggle('bad', st.tone === 'warn');
   chip.classList.remove('hidden');
-  chip.onclick = () => { stopCamera(); lookupBarcode(code); };
+}
+
+function useLiveNafdac(value){
+  stopCamera();
+  closeScanner();
+  fillForm({nafdac_number: value});
+  goTab('check');
+  toast('NAFDAC number ' + value + ' is in the form. Press Check to verify it.');
+}
+
+function useLiveDate(){
+  const locked = lockedDates();
+  const pick = locked.exp || locked.best_before || locked.mfg;
+  if (!pick) return;
+  stopCamera();
+  closeScanner();
+  fillForm(pick.kind === 'mfg' ? {mfg_date: pick.month} : {exp_date: pick.month});
+  goTab('check');
+  toast('Date ' + pick.month + ' is in the form. Press Check to verify it.');
+}
+
+function freshScratch(){
+  const p = state.pendingScratch;
+  if (!p || !p.pin || Date.now() - (p.at || 0) > 180000) return null;
+  return p;
+}
+
+function useLivePin(){
+  const pin = lockedPin() || bestPin();
+  if (!pin) return;
+  state.pendingScratch = {pin: pin.value, shortcode: bestShortcode(), at: Date.now()};
+  stopCamera();
+  closeScanner();
+  goTab('check');
+  toast('Scratch PIN saved. Press Check to run it with the pack.');
 }
 
 /* ---------- camera ---------- */
-function drawVideoToCanvas(canvas, rotation, mirror){
+function drawVideoToCanvas(canvas, rotation, mirror, maxSide){
   const video = $('#cam');
   if (!video || !video.videoWidth) return false;
   const w = video.videoWidth, h = video.videoHeight;
   const swap = rotation % 180 !== 0;
-  canvas.width = swap ? h : w;
-  canvas.height = swap ? w : h;
+  const baseW = swap ? h : w;
+  const baseH = swap ? w : h;
+  const scale = maxSide ? Math.min(1, maxSide / Math.max(baseW, baseH)) : 1;
+  canvas.width = Math.max(1, Math.round(baseW * scale));
+  canvas.height = Math.max(1, Math.round(baseH * scale));
   const ctx = canvas.getContext('2d', {willReadFrequently:true});
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate((rotation || 0) * Math.PI / 180);
-  if (mirror) ctx.scale(-1, 1);
+  ctx.scale((mirror ? -1 : 1) * scale, scale);
   ctx.drawImage(video, -w / 2, -h / 2, w, h);
   ctx.restore();
   return true;
 }
+
+function frameHash(canvas){
+  try {
+    const ctx = hashCanvas.getContext('2d', {willReadFrequently:true});
+    ctx.clearRect(0, 0, 9, 8);
+    ctx.drawImage(canvas, 0, 0, 9, 8);
+    const data = ctx.getImageData(0, 0, 9, 8).data;
+    let bits = '';
+    for (let y = 0; y < 8; y++){
+      for (let x = 0; x < 8; x++){
+        const a = data[(y * 9 + x) * 4];
+        const b = data[(y * 9 + x + 1) * 4];
+        bits += a > b ? '1' : '0';
+      }
+    }
+    return bits;
+  } catch { return ''; }
+}
+
+function hashDistance(a, b){
+  if (!a || !b || a.length !== b.length) return 64;
+  let n = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) n++;
+  return n;
+}
+
 
 function applyPreviewRotation(){
   const video = $('#cam');
@@ -1793,37 +2995,199 @@ function applyPreviewRotation(){
 
 function stopScanLoop(){
   if (scanLoopTimer){ clearInterval(scanLoopTimer); scanLoopTimer = null; }
-  if (scanDetectTimer){ clearInterval(scanDetectTimer); scanDetectTimer = null; }
+}
+
+function qualityTick(){
+  if (!camStream) return;
+  const video = $('#cam');
+  if (!video || !video.videoWidth) return;
+  const canvas = document.createElement('canvas');
+  if (!drawVideoToCanvas(canvas, camRotation, camMirror, 960)) return;
+  const quality = measureCanvas(canvas);
+  lastProbe = {quality, hash: frameHash(canvas), at: Date.now()};
+  setQualityUI(quality);
+  if (lockTimer && quality && quality.score < 45) cancelLock(true);
+  paintScanState();
+  evaluateLock();
 }
 
 function startScanLoop(){
   stopScanLoop();
-  scanLoopTimer = setInterval(() => {
-    if (!camStream) return;
-    const video = $('#cam');
-    if (!video || !video.videoWidth) return;
-    const canvas = document.createElement('canvas');
-    if (!drawVideoToCanvas(canvas, camRotation, camMirror)) return;
-    const quality = measureCanvas(canvas);
-    lastProbe = {quality, at: Date.now()};
-    setQualityUI(quality);
-    if (autoCapture && !autoCaptureTimer && quality && quality.score >= 72){
-      const side = currentSide();
-      if (side && !side.frame) beginAutoCapture();
-    }
-  }, 720);
-  scanDetectTimer = setInterval(scanForCodes, 1150);
+  smartLastQuality = 0;
+  smartLastOcr = 0;
+  qualityTick();
+  scanLoopTimer = setInterval(smartTick, 240);
+}
+
+// One smart camera loop. Every tick reads barcodes and QR codes; the slower
+// quality and text passes ride the same tick on their own cadence, so a frame
+// is judged once and every detector sees the same moment.
+function smartTick(){
+  const now = Date.now();
+  if (now - smartLastQuality >= 650){ smartLastQuality = now; qualityTick(); }
+  scanForCodes();
+  if (now - smartLastOcr >= 1500){ smartLastOcr = now; scanForText(); }
 }
 
 async function scanForCodes(){
-  if (!camStream || scanBusy) return;
-  if (!drawVideoToCanvas(detectCanvas, camRotation, camMirror)) return;
-  const found = await detectOnCanvas(detectCanvas);
-  for (const c of found.codes) noteVote(c.value, c.format);
-  const best = bestLiveCode();
-  if (best && (checksumOk(best.code) || best.count >= 2)){
-    showCodeChip(best.code, best, best.format);
+  if (!camStream || scanBusy || scanCodeBusy || document.hidden) return;
+  if (!drawVideoToCanvas(detectCanvas, camRotation, camMirror, 960)) return;
+  scanCodeBusy = true;
+  try {
+    // A restricted-format decode takes milliseconds. A thorough decode of the
+    // same frame takes hundreds, so it only runs when the fast pass is blind.
+    let found = await detectOnCanvas(detectCanvas, false, false);
+    if (!found.codes.length && !found.qr.length && Date.now() - scanDeepAt > 1800){
+      scanDeepAt = Date.now();
+      found = await detectOnCanvas(detectCanvas, true, true);
+    }
+    for (const c of found.codes) noteVote(c.value, c.format);
+    for (const payload of found.qr){
+      noteQr(payload);
+      // A QR that carries a product code or NAFDAC number votes with the rest.
+      const parsed = parseQrPayload(payload);
+      if (parsed.gtin) noteVote(parsed.gtin, 'QR code');
+      if (parsed.nafdac) noteNafdac(parsed.nafdac, /[A-Z]/.test(parsed.nafdac) ? 'strong' : 'weak');
+    }
+    paintScanState();
+    evaluateLock();
+  } finally {
+    scanCodeBusy = false;
   }
+}
+
+async function scanForText(){
+  if (!camStream || ocrBusy || ocrOff || scanBusy || document.hidden) return;
+  if (Date.now() < scanCooldownUntil) return;
+  const side = currentSide();
+  if (!side || side.frame) return;
+  const q = lastProbe && lastProbe.quality;
+  if (q && q.score < 32) return;
+
+  const frame = document.createElement('canvas');
+  if (!drawVideoToCanvas(frame, camRotation, camMirror, 1100)) return;
+  const cw = Math.max(8, Math.round(frame.width * 0.8));
+  const ch = Math.max(8, Math.round(frame.height * 0.8));
+  const crop = document.createElement('canvas');
+  crop.width = Math.min(900, cw);
+  crop.height = Math.max(1, Math.round(ch * crop.width / cw));
+  const ctx = crop.getContext('2d', {willReadFrequently:true});
+  ctx.drawImage(frame, Math.round((frame.width - cw) / 2), Math.round((frame.height - ch) / 2),
+    cw, ch, 0, 0, crop.width, crop.height);
+
+  ocrBusy = true;
+  try {
+    const blob = await canvasToBlob(crop, 0.74);
+    if (!blob) return;
+    const fd = new FormData();
+    fd.append('file', blob, 'live.jpg');
+    const r = await fetch('/api/scan/live', {method:'POST', body:fd});
+    if (r.status === 503){ ocrOff = true; paintScanState(); return; }
+    if (!r.ok) return;
+    const out = await r.json();
+    if (out.fields && Object.keys(out.fields).length){
+      liveFields = out.fields;
+      liveFieldsAt = Date.now();
+    }
+    const candidates = out.nafdac || [];
+    for (const c of candidates) noteNafdac(c.value, c.strength);
+    for (const d of (out.dates || [])) noteDate(d.kind, d.month, d.text);
+    for (const p of (out.pins || [])) notePin(p.value, p.strength);
+    if (out.shortcode) noteShortcode(out.shortcode);
+    paintScanState();
+    evaluateLock();
+    const best = bestNafdac();
+    if (best && !ocrOff){
+      const strong = best.strength === 'strong' && best.count >= 2;
+      const weak = best.strength !== 'strong' && best.count >= 3;
+      if ((strong || weak) && !registryChecks.has(best.value)) verifyNafdac(best.value);
+    }
+  } catch {
+    /* The next tick tries again; a failed frame is not a result. */
+  } finally {
+    ocrBusy = false;
+  }
+}
+
+function beginLockHold(){
+  if (lockTimer) return;
+  const side = currentSide();
+  if (!side || side.frame) return;
+  const st = evidenceState();
+  if (!st.locked) return;
+  const q = lastProbe && lastProbe.quality;
+  if (!q || q.score < 55) return;
+  if (lastCaptureHash && lastProbe.hash
+      && hashDistance(lastProbe.hash, lastCaptureHash) < 10
+      && scanSides.some(s => s.frame)) return;
+  if (Date.now() < scanCooldownUntil) return;
+
+  showLockOverlay();
+  lockChime();
+  speakCoach('Locked. Hold still.');
+  lockTimer = setTimeout(() => {
+    lockTimer = null;
+    hideLockOverlay();
+    const now = evidenceState();
+    const q2 = lastProbe && lastProbe.quality;
+    if (!now.locked || !q2 || q2.score < 50 || !camStream) return;
+    if (currentSide() !== side) return;
+    captureSide(true);
+  }, 1100);
+}
+
+function evaluateLock(){
+  if (!smartAuto || !camStream){ return; }
+  beginLockHold();
+}
+
+function showLockOverlay(){
+  const el = $('#autoCount');
+  if (!el) return;
+  el.classList.remove('hidden');
+  const badge = el.querySelector('span');
+  if (badge){ badge.style.animation = 'none'; void badge.offsetWidth; badge.style.animation = ''; }
+  if (lockOverlayTimer) clearTimeout(lockOverlayTimer);
+  lockOverlayTimer = setTimeout(() => {
+    lockOverlayTimer = null;
+    el.classList.add('hidden');
+  }, 1100);
+}
+
+function hideLockOverlay(){
+  if (lockOverlayTimer){ clearTimeout(lockOverlayTimer); lockOverlayTimer = null; }
+  const el = $('#autoCount');
+  if (el) el.classList.add('hidden');
+}
+
+function cancelLock(quiet){
+  if (lockTimer){ clearTimeout(lockTimer); lockTimer = null; }
+  hideLockOverlay();
+  if (!quiet) paintScanState();
+}
+
+function lockChime(){
+  if (!scanSoundOn) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    scanAudio = scanAudio || new Ctx();
+    if (scanAudio.state === 'suspended') scanAudio.resume().catch(() => {});
+    const t = scanAudio.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const osc = scanAudio.createOscillator();
+      const gain = scanAudio.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t + i * 0.09);
+      gain.gain.linearRampToValueAtTime(0.05, t + i * 0.09 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.17);
+      osc.connect(gain).connect(scanAudio.destination);
+      osc.start(t + i * 0.09);
+      osc.stop(t + i * 0.09 + 0.19);
+    });
+  } catch {}
+  if (navigator.vibrate){ try { navigator.vibrate(20); } catch {} }
 }
 
 async function startCamera(){
@@ -1861,7 +3225,7 @@ async function startCamera(){
 
 function stopCamera(){
   stopScanLoop();
-  cancelAutoCapture();
+  cancelLock(true);
   if (camStream){
     camStream.getTracks().forEach(t => { try { t.stop(); } catch {} });
     camStream = null;
@@ -1872,6 +3236,18 @@ function stopCamera(){
   if (empty) empty.classList.remove('hidden');
   const chip = $('#codeChip');
   if (chip) chip.classList.add('hidden');
+  clearLiveEvidence();
+  lastProbe = null;
+  const wrap = $('#camWrap');
+  if (wrap) wrap.setAttribute('data-state', 'idle');
+  const coach = $('#scanCoach');
+  if (coach) coach.textContent = 'Start the camera';
+  ['#modBarcode', '#modQr', '#modNafdac', '#modDates', '#modPin'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.setAttribute('data-state', 'idle');
+  });
+  const clash = $('#conflictLine');
+  if (clash){ clash.classList.add('hidden'); clash.textContent = ''; }
   setQualityUI(null);
 }
 
@@ -1887,33 +3263,6 @@ function canvasToBlob(canvas){
   return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
 }
 
-function beginAutoCapture(){
-  if (autoCaptureTimer) return;
-  const el = $('#autoCount');
-  if (!el) return;
-  let left = 3;
-  const number = el.querySelector('span');
-  el.classList.remove('hidden');
-  if (number) number.textContent = String(left);
-  autoCaptureTimer = setInterval(() => {
-    left -= 1;
-    if (left <= 0){
-      clearInterval(autoCaptureTimer);
-      autoCaptureTimer = null;
-      el.classList.add('hidden');
-      if (autoCapture && camStream) captureSide();
-      return;
-    }
-    if (number) number.textContent = String(left);
-  }, 800);
-}
-
-function cancelAutoCapture(){
-  if (autoCaptureTimer){ clearInterval(autoCaptureTimer); autoCaptureTimer = null; }
-  const el = $('#autoCount');
-  if (el) el.classList.add('hidden');
-}
-
 function advanceSide(){
   const total = scanSides.length;
   for (let step = 1; step <= total; step++){
@@ -1922,46 +3271,153 @@ function advanceSide(){
   }
 }
 
-async function captureSide(){
+function clearAiRead(){
+  const box = $('#aiReadBox');
+  if (box){ box.classList.add('hidden'); box.innerHTML = ''; }
+}
+
+// The intelligent pass. Live detectors are instant but narrow; once a frame
+// locks, the vision model reads the whole label at once — dates, batch,
+// names, PIN — plus anything unusual about the printing. Live votes always
+// win on codes; the model fills everything around them.
+async function analyzeFrameAI(blob){
+  if (!scanAiOn || aiBusy || !blob || !navigator.onLine) return;
+  aiBusy = true;
+  try {
+    const fd = new FormData();
+    fd.append('file', blob, 'locked-frame.jpg');
+    const r = await fetch('/api/extract/image', {method:'POST', body:fd});
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return;
+    const ex = body.extraction || {};
+    paintAiRead(ex);
+    // Merge: the model fills gaps, never overrides a locked live read.
+    for (const key of ['nafdac_number', 'product_name', 'batch', 'exp_date', 'mfg_date']){
+      if (ex[key] && !liveFields[key]) liveFields[key] = ex[key];
+    }
+    if (ex.best_before && !liveFields.exp_date) liveFields.exp_date = ex.best_before;
+    liveFieldsAt = Date.now();
+    if (ex.pin && !lockedPin()){
+      state.pendingScratch = {pin: String(ex.pin).replace(/\s+/g, '').toUpperCase(),
+        shortcode: String(ex.shortcode || '').replace(/\D/g, ''), at: Date.now()};
+    }
+    paintScanState();
+  } catch {
+    // Offline or model-less: the live detectors carry on alone.
+  } finally {
+    aiBusy = false;
+  }
+}
+
+function paintAiRead(ex){
+  const box = $('#aiReadBox');
+  if (!box) return;
+  const rows = [
+    ['Product', ex.product_name], ['Maker', ex.manufacturer],
+    ['NAFDAC', ex.nafdac_number], ['Batch', ex.batch],
+    ['Expiry', ex.exp_date], ['Made', ex.mfg_date],
+    ['Best before', ex.best_before], ['PIN', ex.pin],
+    ['Strength', ex.strength], ['Pack', ex.pack_size],
+  ].filter(([, v]) => v);
+  const warns = ex.warnings || [];
+  if (!rows.length && !warns.length){ box.classList.add('hidden'); box.innerHTML = ''; return; }
+  box.classList.remove('hidden');
+  box.innerHTML = '<h4>AI read · ' + esc(ex.provider || 'label model') + '</h4>'
+    + (rows.length ? '<dl class="ai-grid">' + rows.map(([k, v]) =>
+      '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>' : '')
+    + warns.map(w => '<p class="ai-warn">• ' + esc(w) + '</p>').join('');
+}
+
+async function captureSide(auto){
   if (scanBusy) return;
   if (!camStream){ scanStatus('Start the camera first, or use Photo files.', 'err'); return; }
   const side = currentSide();
   if (!side) return;
   scanBusy = true;
+  if (lockTimer) cancelLock(true);
   try {
     const canvas = document.createElement('canvas');
-    if (!drawVideoToCanvas(canvas, camRotation, camMirror)){
+    if (!drawVideoToCanvas(canvas, camRotation, camMirror, 1600)){
       scanStatus('The camera is not ready yet. Give it a moment and try again.', 'err');
       return;
     }
     flashFrame();
     const quality = measureCanvas(canvas);
-    const found = await detectOnCanvas(canvas);
-    let barcode = null;
-    if (found.codes.length){
-      const code = found.codes[0];
-      const vote = noteVote(code.value, code.format);
-      barcode = {value:code.value, format:code.format, votes:vote.count};
-    }
+    const hash = frameHash(canvas);
+    const found = await detectOnCanvas(canvas, true);
+    const barcode = found.codes.length
+      ? {value:found.codes[0].value, format:found.codes[0].format,
+         votes:(liveVotes.get(found.codes[0].value) || {}).count || 1}
+      : null;
+    const qr = (found.qr || []).slice();
+    const naf = bestNafdac();
+    const nafVerdict = naf ? ((liveRegistry(naf) || {}).verdict || '') : '';
+    const nafTrusted = !!(naf && ((naf.strength === 'strong' && naf.count >= 2)
+      || nafVerdict === 'registered' || nafVerdict === 'inactive' || nafVerdict === 'not_found'));
+    const hintFields = {};
+    ['nafdac_number', 'product_name', 'batch', 'exp_date'].forEach(key => {
+      if (liveFields[key]) hintFields[key] = liveFields[key];
+    });
+    if (!nafTrusted) delete hintFields.nafdac_number;
+    const locked = lockedDates();
+    const pin = lockedPin();
+    if (pin) state.pendingScratch = {pin: pin.value, shortcode: bestShortcode(), at: Date.now()};
+    if (locked.exp && !hintFields.exp_date) hintFields.exp_date = locked.exp.month;
+    if (locked.mfg) hintFields.mfg_date = hintFields.mfg_date || locked.mfg.month;
+    const live = {
+      barcode: barcode ? barcode.value : '',
+      qr: qr,
+      nafdac: nafTrusted ? naf.value : '',
+      strength: naf ? naf.strength : '',
+      verdict: nafVerdict,
+      fields: hintFields,
+      ocr_at: liveFieldsAt
+    };
     const blob = await canvasToBlob(canvas);
     if (!blob){ scanStatus('Could not capture that frame. Try again.', 'err'); return; }
     side.frame = {
       blob,
-      url: canvas.toDataURL('image/jpeg', 0.82),
-      quality, barcode, qr: found.qr, rotation: camRotation
+      url: canvas.toDataURL('image/jpeg', 0.78),
+      quality, barcode, qr: found.qr, rotation: camRotation, live
     };
+    analyzeFrameAI(blob);
+    lastCaptureHash = hash;
+    scanCooldownUntil = Date.now() + 1800;
+    clearLiveEvidence();
     advanceSide();
     renderSideList();
     updateCaptureUI();
-    if (barcode) showCodeChip(barcode.value, {count:barcode.votes}, barcode.format);
+    paintScanState();
+    const bits = [];
+    if (barcode) bits.push('barcode ' + barcode.value);
+    if (qr.length) bits.push('QR read');
+    if (naf) bits.push('NAFDAC ' + naf.value);
+    if (locked.exp) bits.push('expiry ' + locked.exp.month);
+    else if (locked.best_before) bits.push('best before ' + locked.best_before.month);
+    if (pin) bits.push('PIN ' + pin.value);
     if (quality){
-      scanStatus(side.label + ' captured · quality ' + Math.round(quality.score)
-        + ' (' + quality.verdict + ').', quality.verdict === 'poor' ? 'err' : 'ok');
+      scanStatus((auto ? 'Locked and captured ' : 'Captured ') + String(side.label).toLowerCase()
+        + ' · quality ' + Math.round(quality.score) + ' (' + quality.verdict + ')'
+        + (bits.length ? ' · ' + bits.join(' · ') : '')
+        + '. Turn the pack for the next side.', quality.verdict === 'poor' ? 'err' : 'ok');
     }
     if (scanSides.every(s => s.frame)){
-      scanStatus('All sides captured. Press Read sides with AI, or add another side.', 'ok');
+      if (fullAuto && !autoFinishTimer){
+        scanStatus('All sides captured. Reading…', 'ok');
+        autoFinishTimer = setTimeout(() => {
+          autoFinishTimer = 0;
+          if (!fullAuto) return;
+          const btn = $('#btnFinishScan');
+          if (btn && !btn.disabled) btn.click();
+        }, 1400);
+      } else if (!fullAuto){
+        scanStatus('All sides captured. Press Read sides with AI, or add another side.', 'ok');
+      }
     }
-  } finally { scanBusy = false; }
+  } finally {
+    scanBusy = false;
+    evaluateLock();
+  }
 }
 
 /* ---------- sides ---------- */
@@ -2021,6 +3477,7 @@ function addSide(){
   const n = scanSides.length + 1;
   scanSides.push({key:'side' + n, label:'Side ' + n, hint:'Any other face, label or leaflet'});
   activeSide = scanSides.length - 1;
+  if (autoFinishTimer){ clearTimeout(autoFinishTimer); autoFinishTimer = 0; }
   renderSideList();
   updateCaptureUI();
 }
@@ -2050,7 +3507,7 @@ async function inspectPhoto(entry){
     const ctx = canvas.getContext('2d', {willReadFrequently:true});
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     entry.quality = measureCanvas(canvas);
-    const found = await detectOnCanvas(canvas);
+    const found = await detectOnCanvas(canvas, true);
     if (found.codes.length){
       entry.barcode = {value:found.codes[0].value, format:found.codes[0].format, votes:1};
     }
@@ -2116,6 +3573,7 @@ function clearPhotoQueue(){
 
 /* ---------- multi-side read ---------- */
 async function runMultiScan(frames, source){
+  if (autoFinishTimer){ clearTimeout(autoFinishTimer); autoFinishTimer = 0; }
   if (!frames.length) return;
   const pressed = source === 'photos' ? $('#btnReadPhotos') : $('#btnFinishScan');
   const label = pressed ? pressed.textContent : '';
@@ -2130,6 +3588,7 @@ async function runMultiScan(frames, source){
       ? {value:f.barcode.value, format:f.barcode.format, votes:f.barcode.votes || 1} : null)));
     fd.append('qr', JSON.stringify(frames.map(f => f.qr || [])));
     fd.append('rotations', JSON.stringify(frames.map(f => f.rotation || 0)));
+    fd.append('live', JSON.stringify(frames.map(f => f.live || null)));
     const r = await fetch('/api/scan/multi', {method:'POST', body:fd});
     const body = await r.json().catch(() => ({detail:'The scan response could not be read.'}));
     if (!r.ok) throw new Error(body.detail || ('Scan failed (HTTP ' + r.status + ')'));
@@ -2160,7 +3619,11 @@ async function applyScanResult(out){
       assessment = await api('/api/check', {method:'POST', body:JSON.stringify(pack)});
     }
     state.assessment = assessment;
-    renderAssessment(assessment);
+    const scratch = merged.pin
+      ? {pin: merged.pin, shortcode: merged.shortcode || ''}
+      : freshScratch();
+    state.pendingScratch = null;
+    renderAssessment(assessment, scratch ? {scratch} : undefined);
     goTab('check');
     const n = out.frames_read || 0;
     toast('Read ' + n + ' side' + (n === 1 ? '' : 's') + ' · ' + readerLabel(out));
@@ -2182,6 +3645,7 @@ function scanEvidenceHtml(ev){
     if (ex.batch) bits.push('batch ' + ex.batch);
     if (s.barcode && s.barcode.value) bits.push('code ' + s.barcode.value);
     if (s.qr && s.qr.length) bits.push('QR read');
+    if (s.live && s.live.nafdac) bits.push('live NAFDAC ' + s.live.nafdac);
     const verdict = q.verdict || 'unknown';
     const score = typeof q.score === 'number' ? Math.round(q.score) : '–';
     return '<div class="ev-side ' + esc(verdict) + '">'
@@ -2206,6 +3670,26 @@ function scanEvidenceHtml(ev){
   const warnings = (ev.warnings || []).length
     ? '<div class="ev-warn">' + ev.warnings.map(w => esc(w)).join('<br>') + '</div>' : '';
 
+  const live = ev.live || {};
+  const liveNafdac = (live.nafdac || []).filter((n, i, all) =>
+    all.findIndex(x => x.value === n.value) === i);
+  const liveConflicts = (live.conflicts || []).map(c =>
+    '<div class="ev-conflict"><b>Live and still reads disagree on '
+    + esc(SCAN_FIELD_LABELS[c.field] || c.field) + '</b>'
+    + '<p>The camera read <b>' + esc(c.live) + '</b> on ' + esc(c.side || 'one side')
+    + ', but the saved frame read <b>' + esc(c.still) + '</b>. Check the pack itself.</p></div>').join('');
+  const liveBlock = (liveNafdac.length || liveConflicts)
+    ? '<div class="ev-live"><b>Seen by the live camera</b>'
+      + (liveNafdac.length
+        ? '<div style="margin-top:4px">' + liveNafdac.map(n =>
+            esc(n.value) + ' <span style="color:var(--ink-3)">· '
+            + esc(n.strength === 'strong' ? 'printed number' : 'number-like')
+            + ' · ' + esc(n.side || '') + '</span>').join('<br>') + '</div>'
+        : '')
+      + '<div style="margin-top:6px;color:var(--ink-3)">A live read is a transcription of what the camera saw, not a verdict. The NAFDAC number is checked separately below.</div>'
+      + '</div>' + liveConflicts
+    : '';
+
   return '<div class="card scan-evidence" style="margin-bottom:18px">'
     + '<div class="hd"><h2>Read from ' + (ev.frames_read || 0) + ' of ' + (ev.frames || 0)
     + ' side' + (ev.frames === 1 ? '' : 's') + '</h2>'
@@ -2213,7 +3697,7 @@ function scanEvidenceHtml(ev){
     + '<div class="bd">'
     + '<p class="ev-coach">' + esc(ev.coach || '') + '</p>'
     + '<div class="ev-sides">' + sides + '</div>'
-    + conflicts + warnings
+    + conflicts + liveBlock + warnings
     + (limits ? '<details class="ev-limits"><summary>What this read does and does not show</summary><ul>'
       + limits + '</ul></details>' : '')
     + '</div></div>';
@@ -2221,11 +3705,14 @@ function scanEvidenceHtml(ev){
 
 /* ---------- session + modes ---------- */
 function resetScanSession(){
-  cancelAutoCapture();
+  if (autoFinishTimer){ clearTimeout(autoFinishTimer); autoFinishTimer = 0; }
+  cancelLock(true);
   scanSides = SCAN_SIDE_DEFS.map(d => Object.assign({}, d));
   activeSide = 0;
-  liveVotes = new Map();
+  clearLiveEvidence();
   lastProbe = null;
+  lastCaptureHash = '';
+  scanCooldownUntil = 0;
   camRotation = 0;
   applyPreviewRotation();
   const chip = $('#codeChip');
@@ -2234,6 +3721,8 @@ function resetScanSession(){
   renderSideList();
   updateCaptureUI();
   clearPhotoQueue();
+  clearAiRead();
+  paintScanState();
 }
 
 function openScanner(mode){
@@ -2293,6 +3782,20 @@ async function lookupBarcode(code){
 }
 
 /* ---------- wiring ---------- */
+function setTheme(t){
+  document.documentElement.dataset.theme = t === 'dark' ? 'dark' : '';
+  try{ localStorage.setItem('vouch.theme', t); }catch(e){}
+  const tg = $('#themeToggle');
+  if (tg) tg.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  const mt = $('#metaTheme');
+  if (mt) mt.content = t === 'dark' ? '#0D1310' : '#F5F7F4';
+}
+(function initTheme(){
+  let t = 'light';
+  try{ t = localStorage.getItem('vouch.theme') || 'dark'; }catch(e){}
+  setTheme(t);
+})();
+$('#themeToggle').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 $('#btnScanTop').onclick = () => openScanner('camera');
 $('#scanClose').onclick = closeScanner;
 $('#scanModal').onclick = (e) => { if (e.target.id === 'scanModal') closeScanner(); };
@@ -2306,11 +3809,11 @@ $('#btnCamFlip').onclick = async () => {
   camMirror = camFacing === 'user';
   await startCamera();
 };
-$('#btnCapture').onclick = captureSide;
+$('#btnCapture').onclick = () => captureSide(false);
 $('#btnFinishScan').onclick = () => {
   const frames = scanSides.filter(s => s.frame).map(s => ({
     blob: s.frame.blob, label: s.label, barcode: s.frame.barcode,
-    qr: s.frame.qr, rotation: s.frame.rotation
+    qr: s.frame.qr, rotation: s.frame.rotation, live: s.frame.live
   }));
   runMultiScan(frames, 'camera');
 };
@@ -2335,10 +3838,41 @@ $('#btnRotateReset').onclick = () => {
   updateCaptureUI();
 };
 $('#autoCapture').onchange = (e) => {
-  autoCapture = e.target.checked;
-  if (!autoCapture) cancelAutoCapture();
-  scanStatus(autoCapture ? 'Auto-capture on. Hold the pack steady in good light.' : 'Auto-capture off.', '');
+  smartAuto = e.target.checked;
+  if (!smartAuto) cancelLock(true);
+  paintScanState();
+  scanStatus(smartAuto
+    ? 'Smart capture on. Codes lock automatically; hold the pack steady.'
+    : 'Smart capture off. Press Capture for each side.', '');
 };
+$('#fullAuto').onchange = (e) => {
+  fullAuto = e.target.checked;
+  if (!fullAuto && autoFinishTimer){ clearTimeout(autoFinishTimer); autoFinishTimer = 0; }
+  scanStatus(fullAuto
+    ? 'Full auto on. When all sides lock, Vouch reads and verifies by itself.'
+    : 'Full auto off. Press Read sides with AI when ready.', '');
+};
+const soundToggle = $('#scanSound');
+if (soundToggle){
+  soundToggle.onchange = (e) => {
+    scanSoundOn = e.target.checked;
+    if (scanSoundOn) lockChime();
+  };
+}
+const voiceToggle = $('#scanVoice');
+if (voiceToggle){
+  voiceToggle.onchange = (e) => {
+    scanVoiceOn = e.target.checked;
+    if (scanVoiceOn) speakCoach('Spoken coach on.');
+  };
+}
+const aiToggle = $('#scanAi');
+if (aiToggle){
+  aiToggle.onchange = (e) => {
+    scanAiOn = e.target.checked;
+    if (!scanAiOn) clearAiRead();
+  };
+}
 
 $('#btnChooseFile').onclick = () => {
   $('#scanFiles').removeAttribute('capture');
@@ -2464,14 +3998,63 @@ $('#btnResetCases').onclick = async () => {
     loadCases();
   } catch (e) { toast(e.message); }
 };
-$('#btnSignOut').onclick = () => { window.location.href = '/'; };
+async function renderSession(){
+  const box = $('#sessionBox');
+  if (!box) return;
+  let user = null;
+  try {
+    const token = localStorage.getItem('vouch.token') || '';
+    if (token) user = (await api('/api/auth/me')).user;
+  } catch { user = null; }
+  if (user){
+    box.innerHTML = `<p style="margin:0 0 12px;font-size:14px">Signed in as <b>${esc(user.username)}</b> <span class="hpill ${esc(user.role === 'admin' ? 'review' : 'clear')}">${esc(user.role)}</span></p>
+      <div class="docbtns" style="margin-top:0">
+        <button class="btn ghost sm" id="btnLogout" type="button">Sign out</button>
+        <button class="btn ghost sm" id="btnWebsite" type="button">Return to website</button>
+      </div>`;
+    $('#btnLogout').onclick = async () => {
+      try { await api('/api/auth/logout', {method:'POST'}); } catch {}
+      try { localStorage.removeItem('vouch.token'); } catch {}
+      renderSession();
+    };
+    $('#btnWebsite').onclick = () => { window.location.href = '/'; };
+    return;
+  }
+  try { localStorage.removeItem('vouch.token'); } catch {}
+  box.innerHTML = `<p style="margin:0 0 12px;font-size:13.5px;color:var(--ink-2)">Cases need an account. The first account on a server is the admin. Checks never need sign-in.</p>
+    <label class="f"><span>Username</span><input id="authUser" autocomplete="username" placeholder="e.g. joseph" /></label>
+    <label class="f"><span>Password</span><input id="authPass" type="password" autocomplete="current-password" placeholder="8+ characters" /></label>
+    <div class="docbtns" style="margin-top:0">
+      <button class="btn sm" id="btnLogin" type="button">Sign in</button>
+      <button class="btn ghost sm" id="btnRegister" type="button">Register</button>
+    </div>`;
+  const creds = () => ({username:$('#authUser').value.trim(), password:$('#authPass').value});
+  $('#btnLogin').onclick = async () => {
+    try {
+      const out = await api('/api/auth/login', {method:'POST', body:JSON.stringify(creds())});
+      localStorage.setItem('vouch.token', out.token);
+      toast('Signed in.');
+      renderSession();
+      loadCases();
+    } catch (e){ toast(e.message); }
+  };
+  $('#btnRegister').onclick = async () => {
+    try {
+      await api('/api/auth/register', {method:'POST', body:JSON.stringify(creds())});
+      const out = await api('/api/auth/login', {method:'POST', body:JSON.stringify(creds())});
+      localStorage.setItem('vouch.token', out.token);
+      toast('Account created. Signed in.');
+      renderSession();
+    } catch (e){ toast(e.message); }
+  };
+}
 
 $$('#samples .chip').forEach(b => b.onclick = async () => {
   b.disabled = true;
   try {
     const r = await fetch(`/samples/${b.dataset.sample}`);
     if (!r.ok) throw new Error('Sample photo missing');
-    await readPhoto(await r.blob(), b.dataset.sample);
+    await readPhoto(await r.blob(), b.dataset.sample, true);
   } catch(e){ toast(e.message); }
   finally { b.disabled = false; }
 });
@@ -2670,6 +4253,55 @@ function savePrefs(patch){
   return next;
 }
 
+let syncPoll = 0;
+async function loadSyncStatus(){
+  const line = $('#syncLine');
+  try {
+    paintSyncStatus(await api('/api/registry/sync/status'));
+  } catch { if (line) line.textContent = 'Sync status unavailable.'; }
+}
+function paintSyncStatus(st){
+  const line = $('#syncLine');
+  const btn = $('#btnSyncNow');
+  if (!line) return;
+  if (st.status === 'running'){
+    line.textContent = 'Syncing… ' + (st.fetched || 0) + ' of '
+      + (st.total || '?') + ' records.';
+    if (btn) btn.disabled = true;
+    if (!syncPoll) syncPoll = setInterval(loadSyncStatus, 3000);
+    return;
+  }
+  if (syncPoll){ clearInterval(syncPoll); syncPoll = 0; }
+  if (btn) btn.disabled = false;
+  const n = st.records || 0;
+  if (st.status === 'complete' && n){
+    const when = st.finished_at ? new Date(st.finished_at * 1000) : null;
+    line.textContent = n.toLocaleString() + ' Greenbook records synced'
+      + (when ? ' · updated ' + when.toLocaleString(undefined,
+        {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '')
+      + '. Checks read this copy first.'
+      + (st.stale ? ' Mirror is over a week old — press Sync now.' : '');
+  } else if (st.status === 'error'){
+    line.textContent = 'Last sync stopped: ' + (st.error || 'unknown error')
+      + ' Press Sync now to resume.';
+  } else if (st.status === 'paused'){
+    line.textContent = 'Sync paused at ' + (st.fetched || 0)
+      + ' records. Press Sync now to resume.';
+  } else {
+    line.textContent = 'No synced copy yet. Checks use the live register'
+      + ' until the first sync finishes.';
+  }
+}
+const btnSyncNow = $('#btnSyncNow');
+if (btnSyncNow) btnSyncNow.onclick = async () => {
+  btnSyncNow.disabled = true;
+  try {
+    const out = await api('/api/registry/sync', {method:'POST'});
+    if (!out.started) toast('A sync is already running.');
+    loadSyncStatus();
+  } catch (e){ toast(e.message); btnSyncNow.disabled = false; }
+};
+
 /* ---------- render assessment ---------- */
 function kv(k, v, em){
   return `<div class="kv"><span class="k">${esc(k)}</span><span class="v${em?' em':''}">${esc(v||'—')}</span></div>`;
@@ -2682,8 +4314,164 @@ const KIND = {
   household:'Household product', product:'Product'
 };
 
+function resultHeading(a){
+  const checks = a.checks || [];
+  const find = id => checks.find(c => c.id === id) || {};
+  const expired = (find('expiry').state === 'high_risk');
+  const alertCheck = find('alert');
+  const alert = !!alertCheck.id;
+  if (a.band === 'clear'){
+    return {
+      title: 'Registration details match',
+      lead: (a.rail === 'barcode'
+        ? 'The product database record matches the barcode and details provided. Physical authenticity is not yet confirmed.'
+        : 'The official record matches the product details provided. Physical authenticity is not yet confirmed.')
+    };
+  }
+  if (a.band === 'high_risk'){
+    if (alert){
+      const evidence = alertCheck.evidence || '';
+      let lead = 'This batch matches a configured official alert. Avoid using it and follow the relevant reporting guidance.';
+      if (!/name this batch/.test(evidence)){
+        lead = /name this barcode/.test(evidence)
+          ? 'This barcode matches a configured official alert. Avoid using it and follow the relevant reporting guidance; check the alert\u2019s batch first.'
+          : 'This product or registration number matches a configured official alert that states no batch. Avoid using it until the manufacturer or regulator confirms the pack, and follow the alert\u2019s guidance.';
+      }
+      return { title: 'Counterfeit alert', lead };
+    }
+    if (expired){
+      return {
+        title: 'Expired',
+        lead: 'This pack is past its expiry date. Set it aside and follow the relevant reporting guidance.'
+      };
+    }
+    return {
+      title: 'High-risk signals',
+      lead: 'Vouch found high-risk signals in the details provided. Avoid using it until a pharmacist, the manufacturer or NAFDAC confirms it, and keep the pack and receipt.'
+    };
+  }
+  return {
+    title: 'Verification needed',
+    lead: 'Some information is missing, inconsistent, or cannot be verified. Do not treat the product as confirmed.'
+  };
+}
+
+function scratchHtml(scratch){
+  if (!scratch || !scratch.pin) return '';
+  const grouped = String(scratch.pin).replace(/(.{4})/g, '$1 ').trim();
+  const route = scratch.shortcode
+    ? 'Text this PIN to ' + scratch.shortcode + ' — the shortcode printed beside the panel.'
+    : 'Text this PIN to the shortcode printed beside the panel.';
+  return `<div class="card anim-in" style="margin-bottom:18px">
+    <div class="hd"><h2>Scratch panel</h2><span class="who" id="masWho">read from the pack</span></div>
+    <div class="bd">
+      <div class="scratch-pin" id="scratchPin" data-shortcode="${esc(scratch.shortcode || '')}">${esc(grouped)}</div>
+      <p class="scratch-route">${esc(route)}</p>
+      <div class="docbtns" style="margin-top:0">
+        <button class="btn sm" id="btnVerifyPin" type="button">Verify PIN</button>
+        <button class="btn ghost sm" id="btnCopyPin" type="button">Copy PIN</button>
+      </div>
+      <div class="mas-out hidden" id="masOut" aria-live="polite"></div>
+      <p class="scan-note">Vouch reads the PIN; only the verification service — or the shortcode reply — speaks for it. Check the digits against the panel before sending.</p>
+    </div>
+  </div>`;
+}
+
+async function verifyScratchPin(){
+  const pinEl = $('#scratchPin');
+  const out = $('#masOut');
+  if (!pinEl || !out) return;
+  const pin = pinEl.textContent.replace(/\s+/g, '');
+  const shortcode = pinEl.dataset.shortcode || '';
+  const btn = $('#btnVerifyPin');
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Asking'; }
+  try {
+    const r = await api('/api/mas/verify', {method:'POST', body:JSON.stringify({pin, shortcode})});
+    out.classList.remove('hidden');
+    const who = $('#masWho');
+    if (who) who.textContent = r.connected
+      ? ('answered by ' + (r.provider || 'verification service'))
+      : 'no service connected';
+    const tone = r.verdict === 'authentic' ? 'ok' : r.verdict === 'suspicious' ? 'bad' : '';
+    out.innerHTML = `<div class="mas-verdict ${tone}">${esc(r.verdict)}</div><p>${esc(r.detail || '')}</p>`;
+  } catch (e){
+    out.classList.remove('hidden');
+    out.innerHTML = `<p>${esc(e.message)}</p>`;
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = 'Verify PIN'; }
+  }
+}
+
+function layersHtml(a){
+  const checks = a.checks || [];
+  const stateOf = id => (checks.find(c => c.id === id) || {}).state || '';
+  const reg = a.registry || {};
+  const bar = a.barcode || {};
+  const scan = state.scanEvidence;
+  const identity = ['verified', 'attention', 'high_risk'].includes(stateOf('registry'))
+    || ['verified', 'attention', 'high_risk'].includes(stateOf('barcode'));
+  const identityNote = identity
+    ? 'The NAFDAC register and/or product databases were queried. A record match is not proof of the physical pack.'
+    : 'No trusted record was available for these details, so identity could not be checked.';
+  const packNote = scan
+    ? 'Photos were read for printed text, dates and the flags you selected. No verified reference-packaging comparison is connected, so print differences are not authenticated.'
+    : 'No photos were read in this check. Label, seal and print differences were not examined.';
+  const rows = [
+    ['1', 'Digital identity', identity ? 'Checked' : 'Not checked',
+      identity ? 'live' : 'gap', identityNote],
+    ['2', 'Packaging and consistency', scan ? 'AI-assisted' : 'Not checked',
+      scan ? 'partial' : 'gap', packNote],
+    ['3', 'Supply-chain authentication', 'Requires integration', 'gap',
+      'No manufacturer serialisation or authentication service is connected. A copied code can only be spotted by the manufacturer\u2019s own system.'],
+    ['4', 'Physical testing', 'Not performed', 'gap',
+      'A camera cannot test identity, strength, contamination or adulteration. Vouch can prepare the route to NAFDAC or a qualified laboratory.'],
+    ['5', 'Shared safety intelligence', 'Local only', 'partial',
+      'Configured official alerts and submissions on this deployment are checked. This is not a national feed.']
+  ];
+  return `<div class="layers" id="layerPanel">
+    <div class="hd"><h2>Five layers of verification</h2><span>What is live, and what is not</span></div>
+    ${rows.map(([n, name, status, tone, note]) => `
+      <div class="layer">
+        <span class="ln">${n}</span>
+        <div><b>${esc(name)}</b><small>${esc(note)}</small>
+          ${n === '5' ? '<div class="layer-safety" id="layerSafety">Checking this batch…</div>' : ''}
+        </div>
+        <span class="st ${tone}">${esc(status)}</span>
+      </div>`).join('')}
+    <div class="layer-note">Digital checks can show a record match, a bad date or a known warning. They cannot prove the contents of the pack. Definitive confirmation of a counterfeit or adulterated product needs the manufacturer, the regulator or a laboratory.</div>
+  </div>`;
+}
+
+async function loadLayerSafety(a){
+  const el = $('#layerSafety');
+  if (!el) return;
+  const port = a.input || {};
+  const reg = a.registry || {};
+  const naf = reg.nafdac || port.nafdac_number || '';
+  const batch = port.batch || '';
+  const code = port.barcode || (a.barcode || {}).code || '';
+  if (!naf && !batch && !code){
+    el.textContent = 'No registration number, batch or barcode to watch.';
+    return;
+  }
+  try {
+    const out = await api('/api/safety/batch?nafdac=' + encodeURIComponent(naf)
+      + '&batch=' + encodeURIComponent(batch) + '&barcode=' + encodeURIComponent(code));
+    const bits = [out.message];
+    if (out.report_count) bits.push(out.report_count + ' local submission(s) for this batch.');
+    if (out.pattern) bits.push('Pattern flagged for review, not a public accusation.');
+    el.textContent = bits.join(' ');
+  } catch {
+    el.textContent = 'The shared safety layer could not be read. The other layers above still apply.';
+  }
+}
+
 function renderAssessment(a, packMeta){
   const band = BAND[a.band] || BAND.incomplete;
+  const scratch = packMeta && packMeta.scratch;
+  const isSample = !!(packMeta && (packMeta.sample || packMeta.title || packMeta.chip));
+  const samplePill = '<span class="sample-pill">Sample</span>';
+  const sampleName = packMeta ? (packMeta.title || packMeta.chip || 'Sample photo') : '';
   const c = a.counts || {};
   const reg = a.registry || {};
   const port = a.input || {};
@@ -2703,7 +4491,7 @@ function renderAssessment(a, packMeta){
         ${kv('Batch', port.batch)}
       </div>
       <div>
-        <h3>In the NAFDAC registry</h3>
+        <h3>In the NAFDAC registry ${isSample ? samplePill : ''}</h3>
         ${kv('Product', reg.product_name)}
         ${kv('Number', reg.nafdac)}
         ${kv('Holder', reg.manufacturer)}
@@ -2721,7 +4509,7 @@ function renderAssessment(a, packMeta){
         ${kv('Batch', port.batch)}
       </div>
       <div>
-        <h3>In the product database</h3>
+        <h3>In the product database ${isSample ? samplePill : ''}</h3>
         ${bar.found === false
           ? kv('Product', 'No record of this barcode')
           : `${kv('Product', bar.name)}${kv('Brand', bar.brand)}${kv('Category', bar.categories)}${kv('Origin', bar.countries)}${kv('Source', bar.source)}`}
@@ -2749,24 +4537,30 @@ function renderAssessment(a, packMeta){
     <li><span class="n">${i+1}</span><div><b>${esc(x.label)}</b><small>${esc(x.why)}</small></div></li>`).join('');
 
   const counts = `<div class="stats" style="margin-bottom:16px">
-      <div class="stat"><b>${c.high_risk||0}</b><span>high-risk</span></div>
-      <div class="stat"><b>${c.attention||0}</b><span>to check</span></div>
-      <div class="stat"><b>${c.verified||0}</b><span>checked</span></div>
+      <div class="stat bad"><b>${c.high_risk||0}</b><span>high-risk</span></div>
+      <div class="stat warn"><b>${c.attention||0}</b><span>to check</span></div>
+      <div class="stat ok"><b>${c.verified||0}</b><span>checked</span></div>
       <div class="stat"><b>${c.unverifiable||0}</b><span>unknown</span></div>
     </div>`;
 
+  const heading = resultHeading(a);
   $('#result').innerHTML = `
-    ${packMeta && packMeta.title ? `<p style="font-size:13px;color:var(--ink-3);margin:0 0 8px">Demo — <b style="color:var(--ink-2)">${esc(packMeta.title)}</b></p>` : ''}
-    <div class="band ${a.band}">
+    ${isSample ? `<p style="font-size:13px;color:var(--ink-3);margin:0 0 8px">${samplePill} Demo — <b style="color:var(--ink-2)">${esc(sampleName)}</b> · sample record, not a live pack</p>` : ''}
+    <div class="band ${a.band} anim-in">
       <div class="railrow">
         <span class="badge">${esc(KIND[a.kind] || 'Product')}</span>
         <span class="badge rail">${a.rail === 'barcode' ? 'Barcode rail' : 'NAFDAC register'}</span>
         <span class="badge">${a.checks.filter(x=>x.state!=='not_applicable').length} checks</span>
       </div>
       <span class="tag">${esc(band.tag)}</span>
-      <h1>${esc(a.headline)}</h1>
-      <p>${esc(band.label)} · ${a.checks.filter(x=>x.state!=='not_applicable').length} checks run</p>
+      <h1>${esc(heading.title)}</h1>
+      <p>${esc(heading.lead)}</p>
+      <p style="margin-top:8px;font-size:12px">${esc(a.headline || '')} · ${esc(band.label)}</p>
     </div>
+
+    ${scratchHtml(scratch)}
+
+    ${layersHtml(a)}
 
     ${scanEvidenceHtml(state.scanEvidence)}
 
@@ -2817,6 +4611,18 @@ function renderAssessment(a, packMeta){
 
   $('#btnCase').onclick = () => openCase(Object.assign({}, port, {flags: $$('#flags input:checked').map(i=>i.value)}));
 
+  const btnVerifyPin = $('#btnVerifyPin');
+  if (btnVerifyPin) btnVerifyPin.onclick = verifyScratchPin;
+  const btnCopyPin = $('#btnCopyPin');
+  if (btnCopyPin) btnCopyPin.onclick = async () => {
+    const pinEl = $('#scratchPin');
+    if (!pinEl) return;
+    try {
+      await navigator.clipboard.writeText(pinEl.textContent.replace(/\s+/g, ''));
+      toast('PIN copied.');
+    } catch { toast('Copy failed. Long-press the PIN.'); }
+  };
+
   $('#btnRe').onclick = () => startExplain(a);
   $('#askForm').onsubmit = (ev) => {
     ev.preventDefault();
@@ -2827,7 +4633,13 @@ function renderAssessment(a, packMeta){
   };
 
   startExplain(a);
+  loadLayerSafety(a);
   saveScan(a, port);
+  $$('#result > *').forEach((el, i) => {
+    el.classList.remove('anim-in'); void el.offsetWidth;
+    el.style.setProperty('--d', Math.min(i * 0.055, 0.4) + 's');
+    el.classList.add('anim-in');
+  });
   if (typeof voiceOnResult === 'function') voiceOnResult();
 
   if (naf || port.batch) {
@@ -2929,6 +4741,158 @@ async function loadQueue(){
   } catch(e){ toast(e.message); }
 }
 
+/* ---------- safety intelligence ---------- */
+function safetyAlertHtml(a){
+  return `<div class="safety-item ${a.demo ? '' : 'safety-alert'}">
+    <b>${esc(a.product_name || 'Unnamed product')}${a.batch ? ' · batch ' + esc(a.batch) : ''}</b>
+    <small>${esc([a.nafdac_number && ('NAFDAC ' + a.nafdac_number),
+      a.barcode && ('Barcode ' + a.barcode), a.manufacturer].filter(Boolean).join(' · '))}</small>
+    <p>${esc(a.reason || 'No reason given in the source file.')}</p>
+    <small>${esc([a.source, a.published].filter(Boolean).join(' · '))}${a.demo ? ' · labelled demo' : ''}${a.url ? ' · <a href="' + esc(a.url) + '" target="_blank" rel="noopener">source</a>' : ''}</small>
+  </div>`;
+}
+
+function safetyReportHtml(r){
+  return `<div class="safety-item">
+    <b>${esc(r.product_name || 'Unnamed product')}${r.batch ? ' · batch ' + esc(r.batch) : ''}</b>
+    <small>${esc([r.nafdac && ('NAFDAC ' + r.nafdac), r.seller && ('Seller: ' + r.seller),
+      r.location, r.at].filter(Boolean).join(' · '))}</small>
+    <p>${esc(r.issue || 'other')} — ${esc(r.notes || '')}</p>
+    <small>Submission ${esc(r.id)} · awaiting review · not verified</small>
+    ${r.photo_url ? '<img class="safety-photo" loading="lazy" src="' + esc(r.photo_url) + '" alt="Evidence photo for ' + esc(r.product_name || 'submission') + '" />' : ''}
+  </div>`;
+}
+
+function safetyPatternHtml(p){
+  return `<div class="safety-item pattern">
+    <b>${p.kind === 'seller' ? 'Seller' : 'Batch'} pattern · ${esc(p.kind === 'seller' ? (p.seller || 'unnamed') : (p.batch || 'no batch'))}</b>
+    <small>${p.reports} separate submissions · ${esc(p.first)} to ${esc(p.last)}</small>
+    <p>${esc(p.note)}</p>
+  </div>`;
+}
+
+async function loadSafety(){
+  const source = $('#safetySource');
+  const a = state.assessment;
+  if (a){
+    const port = a.input || {};
+    const set = (sel, value) => { const el = $(sel); if (el && !el.value && value) el.value = value; };
+    set('#sfProduct', port.product_name);
+    set('#sfNafdac', port.nafdac_number || (a.registry || {}).nafdac);
+    set('#sfBatch', port.batch);
+    set('#sfBarcode', port.barcode || (a.barcode || {}).code);
+    set('#sfSeller', port.seller);
+    set('#sfLocation', port.location);
+  }
+  try {
+    const s = await api('/api/safety/summary');
+    if (source){
+      source.textContent = s.alerts.configured
+        ? 'Alerts: ' + (s.alerts.source || 'configured file') + ' · ' + s.alerts.count + ' record(s)'
+        : 'No official alert source configured';
+      source.title = s.alerts.note || '';
+    }
+    const patterns = $('#safetyPatterns');
+    if (patterns){
+      patterns.innerHTML = s.patterns.length
+        ? s.patterns.map(safetyPatternHtml).join('')
+        : '<div class="safety-empty">No pattern has reached three separate submissions. One report is an allegation, not a pattern.</div>';
+    }
+    const reports = await api('/api/safety/reports?limit=8');
+    const list = $('#safetyReportsList');
+    if (list){
+      list.innerHTML = reports.reports.length
+        ? reports.reports.map(safetyReportHtml).join('')
+        : '<div class="safety-empty">No submissions yet on this deployment. The submission form is above.</div>';
+    }
+    if (!s.alerts.configured){
+      const results = $('#safetyResults');
+      if (results && !results.dataset.searched){
+        results.dataset.searched = '1';
+        results.innerHTML = '<div class="safety-empty"><b>No official alert source is configured.</b><br>'
+          + esc(s.alerts.note) + '<br>Vouch will show alerts only if a real feed is connected; it will not invent one.</div>';
+      }
+    }
+  } catch (e){
+    if (source) source.textContent = 'Safety layer unavailable';
+  }
+}
+
+async function searchSafety(){
+  const box = $('#safetyResults');
+  const q = ($('#safetySearch').value || '').trim();
+  if (!box) return;
+  box.dataset.searched = '1';
+  box.innerHTML = '<div class="safety-empty">Searching configured alerts…</div>';
+  try {
+    const [alerts, reports] = await Promise.all([
+      api('/api/safety/alerts?q=' + encodeURIComponent(q)),
+      api('/api/safety/reports?q=' + encodeURIComponent(q) + '&limit=8')
+    ]);
+    let html = '';
+    if (!alerts.configured){
+      html += '<div class="safety-empty"><b>No official alert source is configured.</b><br>'
+        + esc(alerts.note) + '</div>';
+    } else if (!alerts.alerts.length){
+      html += '<div class="safety-empty">No alert in the configured file matches '
+        + (q ? '<b>' + esc(q) + '</b>' : 'that search')
+        + '. A missing alert says nothing about this particular pack.<br><small>'
+        + esc(alerts.source || '') + '</small></div>';
+    } else {
+      html += '<p style="margin:0 0 4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">'
+        + alerts.alerts.length + ' alert match(es)</p>' + alerts.alerts.map(safetyAlertHtml).join('');
+    }
+    if (reports.reports.length){
+      html += '<p style="margin:10px 0 4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">'
+        + reports.reports.length + ' local submission(s)</p>' + reports.reports.map(safetyReportHtml).join('');
+    }
+    box.innerHTML = html;
+  } catch (e){
+    box.innerHTML = '<div class="safety-empty">The safety search failed. ' + esc(e.message || '') + '</div>';
+  }
+}
+
+async function submitSafety(ev){
+  ev.preventDefault();
+  const form = $('#safetyForm');
+  const button = $('#btnSafetySubmit');
+  const note = $('#safetyFormNote');
+  if (!form) return;
+  if (button){ button.disabled = true; button.textContent = 'Saving…'; }
+  try {
+    const r = await fetch('/api/safety/reports', {method:'POST', body:new FormData(form)});
+    const body = await r.json().catch(() => ({detail:'The response could not be read.'}));
+    if (!r.ok) throw new Error(body.detail || ('HTTP ' + r.status));
+    form.reset();
+    if (note) note.textContent = 'Saved as ' + body.id + '. It is a submission for review, not a finding.';
+    toast('Evidence saved for review');
+    loadSafety();
+  } catch (e){
+    if (note) note.textContent = e.message || 'That submission could not be saved.';
+  } finally {
+    if (button){ button.disabled = false; button.textContent = 'Submit for review'; }
+  }
+}
+
+const safetySearchBtn = $('#btnSafetySearch');
+if (safetySearchBtn) safetySearchBtn.onclick = searchSafety;
+const safetySearchInput = $('#safetySearch');
+if (safetySearchInput){
+  safetySearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter'){ e.preventDefault(); searchSafety(); }
+  });
+}
+const safetyClearBtn = $('#btnSafetyClear');
+if (safetyClearBtn){
+  safetyClearBtn.onclick = () => {
+    if (safetySearchInput) safetySearchInput.value = '';
+    const box = $('#safetyResults');
+    if (box){ delete box.dataset.searched; box.innerHTML = '<div class="safety-empty">No search yet. Try a product name or a batch number.</div>'; }
+  };
+}
+const safetyForm = $('#safetyForm');
+if (safetyForm) safetyForm.addEventListener('submit', submitSafety);
+
 async function loadCases(openId){
   try {
     const {cases, stats} = await api('/api/cases');
@@ -2961,7 +4925,15 @@ async function loadCases(openId){
       </div>`).join('');
     $$('#caseList .caseitem').forEach(el => el.onclick = () => showCase(el.dataset.case));
     if (openId) showCase(openId);
-  } catch(e){ toast(e.message); }
+  } catch(e){
+    if (/sign in/i.test(e.message || '')){
+      $('#caseList').innerHTML = `<div class="card"><div class="bd empty">Cases need an account. <a href="#" id="caseSignin" style="color:var(--green);font-weight:700">Sign in in Settings</a>.</div></div>`;
+      const link = $('#caseSignin');
+      if (link) link.onclick = (ev) => { ev.preventDefault(); goTab('settings'); };
+      return;
+    }
+    toast(e.message);
+  }
 }
 
 async function showCase(id){
@@ -3725,6 +5697,45 @@ const heroMic = $('#heroMic');
 if (heroMic) heroMic.onclick = () => openVoice();
 const heroScan = $('#heroScan');
 if (heroScan) heroScan.onclick = () => openScanner('camera');
+
+// Gentle 3D tilt on the hero viewfinder. Mouse only; touch and
+// reduced-motion users get the static illustration.
+(function(){
+  const el = document.querySelector('.hs-view');
+  const wrap = document.querySelector('.hero-scan');
+  if (!el || !wrap) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (window.matchMedia('(hover: none)').matches) return;
+  wrap.style.perspective = '1000px';
+  el.classList.add('tilt');
+  let raf = 0;
+  wrap.addEventListener('pointermove', (e) => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      const r = wrap.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      el.style.transform = `rotateY(${(x * 10).toFixed(2)}deg) rotateX(${(-y * 10).toFixed(2)}deg)`;
+    });
+  });
+  wrap.addEventListener('pointerleave', () => { el.style.transform = ''; });
+})();
+const btnHeroScan = $('#btnHeroScan');
+if (btnHeroScan) btnHeroScan.onclick = () => openScanner('camera');
+const btnHeroAsk = $('#btnHeroAsk');
+if (btnHeroAsk) btnHeroAsk.onclick = () => openVoice();
+const heroAsk = $('#heroAsk');
+if (heroAsk) heroAsk.onsubmit = (e) => {
+  e.preventDefault();
+  const input = $('#heroAskInput');
+  const q = input ? input.value.trim() : '';
+  if (input) input.value = '';
+  openVoice();
+  if (q) voiceAsk(q);
+};
+const heroAskMic = $('#heroAskMic');
+if (heroAskMic) heroAskMic.onclick = () => { openVoice(); voiceStartRec(); };
 $('#voiceClose').onclick = () => closeVoice();
 $('#voiceMute').onclick = () => {
   voiceMuted = !voiceMuted;

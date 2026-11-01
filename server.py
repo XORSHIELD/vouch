@@ -15,8 +15,9 @@ from dataclasses import fields
 from datetime import date
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import (FileResponse, PlainTextResponse,
                                StreamingResponse)
 from fastapi.staticfiles import StaticFiles
@@ -25,11 +26,19 @@ from pydantic import BaseModel, Field as PField
 import json
 
 import actions
+import agent
+import audit
+import auth
 import ai
 import barcode as B
 import cases
+import manufacturer as M
+import mas
+import ratelimit
+import sms
 import engine
 import registry as R
+import safety
 import scan as S
 import vision
 from engine import PackInput
@@ -37,11 +46,43 @@ from engine import PackInput
 HERE = os.path.dirname(os.path.abspath(__file__))
 UI = os.path.join(HERE, "ui")
 
+
+def _cors_origins() -> list:
+    # Same-origin UI needs no CORS entry at all; cross-origin callers must be
+    # named explicitly. The old default ("*") let any website drive the API.
+    raw = os.environ.get("VOUCH_ORIGINS", "")
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
 app = FastAPI(title="Vouch", version="0.4.0",
               description="Check it. Chase it.")
+def _security_headers() -> dict:
+    return {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Content-Security-Policy": (
+            "default-src 'self'; object-src 'none'; base-uri 'self'; "
+            "form-action 'self'; frame-ancestors 'self'; "
+            "img-src 'self' data: blob:; media-src 'self' blob:; "
+            "connect-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'"),
+        "Permissions-Policy": "camera=(self), microphone=(self)",
+    }
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        resp = await call_next(request)
+        for key, value in _security_headers().items():
+            resp.headers[key] = value
+        return resp
+
+
+app.add_middleware(ratelimit.RateLimitMiddleware)
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware, allow_origins=_cors_origins(), allow_methods=["*"], allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 # --------------------------------------------------------------------------
@@ -54,6 +95,7 @@ class PackBody(BaseModel):
     manufacturer: str = ""
     product_name: str = ""
     batch: str = ""
+    serial: str = ""
     mfg_date: str = ""
     exp_date: str = ""
     pack_size: str = ""
@@ -128,7 +170,7 @@ def health() -> dict:
             "nafdac": "medicines, devices, vaccines, herbals, veterinary",
             "barcode": "food, drink, water, cosmetics and household products",
         },
-        "registry_total": _safe_total(),
+        "registry_total": _safe_total(), "sync": R.sync_status(),
         "stats": cases.stats(),
     }
 
@@ -140,10 +182,23 @@ def _safe_total() -> int | None:
         return None
 
 
+def _alert_matches(pack: PackInput) -> list[dict]:
+    """Exact batch-level matches from the configured alert file, or nothing."""
+    try:
+        return safety.match_alerts(pack.nafdac_number, pack.batch, pack.barcode)
+    except Exception:
+        return []
+
+
+def _assess(pack: PackInput, **kwargs) -> engine.Assessment:
+    kwargs.setdefault("alert_matches", _alert_matches(pack))
+    return engine.assess(pack, **kwargs)
+
+
 @app.post("/api/check")
 def check(body: PackBody) -> dict:
     pack = body.to_pack()
-    assessment = engine.assess(
+    assessment = _assess(
         pack, seen_batches=cases.seen_batches_for(pack.nafdac_number)
     )
     return assessment.to_dict()
@@ -158,6 +213,33 @@ def extract_text(body: TextBody) -> dict:
     return {"extraction": ex.to_dict()}
 
 
+def _clean_upload(data: bytes) -> bytes:
+    """Accept only real JPG/PNG/WebP bytes, and strip camera metadata.
+
+    Magic bytes are checked instead of trusting the filename or the declared
+    content type. EXIF (which can carry GPS) is dropped on the way in, so a
+    stored evidence photo cannot leak where it was taken.
+    """
+    head = bytes(data[:12])
+    webp = head[:4] == b"RIFF" and bytes(data[8:12]) == b"WEBP"
+    if not (head[:3] == b"\xff\xd8\xff"
+            or head[:8] == b"\x89PNG\r\n\x1a\n" or webp):
+        raise HTTPException(400, "That file is not a JPG, PNG or WebP image.")
+    try:
+        import io as _io
+
+        from PIL import Image
+        img = Image.open(_io.BytesIO(bytes(data)))
+        img.load()
+        buf = _io.BytesIO()
+        img.save(buf, "PNG" if head[1:4] == b"PNG" else "JPEG")
+        return buf.getvalue()
+    except HTTPException:
+        raise
+    except Exception:
+        return data
+
+
 @app.post("/api/extract/image")
 def extract_image(file: UploadFile = File(...)) -> dict:
     # Sync on purpose: OCR needs its own event loop, and FastAPI runs sync
@@ -167,11 +249,32 @@ def extract_image(file: UploadFile = File(...)) -> dict:
         raise HTTPException(400, "Empty file.")
     if len(data) > 25 * 1024 * 1024:
         raise HTTPException(413, "Image is larger than 25 MB.")
+    data = _clean_upload(data)
     try:
         ex = vision.extract_from_image(data, file.content_type or "image/jpeg")
     except vision.VisionUnavailable as exc:
         raise HTTPException(503, str(exc))
     return {"extraction": ex.to_dict()}
+
+
+@app.post("/api/scan/live")
+def scan_live(file: UploadFile = File(...)) -> dict:
+    """Fast text read of one live camera crop.
+
+    The browser detects barcodes and QR codes itself; this endpoint is only for
+    printed text: the NAFDAC number, labelled dates and scratch PINs. It
+    transcribes, nothing more, and says so when no on-device reader exists.
+    """
+    data = file.file.read()
+    if not data:
+        raise HTTPException(400, "Empty frame.")
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(413, "That frame is larger than 8 MB.")
+    data = _clean_upload(data)
+    try:
+        return S.live_read(data)
+    except vision.VisionUnavailable as exc:
+        raise HTTPException(503, str(exc))
 
 
 def _form_list(raw: str, default: list | None = None) -> list:
@@ -190,6 +293,7 @@ def scan_multi(
     barcodes: str = Form("[]"),
     qr: str = Form("[]"),
     rotations: str = Form("[]"),
+    live: str = Form("[]"),
 ) -> dict:
     """Read several sides of one pack and reconcile what they say.
 
@@ -206,6 +310,7 @@ def scan_multi(
     detections = _form_list(barcodes)
     payloads = _form_list(qr)
     turns = _form_list(rotations)
+    hints = _form_list(live)
 
     frames: list[dict] = []
     total = 0
@@ -216,9 +321,11 @@ def scan_multi(
             raise HTTPException(400, f"Frame {idx + 1} is empty.")
         if total > 100 * 1024 * 1024:
             raise HTTPException(413, "The frames together are larger than 100 MB.")
+        data = _clean_upload(data)
         label = labels[idx] if idx < len(labels) and isinstance(labels[idx], str) else ""
         det = detections[idx] if idx < len(detections) and isinstance(detections[idx], dict) else None
         qr_for_side = payloads[idx] if idx < len(payloads) and isinstance(payloads[idx], list) else []
+        hint_for_side = hints[idx] if idx < len(hints) and isinstance(hints[idx], dict) else {}
         frames.append({
             "label": label,
             "data": data,
@@ -226,6 +333,7 @@ def scan_multi(
             "barcode": det,
             "qr": qr_for_side,
             "rotation": turns[idx] if idx < len(turns) else 0,
+            "live": hint_for_side,
         })
 
     try:
@@ -259,7 +367,7 @@ def barcode_lookup(body: BarcodeBody) -> dict:
         exp_date=body.exp_date,
         mfg_date=body.mfg_date,
     )
-    assessment = engine.assess(pack, offline=body.offline)
+    assessment = _assess(pack, offline=body.offline)
     return {
         "barcode": assessment.barcode,
         "kind": assessment.kind,
@@ -287,7 +395,7 @@ def demo_barcode(body: BarcodeDemoBody) -> dict:
         exp_date=p.get("exp_date", ""),
         mfg_date=p.get("mfg_date", ""),
     )
-    assessment = engine.assess(pack)
+    assessment = _assess(pack)
     out = {"assessment": assessment.to_dict(), "demo": demo, "pack": p}
     if body.create_case:
         case = cases.create_case(pack, assessment)
@@ -312,7 +420,7 @@ def explain_stream(body: ExplainBody) -> StreamingResponse:
     """The explanation, in real time. Server-sent events, so it starts
     arriving before the last sentence exists."""
     pack = body.to_pack()
-    assessment = engine.assess(
+    assessment = _assess(
         pack, seen_batches=cases.seen_batches_for(pack.nafdac_number)
     )
 
@@ -330,9 +438,44 @@ def explain_stream(body: ExplainBody) -> StreamingResponse:
 
 
 @app.post("/api/ask")
+class AgentBody(BaseModel):
+    message: str = ""
+    history: list = PField(default_factory=list)
+    image_b64: str = ""
+    image_type: str = "image/jpeg"
+    confirmed_action: dict | None = None
+
+
+@app.post("/api/agent/chat")
+def agent_chat(body: AgentBody, request: Request) -> dict:
+    """Chat with the Vouch agent. Reads are public; confirmed actions
+    need sign-in, and execution is code, never model output."""
+    if body.confirmed_action is not None:
+        user = None
+        try:
+            user = auth.me(auth.bearer_token(request))
+        except Exception:
+            user = None
+        if not user:
+            raise HTTPException(401, "Sign in to open cases.")
+        try:
+            return agent.execute_confirmed(body.confirmed_action,
+                                           user["username"])
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+    image_bytes = None
+    if body.image_b64:
+        try:
+            image_bytes = agent.decode_image(body.image_b64)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+    return agent.chat(body.message, body.history, image_bytes,
+                      body.image_type or "image/jpeg")
+
+
 def ask(body: ExplainBody) -> dict:
     pack = body.to_pack()
-    assessment = engine.assess(
+    assessment = _assess(
         pack, seen_batches=cases.seen_batches_for(pack.nafdac_number)
     )
     text, who = ai.compose(assessment, body.question)
@@ -350,27 +493,63 @@ def ask(body: ExplainBody) -> dict:
 # Cases
 # --------------------------------------------------------------------------
 
+class AuthBody(BaseModel):
+    username: str = ""
+    password: str = ""
+
+
+@app.post("/api/auth/register")
+def auth_register(body: AuthBody) -> dict:
+    """Create a consumer account."""
+    try:
+        user = auth.register(body.username, body.password)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    return {"user": user}
+
+
+@app.post("/api/auth/login")
+def auth_login(body: AuthBody) -> dict:
+    """Trade credentials for a session token."""
+    token = auth.login(body.username, body.password)
+    if not token:
+        raise HTTPException(401, "Wrong username or password.")
+    return {"token": token, "user": auth.me(token)}
+
+
+@app.post("/api/auth/logout")
+def auth_logout(request: Request) -> dict:
+    auth.logout(auth.bearer_token(request))
+    return {"ok": True}
+
+
+@app.get("/api/auth/me")
+def auth_me(user: dict = Depends(auth.require_user)) -> dict:
+    return {"user": user}
+
+
 @app.post("/api/cases")
-def create_case(body: PackBody) -> dict:
+def create_case(body: PackBody, user: dict = Depends(auth.require_user)) -> dict:
     pack = body.to_pack()
-    assessment = engine.assess(
+    assessment = _assess(
         pack, seen_batches=cases.seen_batches_for(pack.nafdac_number)
     )
     case = cases.create_case(pack, assessment)
     docs = actions.all_documents(pack, assessment)
+    audit.log("case_opened", user.get("username", ""), case["id"])
     for doc in docs.values():
         cases.attach_document(case["id"], doc)
     return {"case_id": case["id"], "case": cases.get_case(case["id"])}
 
 
 @app.get("/api/cases")
-def list_cases(status: Optional[str] = None, limit: int = 50) -> dict:
+def list_cases(status: Optional[str] = None, limit: int = 50, user: dict = Depends(auth.require_user)) -> dict:
     return {"cases": cases.list_cases(limit=limit, status=status),
             "stats": cases.stats()}
 
 
 @app.get("/api/cases/{case_id}")
-def get_case(case_id: str) -> dict:
+def get_case(case_id: str, user: dict = Depends(auth.require_user)) -> dict:
     c = cases.get_case(case_id)
     if not c:
         raise HTTPException(404, "No such case.")
@@ -378,7 +557,7 @@ def get_case(case_id: str) -> dict:
 
 
 @app.post("/api/cases/{case_id}/documents/{kind}")
-def make_document(case_id: str, kind: str) -> dict:
+def make_document(case_id: str, kind: str, user: dict = Depends(auth.require_user)) -> dict:
     c = cases.get_case(case_id)
     if not c:
         raise HTTPException(404, "No such case.")
@@ -400,7 +579,7 @@ def make_document(case_id: str, kind: str) -> dict:
 
 
 @app.get("/api/cases/{case_id}/documents/{kind}", response_class=PlainTextResponse)
-def download_document(case_id: str, kind: str) -> str:
+def download_document(case_id: str, kind: str, user: dict = Depends(auth.require_user)) -> str:
     c = cases.get_case(case_id)
     if not c:
         raise HTTPException(404, "No such case.")
@@ -420,15 +599,16 @@ def download_document(case_id: str, kind: str) -> str:
 
 
 @app.post("/api/cases/{case_id}/close")
-def close_case(case_id: str, body: CloseBody) -> dict:
+def close_case(case_id: str, body: CloseBody, user: dict = Depends(auth.require_user)) -> dict:
     c = cases.close_case(case_id, body.outcome, body.status)
+    audit.log("case_closed", user.get("username", ""), case_id)
     if not c:
         raise HTTPException(404, "No such case.")
     return c
 
 
 @app.post("/api/cases/{case_id}/event")
-def add_event(case_id: str, body: EventBody) -> dict:
+def add_event(case_id: str, body: EventBody, user: dict = Depends(auth.require_user)) -> dict:
     if not cases.get_case(case_id):
         raise HTTPException(404, "No such case.")
     cases.add_event(case_id, body.kind, body.note)
@@ -436,18 +616,18 @@ def add_event(case_id: str, body: EventBody) -> dict:
 
 
 @app.get("/api/cluster")
-def get_cluster(nafdac: str = "", batch: str = "") -> dict:
+def get_cluster(nafdac: str = "", batch: str = "", user: dict = Depends(auth.require_user)) -> dict:
     return cases.cluster(nafdac, batch)
 
 
 @app.get("/api/queue")
-def get_queue(limit: int = 50) -> dict:
+def get_queue(limit: int = 50, user: dict = Depends(auth.require_user)) -> dict:
     """What is due now. The follow-through half of the product."""
     return {"queue": cases.queue(limit=limit), "stats": cases.stats()}
 
 
 @app.post("/api/cases/{case_id}/steps/{day}")
-def complete_step(case_id: str, day: int, body: EventBody | None = None) -> dict:
+def complete_step(case_id: str, day: int, body: EventBody | None = None, user: dict = Depends(auth.require_user)) -> dict:
     if not cases.get_case(case_id):
         raise HTTPException(404, "No such case.")
     c = cases.mark_step(case_id, day, (body.note if body else "") or "")
@@ -455,7 +635,7 @@ def complete_step(case_id: str, day: int, body: EventBody | None = None) -> dict
 
 
 @app.post("/api/cases/{case_id}/snooze")
-def snooze_case(case_id: str, days: int = 3) -> dict:
+def snooze_case(case_id: str, days: int = 3, user: dict = Depends(auth.require_user)) -> dict:
     if not cases.get_case(case_id):
         raise HTTPException(404, "No such case.")
     return cases.snooze(case_id, days) or {}
@@ -471,7 +651,7 @@ def demo_packs() -> dict:
 
 
 @app.post("/api/demo/seed")
-def demo_seed() -> dict:
+def demo_seed(user: dict = Depends(auth.require_user)) -> dict:
     """Create three cases with different pasts, so the follow-up screen can be
     shown honestly without waiting a week.
 
@@ -493,7 +673,7 @@ def demo_seed() -> dict:
             continue
         ex = vision.from_fixture(key)
         pack = PackInput(flags=f.get("flags", []), **ex.to_pack_kwargs())
-        a = engine.assess(pack)
+        a = _assess(pack)
         c = cases.create_case(pack, a, opened_on=date.today() - timedelta(days=age))
         for doc in actions.all_documents(pack, a).values():
             cases.attach_document(c["id"], doc)
@@ -511,7 +691,7 @@ def demo_run(body: DemoBody) -> dict:
         raise HTTPException(404, str(exc))
     f = vision.fixture(body.key) or {}
     pack = PackInput(flags=f.get("flags", []), **ex.to_pack_kwargs())
-    assessment = engine.assess(pack, seen_batches=cases.seen_batches_for(pack.nafdac_number))
+    assessment = _assess(pack, seen_batches=cases.seen_batches_for(pack.nafdac_number))
     out = {"assessment": assessment.to_dict(), "pack": f}
     if body.create_case:
         case = cases.create_case(pack, assessment)
@@ -523,8 +703,10 @@ def demo_run(body: DemoBody) -> dict:
 
 
 @app.post("/api/demo/reset")
-def demo_reset() -> dict:
+def demo_reset(user: dict = Depends(auth.require_user)) -> dict:
     cases.reset()
+    safety.reset()
+    audit.log("demo_reset", user.get("username", ""), "")
     return {"ok": True, "stats": cases.stats()}
 
 
@@ -539,7 +721,7 @@ def get_stats() -> dict:
 
 @app.get("/api/registry/search")
 def registry_search(q: str = "", limit: int = 20, page: int = 1) -> dict:
-    """Search the live NAFDAC register by product name, ingredient or number.
+    """Search the synced NAFDAC register by product name, ingredient or number.
 
     This is the same public dataset the lookup uses, so every product that can
     be verified by number can also be found by name.
@@ -578,10 +760,62 @@ def registry_search(q: str = "", limit: int = 20, page: int = 1) -> dict:
         "total": payload.get("recordsTotal") or 0,
         "matched": payload.get("recordsFiltered") or 0,
         "records": records,
-        "source": R.BASE,
+        "source": R.BASE, "mirror": R.sync_status(),
         "note": "Registration in the Greenbook confirms a licence record, "
                 "not the authenticity of a particular pack.",
     }
+
+
+class SerialBody(BaseModel):
+    manufacturer: str = ""
+    serial: str = ""
+
+
+class MasBody(BaseModel):
+    pin: str = ""
+    shortcode: str = ""
+
+
+@app.post("/api/mas/verify")
+def mas_verify(body: MasBody) -> dict:
+    """Ask the connected PIN service. Honest when none is connected."""
+    return mas.verify(body.pin, body.shortcode)
+
+
+@app.post("/api/manufacturer/verify")
+def manufacturer_verify(body: SerialBody) -> dict:
+    """Ask a connected manufacturer about one serial. Honest when none."""
+    return M.verify(body.manufacturer, body.serial)
+
+
+class SmsBody(BaseModel):
+    sender: str = ""
+    text: str = ""
+    secret: str = ""
+
+
+@app.post("/api/sms/inbound")
+def sms_inbound(body: SmsBody) -> dict:
+    """Provider webhook: 'NAFDAC <number>' in, short answer text out."""
+    if not sms.check_secret(body.secret):
+        raise HTTPException(403, "Bad provider secret.")
+    return {"reply": sms.handle_inbound(body.text, body.sender)}
+
+
+@app.get("/api/registry/sync/status")
+def registry_sync_status() -> dict:
+    """How fresh the local Greenbook mirror is."""
+    return R.sync_status()
+
+
+@app.post("/api/registry/sync")
+def registry_sync_now(bg: BackgroundTasks, user: dict = Depends(auth.require_user)) -> dict:
+    """Start a background sync of the whole Greenbook listing. Resumable."""
+    if R.sync_running():
+        return {"started": False, "status": R.sync_status()}
+    bg.add_task(R.sync_run)
+    audit.log("sync_started", user.get("username", ""), "")
+    return {"started": True, "status": R.sync_status()}
 
 
 @app.get("/api/registry/lookup/{number}")
@@ -592,6 +826,92 @@ def registry_lookup(number: str) -> dict:
     except R.RegistryUnavailable as exc:
         raise HTTPException(503, f"The NAFDAC register is unreachable: {exc}")
     return result.to_dict()
+
+
+# --------------------------------------------------------------------------
+# Nigeria Product Safety Intelligence
+# --------------------------------------------------------------------------
+
+@app.get("/api/safety/summary")
+def safety_summary() -> dict:
+    """What the shared layer knows, and what it cannot know."""
+    return safety.summary()
+
+
+@app.get("/api/safety/alerts")
+def safety_alerts(q: str = "", nafdac: str = "", batch: str = "") -> dict:
+    return safety.alerts(query=q, nafdac=nafdac, batch=batch)
+
+
+@app.get("/api/safety/batch")
+def safety_batch(nafdac: str = "", batch: str = "", barcode: str = "") -> dict:
+    """Batch watch: configured alerts, local submissions and pattern flags."""
+    return safety.batch_watch(nafdac=nafdac, batch=batch, barcode=barcode)
+
+
+@app.get("/api/safety/reports")
+def safety_reports(limit: int = 30, nafdac: str = "", batch: str = "",
+                   seller: str = "", q: str = "", barcode: str = "") -> dict:
+    reports = safety.list_reports(limit=limit, nafdac=nafdac, batch=batch,
+                                  seller=seller, query=q, barcode=barcode)
+    return {
+        "reports": reports,
+        "count": len(reports),
+        "note": ("Submissions are shown as received. They are not verified findings "
+                 "and Vouch does not publish them as accusations."),
+    }
+
+
+@app.post("/api/safety/reports")
+def safety_submit(
+    product_name: str = Form(""),
+    nafdac_number: str = Form(""),
+    batch: str = Form(""),
+    barcode: str = Form(""),
+    seller: str = Form(""),
+    location: str = Form(""),
+    issue: str = Form("other"),
+    notes: str = Form(""),
+    contact: str = Form(""),
+    file: UploadFile | None = File(None),
+) -> dict:
+    """Accept one evidence submission for review. Never a public verdict."""
+    photo = None
+    media_type = "image/jpeg"
+    if file is not None:
+        media_type = file.content_type or "image/jpeg"
+        if not media_type.startswith("image/"):
+            raise HTTPException(400, "Evidence must be an image.")
+        photo = file.file.read()
+        if not photo:
+            photo = None
+        elif len(photo) > safety.MAX_PHOTO:
+            raise HTTPException(413, "The evidence photo is larger than 8 MB.")
+        if photo:
+            photo = _clean_upload(photo)
+    try:
+        return safety.submit({
+            "product_name": product_name,
+            "nafdac_number": nafdac_number,
+            "batch": batch,
+            "barcode": barcode,
+            "seller": seller,
+            "location": location,
+            "issue": issue,
+            "notes": notes,
+            "contact": contact,
+        }, photo=photo, media_type=media_type)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.get("/api/safety/photo/{report_id}")
+def safety_photo(report_id: str) -> FileResponse:
+    found = safety.photo_path(report_id)
+    if not found:
+        raise HTTPException(404, "No evidence photo for that submission.")
+    path, media_type = found
+    return FileResponse(path, media_type=media_type)
 
 
 # --------------------------------------------------------------------------
@@ -635,11 +955,17 @@ _MARKETING_PAGES = (
 )
 
 
+@app.get("/favicon.ico")
+def favicon() -> FileResponse:
+    return FileResponse(os.path.join(UI, "favicon.png"))
+
+
 @app.get("/{page}")
 def marketing_page(page: str) -> FileResponse:
     if "/" + page in _MARKETING_PAGES:
         return FileResponse(os.path.join(UI, "marketing.html"))
-    raise HTTPException(404, "Not found")
+    # Unknown paths get the shell too; the router shows the not-found page.
+    return FileResponse(os.path.join(UI, "marketing.html"))
 
 
 app.mount("/samples", StaticFiles(directory=os.path.join(HERE, "samples", "img")),
@@ -649,6 +975,29 @@ if os.path.isdir(UI):
     app.mount("/ui", StaticFiles(directory=UI), name="ui")
 
 
+def _maybe_auto_sync() -> None:
+    """Daily Greenbook refresh when VOUCH_AUTO_SYNC=1. A daemon thread."""
+    if os.environ.get("VOUCH_AUTO_SYNC") != "1":
+        return
+    import threading
+
+    def loop() -> None:
+        import time as _time
+        while True:
+            try:
+                if not R.mirror_ready():
+                    R.sync_run()
+                _time.sleep(24 * 3600)
+                R.sync_run()
+            except Exception:
+                _time.sleep(3600)
+
+    threading.Thread(target=loop, daemon=True).start()
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8077, log_level="info")
+    auth.ensure_admin()
+    _maybe_auto_sync()
+    port = int(os.environ.get("VOUCH_PORT", "8077"))
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")

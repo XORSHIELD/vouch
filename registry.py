@@ -22,6 +22,8 @@ Usage:
     python registry.py A3-1450
     python registry.py --name paracetamol --limit 5
     python registry.py A11-0551 --manufacturer "ACME Ltd" --json
+    python registry.py --sync            # mirror the whole listing locally
+    python registry.py --sync-status     # how fresh the mirror is
 """
 
 from __future__ import annotations
@@ -47,7 +49,11 @@ UA = (
 )
 CACHE_TTL = 60 * 60 * 24 * 7      # 7 days
 MIN_INTERVAL = 0.6                 # seconds between live requests
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
+SYNC_STALE_AFTER = 30 * 60         # a sync silent this long is presumed dead
+SYNC_STALE_DAYS = 7              # a mirror older than this warns
+CACHE_DIR = (os.environ.get("VOUCH_CACHE_DIR")
+             or os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             ".cache"))
 
 # Datatable columns the registry expects for the product listing endpoint.
 COLUMNS = [
@@ -256,9 +262,8 @@ def _query_string(term: str, length: int) -> str:
     return urllib.parse.urlencode(parts)
 
 
-def search(term: str, length: int = 10, offline: bool = False, start: int = 0) -> dict:
-    """Search the registry. Returns the raw datatables payload."""
-    term = (term or "").strip()
+def _fetch(term: str, length: int, start: int) -> dict:
+    """One live listing request. No cache reads or writes."""
     parts = [("draw", "1")]
     for i, (data, name) in enumerate(COLUMNS):
         parts += [
@@ -278,18 +283,6 @@ def search(term: str, length: int = 10, offline: bool = False, start: int = 0) -
         ("search[regex]", "false"),
     ]
     qs = urllib.parse.urlencode(parts)
-    key = f"s|{term.lower()}|{length}|{start}"
-
-    cached = _cache_get(key)
-    if cached is not None:
-        return cached
-    if offline:
-        # An empty offline cache must never look like a real zero-result answer.
-        # "not found" is an accusation; "I could not ask" is not.
-        raise RegistryUnavailable(
-            f"offline, and no cached answer for '{term}'"
-        )
-
     _throttle()
     req = urllib.request.Request(
         f"{BASE}/?{qs}",
@@ -302,16 +295,307 @@ def search(term: str, length: int = 10, offline: bool = False, start: int = 0) -
     )
     try:
         with urllib.request.urlopen(req, timeout=45) as resp:
-            body = json.loads(resp.read().decode("utf-8", "replace"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            return json.loads(resp.read().decode("utf-8", "replace"))
+    except (urllib.error.URLError, TimeoutError,
+            json.JSONDecodeError) as exc:
         raise RegistryUnavailable(str(exc)) from exc
 
+
+def search(term: str, length: int = 10, offline: bool = False, start: int = 0) -> dict:
+    """Search the registry. Returns the raw datatables payload.
+
+    Once a sync has completed, the local mirror answers: same shape, same
+    records, no network. Otherwise this is a live lookup with a 7-day cache.
+    """
+    term = (term or "").strip()
+    if mirror_ready():
+        return search_mirror(term, length, start)
+    key = f"s|{term.lower()}|{length}|{start}"
+
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+    if offline:
+        # An empty offline cache must never look like a real zero-result answer.
+        # "not found" is an accusation; "I could not ask" is not.
+        raise RegistryUnavailable(
+            f"offline, and no cached answer for '{term}'"
+        )
+
+    body = _fetch(term, length, start)
     _cache_put(key, body)
     return body
 
 
 class RegistryUnavailable(RuntimeError):
     pass
+
+
+# --------------------------------------------------------------------------
+# Local mirror — a synced copy of the whole Greenbook
+# --------------------------------------------------------------------------
+#
+# Live lookup answers one number at a time. The mirror holds every record
+# locally instead: faster, works offline, and kind to a public government
+# server. sync_run() pages the listing endpoint (empty search, start/length)
+# and stores each record verbatim; search() prefers the mirror once a
+# completed pass exists and otherwise behaves exactly as before.
+
+MIRROR_SCHEMA = """
+CREATE TABLE IF NOT EXISTS mirror (
+  product_id TEXT PRIMARY KEY,
+  nafdac TEXT NOT NULL DEFAULT '',
+  nafdac_norm TEXT NOT NULL DEFAULT '',
+  product_name TEXT NOT NULL DEFAULT '',
+  manufacturer TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT '',
+  raw TEXT NOT NULL DEFAULT '{}',
+  pass INTEGER NOT NULL DEFAULT 0,
+  synced_at REAL NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_mirror_nafdac ON mirror(nafdac_norm);
+CREATE INDEX IF NOT EXISTS idx_mirror_name ON mirror(product_name);
+CREATE TABLE IF NOT EXISTS sync_state (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  status TEXT NOT NULL DEFAULT 'never',
+  started_at REAL NOT NULL DEFAULT 0,
+  finished_at REAL NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0,
+  fetched INTEGER NOT NULL DEFAULT 0,
+  pass INTEGER NOT NULL DEFAULT 0,
+  error TEXT NOT NULL DEFAULT ''
+);
+"""
+
+
+def _mirror_db() -> sqlite3.Connection:
+    con = _db()
+    con.executescript(MIRROR_SCHEMA)
+    return con
+
+
+_SYNC_KEYS = ("status", "started_at", "finished_at", "total", "fetched",
+              "pass", "error")
+
+
+def _sync_get() -> dict:
+    try:
+        con = _mirror_db()
+        try:
+            row = con.execute(
+                "SELECT status, started_at, finished_at, total, fetched,"
+                " pass, error FROM sync_state WHERE id = 1"
+            ).fetchone()
+        finally:
+            con.close()
+    except Exception:
+        row = None
+    if not row:
+        return {"status": "never", "started_at": 0, "finished_at": 0,
+                "total": 0, "fetched": 0, "pass": 0, "error": ""}
+    return dict(zip(_SYNC_KEYS, row))
+
+
+def _sync_put(**kw) -> dict:
+    st = _sync_get()
+    if "pass_no" in kw:      # "pass" is a keyword, so callers say pass_no
+        kw["pass"] = kw.pop("pass_no")
+    st.update({k: v for k, v in kw.items() if k in _SYNC_KEYS})
+    con = _mirror_db()
+    try:
+        con.execute(
+            "INSERT OR REPLACE INTO sync_state"
+            " (id, status, started_at, finished_at, total, fetched,"
+            " pass, error) VALUES (1, ?, ?, ?, ?, ?, ?, ?)",
+            tuple(st[k] for k in _SYNC_KEYS),
+        )
+        con.commit()
+    finally:
+        con.close()
+    return st
+
+
+def sync_running() -> bool:
+    st = _sync_get()
+    return (st["status"] == "running"
+            and (time.time() - st["started_at"]) < SYNC_STALE_AFTER)
+
+
+def mirror_ready() -> bool:
+    try:
+        con = _mirror_db()
+        try:
+            row = con.execute(
+                "SELECT status FROM sync_state WHERE id = 1").fetchone()
+            if not row or row[0] != "complete":
+                return False
+            return con.execute(
+                "SELECT COUNT(*) FROM mirror").fetchone()[0] > 0
+        finally:
+            con.close()
+    except Exception:
+        return False
+
+
+def sync_status() -> dict:
+    """How fresh the local mirror is. Cheap: two indexed reads."""
+    st = _sync_get()
+    try:
+        con = _mirror_db()
+        try:
+            records = con.execute(
+                "SELECT COUNT(*) FROM mirror").fetchone()[0]
+        finally:
+            con.close()
+    except Exception:
+        records = 0
+    st["records"] = records
+    st["ready"] = st["status"] == "complete" and records > 0
+    st["source"] = BASE
+    finished = st.get("finished_at") or 0
+    st["age_days"] = round((time.time() - finished) / 86400, 1) if finished else None
+    st["stale"] = bool(st["ready"]) and (st["age_days"] or 0) > SYNC_STALE_DAYS
+    return st
+
+
+def _mirror_upsert(con: sqlite3.Connection, d: dict, pass_no: int) -> None:
+    rec = Record.from_api(d)
+    norms = normalise(rec.nafdac)
+    pid = str(d.get("product_id") or "").strip()
+    if not pid:
+        pid = f"n:{rec.nafdac}|{rec.product_name}|{rec.manufacturer}"
+    con.execute(
+        "INSERT OR REPLACE INTO mirror"
+        " (product_id, nafdac, nafdac_norm, product_name, manufacturer,"
+        " status, raw, pass, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (pid, rec.nafdac, norms[0] if norms else rec.nafdac,
+         rec.product_name, rec.manufacturer, rec.status,
+         json.dumps(d), pass_no, time.time()),
+    )
+
+
+def _like_escape(term: str) -> str:
+    return (term.replace("\\", "\\\\").replace("%", "\\%")
+               .replace("_", "\\_"))
+
+
+def search_mirror(term: str, length: int = 10, start: int = 0) -> dict:
+    """The same datatables-shaped answer as search(), from the local copy."""
+    term = (term or "").strip().lower()
+    con = _mirror_db()
+    try:
+        total = con.execute("SELECT COUNT(*) FROM mirror").fetchone()[0]
+        if term:
+            like = f"%{_like_escape(term)}%"
+            where = ("WHERE lower(nafdac) LIKE ? ESCAPE '\\'"
+                     " OR lower(nafdac_norm) LIKE ? ESCAPE '\\'"
+                     " OR lower(product_name) LIKE ? ESCAPE '\\'"
+                     " OR lower(manufacturer) LIKE ? ESCAPE '\\'")
+            args: list = [like] * 4
+            filtered = con.execute(
+                f"SELECT COUNT(*) FROM mirror {where}", args).fetchone()[0]
+            rows = con.execute(
+                f"SELECT raw FROM mirror {where}"
+                " ORDER BY product_name ASC LIMIT ? OFFSET ?",
+                args + [length, start]).fetchall()
+        else:
+            filtered = total
+            rows = con.execute(
+                "SELECT raw FROM mirror ORDER BY product_name ASC"
+                " LIMIT ? OFFSET ?", (length, start)).fetchall()
+    finally:
+        con.close()
+    return {
+        "data": [json.loads(r[0]) for r in rows],
+        "recordsTotal": total,
+        "recordsFiltered": filtered,
+    }
+
+
+def _mirror_exact(term: str) -> list[dict]:
+    """Rows whose number IS this term. Indexed: milliseconds, not a scan.
+
+    Empty when the mirror is not ready, so callers fall back to search().
+    """
+    norms = normalise(term)
+    if not norms or not mirror_ready():
+        return []
+    con = _mirror_db()
+    try:
+        rows = con.execute(
+            "SELECT raw FROM mirror WHERE nafdac_norm = ?", (norms[0],)
+        ).fetchall()
+    finally:
+        con.close()
+    return [json.loads(r[0]) for r in rows]
+
+
+def sync_run(page_size: int = 200, max_pages: int | None = None,
+             on_progress=None) -> dict:
+    """Copy the whole listing into the local mirror.
+
+    Resumable and idempotent: every write is keyed by the registry's own
+    product id, an interrupted run continues where it stopped, and rows from
+    older passes are only deleted when a pass completes.
+    """
+    page_size = max(25, min(int(page_size or 200), 500))
+    st = _sync_get()
+    if sync_running():
+        return {**sync_status(), "started": False,
+                "note": "A sync is already running."}
+    resume = st["status"] in ("error", "paused") and st["pass"] > 0
+    pass_no = st["pass"] if resume else st["pass"] + 1
+    # Back up one page on resume: the listing can shift under us.
+    start = max(0, st["fetched"] - page_size) if resume else 0
+    total = st["total"] if resume else 0
+    fetched = start
+    pages = 0
+    _sync_put(status="running", started_at=time.time(), total=total,
+              fetched=fetched, pass_no=pass_no, error="")
+    try:
+        while True:
+            payload = _fetch("", page_size, start)
+            total = payload.get("recordsTotal") or total
+            rows = payload.get("data") or []
+            con = _mirror_db()
+            try:
+                for d in rows:
+                    _mirror_upsert(con, d, pass_no)
+                con.commit()
+            finally:
+                con.close()
+            fetched += len(rows)
+            pages += 1
+            _sync_put(fetched=fetched, total=total)
+            if on_progress:
+                on_progress({"fetched": fetched, "total": total,
+                             "pages": pages})
+            if max_pages and pages >= max_pages:
+                _sync_put(status="paused",
+                            error=f"Stopped after {pages} pages (cap).")
+                break
+            if not rows or (total and fetched >= total):
+                break
+            start += len(rows)
+        if not max_pages or fetched >= (total or 0):
+            con = _mirror_db()
+            try:
+                con.execute("DELETE FROM mirror WHERE pass <> ?",
+                            (pass_no,))
+                con.commit()
+            finally:
+                con.close()
+            _sync_put(status="complete", finished_at=time.time(),
+                      fetched=fetched, total=total, error="")
+            try:
+                import audit
+                audit.log("sync_complete", "", f"{fetched} records")
+            except Exception:
+                pass
+    except RegistryUnavailable as exc:
+        _sync_put(status="error", fetched=fetched, total=total,
+                  error=str(exc)[:300])
+    return {**sync_status(), "started": True}
 
 
 # --------------------------------------------------------------------------
@@ -428,8 +712,6 @@ def lookup(
 
     for idx, cand in enumerate(candidates):
         tried.append(cand)
-        payload = search(cand, length=10, offline=offline)
-        recs = [Record.from_api(d) for d in (payload.get("data") or [])]
 
         # A record only counts if its registered number resolves to the
         # candidate exactly. The registry search is a substring LIKE, so a
@@ -437,7 +719,16 @@ def lookup(
         def matches(rec: Record) -> bool:
             return cand in normalise(rec.nafdac)
 
+        # The indexed exact read first: the common case in milliseconds.
+        # Only when it finds no true hit do we pay for the substring scan
+        # (which also feeds the loose fallback below).
+        recs = [Record.from_api(d) for d in _mirror_exact(cand)]
         exact = [r for r in recs if matches(r)]
+        if not exact:
+            recs = [Record.from_api(d) for d in
+                    (search(cand, length=10,
+                            offline=offline).get("data") or [])]
+            exact = [r for r in recs if matches(r)]
         if exact:
             hits = exact
             if idx > 0:
@@ -454,9 +745,12 @@ def lookup(
         if (payload.get("recordsFiltered") or 0) == 0 and not fallback_hits:
             hints = []
             for alt in explore_variants(printed_number):
-                alt_payload = search(alt, length=3, offline=offline)
-                for d in alt_payload.get("data") or []:
-                    o = Record.from_api(d)
+                alt_rows = [Record.from_api(d) for d in _mirror_exact(alt)]
+                if not any(alt in normalise(o.nafdac) for o in alt_rows):
+                    alt_rows = [Record.from_api(d) for d in
+                                (search(alt, length=3,
+                                        offline=offline).get("data") or [])]
+                for o in alt_rows:
                     if alt in normalise(o.nafdac):
                         hints.append(
                             f"The same tail exists as '{alt}': {o.product_name} "
@@ -576,7 +870,50 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--limit", type=int, default=8)
     ap.add_argument("--offline", action="store_true", help="cache only")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--sync", action="store_true",
+                    help="mirror the whole listing locally (resumable)")
+    ap.add_argument("--sync-status", action="store_true",
+                    help="show how fresh the local mirror is")
+    ap.add_argument("--page-size", type=int, default=200,
+                    help="records per sync request (25-500)")
+    ap.add_argument("--max-pages", type=int, default=0,
+                    help="stop after this many sync pages (0 = all)")
     a = ap.parse_args(argv)
+
+    if a.sync_status:
+        st = sync_status()
+        if a.json:
+            print(json.dumps(st, indent=2))
+            return 0
+        print(f"mirror : {st['status']}"
+              + (f"  ({st['records']} records)" if st["records"] else ""))
+        if st["status"] == "complete" and st["finished_at"]:
+            print("updated: "
+                  + time.strftime("%Y-%m-%d %H:%M",
+                                   time.localtime(st["finished_at"])))
+        elif st["status"] in ("running", "error", "paused"):
+            print(f"progress: {st['fetched']} of {st['total'] or '?'}")
+            if st["error"]:
+                print(f"note   : {st['error']}")
+        print(f"source : {st['source']}")
+        return 0
+
+    if a.sync:
+        def tick(p):
+            total = p["total"] or "?"
+            print(f"  synced {p['fetched']} of {total} "
+                  f"({p['pages']} pages)", flush=True)
+
+        out = sync_run(page_size=a.page_size,
+                       max_pages=a.max_pages or None, on_progress=tick)
+        if not out.get("started"):
+            print(out.get("note", "A sync is already running."))
+            return 0
+        st = sync_status()
+        print(f"done: {st['status']} — {st['records']} records")
+        if st["error"]:
+            print(f"note: {st['error']}")
+        return 0
 
     try:
         if a.name:

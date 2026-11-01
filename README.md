@@ -14,6 +14,8 @@ statement of what the check does not prove.
 
 ```powershell
 cd vouch
+python server.py                 # http://127.0.0.1:8077
+$env:VOUCH_PORT = "8091"         # optional: run on another port
 python server.py
 ```
 
@@ -83,6 +85,11 @@ authentic.
   keeps a typed fallback, and stores no audio. A **Test microphone** control
   measures the actual input level, so a blocked or silent mic can be told apart
   from a browser speech service that failed.
+- A chat agent (Agent tab, `POST /api/agent/chat`). Send a photo or a
+  question; it runs the same checks as Verify, explains in words, and
+  asks before opening any case. With `MODEL_API_KEY` set it plans with
+  the model, otherwise it answers deterministically — the engine owns
+  every verdict either way, and case creation always needs sign-in.
 - A product guide, privacy/terms pages, a report form and demo auth flows.
 
 ## Tests
@@ -92,13 +99,88 @@ python test_engine.py
 python test_expiry.py
 python test_registry.py
 python test_scan.py
+python test_sync.py
+python test_auth.py
+python test_backup.py
+python test_seams.py
+python test_mas.py
+python test_safety.py
+python test_vision.py
+python test_server.py
+python test_agent.py
 python smoke.py
 ```
+
+Pushes also run the suite plus a server boot check in CI
+(`.github/workflows/ci.yml`).
 
 The smoke suite exercises the API, the band invariants, the case lifecycle, the
 queue, the single-photo path, the multi-side scan endpoint and the reset flow.
 `test_scan.py` covers frame-quality scoring, multi-side reconciliation,
 conflict reporting and barcode/QR consensus.
+
+## Greenbook sync
+
+Vouch can keep a local copy of the whole NAFDAC Greenbook listing, so checks
+are instant and keep working offline. Until the first sync finishes, every
+check reads the live register.
+
+```powershell
+python registry.py --sync           # download the listing (resumable)
+python registry.py --sync-status    # how fresh the copy is
+```
+
+The copy lives in `.cache/registry.sqlite` next to the 7-day query cache.
+Re-running `--sync` refreshes it; an interrupted run resumes where it stopped.
+The app also syncs from **Settings → Greenbook sync**, and `/api/health`
+reports the sync state. A synced record is still Greenbook data, so the result
+panels name the source; sample and demo runs are labelled separately.
+
+## Running it for real
+
+**Accounts.** Checks never need sign-in; cases do. The first account
+registered is the admin. For scripted deploys, set `VOUCH_ADMIN_PASSWORD`
+before the first start instead. Sessions last 7 days; sign in from
+**Settings → Session**.
+
+**Backups.** Cases, reports, accounts and the mirror live in `.data/`,
+`data/` and `.cache/`. Back them up:
+
+```powershell
+python backup.py                 # timestamped copy in backups/, keeps 7
+```
+
+Schedule it (Task Scheduler on Windows, cron elsewhere) before real users
+depend on the server.
+
+**Fresh data.** Set `VOUCH_AUTO_SYNC=1` and the server refreshes the
+Greenbook mirror daily by itself. Without it, sync from Settings or
+`python registry.py --sync`.
+
+**Locking down.** Set `VOUCH_ORIGINS=https://your-domain` so browsers only
+accept your site; without it, any origin is allowed (fine for local use).
+Uploads are verified as real JPG/PNG/WebP and stripped of camera metadata
+(including GPS) on arrival. Per-IP rate limits apply to every endpoint,
+tightest on auth and OCR. Security events land in `.data/audit.log`.
+
+**Partner seams.** A manufacturer serial check and an SMS/USSD inbound
+endpoint exist as tested seams (`/api/manufacturer/verify`,
+`/api/sms/inbound`). They answer honestly until you configure
+`VOUCH_MFR_URL` (+`VOUCH_MFR_KEY`) and `VOUCH_SMS_SECRET` with real
+providers.
+
+**Scratch panels.** The camera reads scratch-to-verify PINs like any other
+field: the PIN locks when two frames agree, rivals stay visible, and the
+result page shows the exact PIN with the shortcode beside it, a Verify
+button, and copy/SMS instructions. Verification itself needs a MAS
+provider: without `VOUCH_MAS_URL` the button tells the person to text the
+PIN to the shortcode instead.
+
+**AI assist.** Every locked frame is also read in full by the vision model
+(dates, batch, names, PIN, print warnings) and shown under the camera as
+the AI read. Live detectors always win on codes; the model fills the gaps.
+Toggle it in the scanner; with no key or no network the live detectors
+carry on alone.
 
 ## Honest limits
 
@@ -127,13 +209,20 @@ conflict reporting and barcode/QR consensus.
 vouch/
   server.py        FastAPI app and JSON endpoints
   engine.py        checks, banding, evidence and actions
-  registry.py      NAFDAC Greenbook client and normalisation
+  registry.py      Greenbook client, normalisation and sync mirror
   barcode.py       barcode validation, identity scoring, product databases
   expiry.py        date parsing and expiry assessment
   scan.py          frame quality, multi-side reconciliation, barcode/QR consensus
   vision.py        OCR extraction and fixtures
   ai.py            explanation layer, guardrails, streaming
   cases.py         case lifecycle, deadlines, queue and stats
+  auth.py          accounts, sessions, roles
+  audit.py         append-only security log
+  ratelimit.py     per-IP rate limiting middleware
+  backup.py        timestamped database backups
+  manufacturer.py  maker serial-check seam
+  mas.py           scratch-PIN verification seam
+  sms.py           SMS/USSD inbound seam
   actions.py       seller/regulator document builders
   ui/
     index.html     the application

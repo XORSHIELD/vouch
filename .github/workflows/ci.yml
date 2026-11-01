@@ -1,0 +1,32 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install fastapi uvicorn httpx pillow
+      - run: |
+          python test_engine.py
+          python test_expiry.py
+          python test_registry.py
+          python test_scan.py
+          python test_sync.py
+          python test_auth.py
+          python test_backup.py
+          python test_seams.py
+          python test_mas.py
+          python test_safety.py
+          python test_vision.py
+          python test_server.py
+          python test_agent.py
+      - run: |
+          python server.py & echo $! > server.pid
+          sleep 10
+          python -c "import json,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8077/api/health', timeout=30)); assert h['ok'], h; print('health ok, sync:', h.get('sync', {}).get('status'))"
+          kill $(cat server.pid)

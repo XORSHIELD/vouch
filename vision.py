@@ -43,6 +43,9 @@ class Extraction:
     batch: str = ""
     exp_date: str = ""
     mfg_date: str = ""
+    best_before: str = ""
+    pin: str = ""
+    shortcode: str = ""
     strength: str = ""
     pack_size: str = ""
     raw_text: str = ""
@@ -224,10 +227,13 @@ Return strict JSON with exactly these keys:
   "product_name": "brand name as printed",
   "nafdac_number": "NAFDAC registration number exactly as printed, e.g. A11-0551",
   "barcode": "the digits printed under the barcode, no spaces, or empty",
-  "manufacturer": "company name as printed, including 'Manufactured by' if present",
+  "manufacturer": "company name as printed, without any 'Manufactured by' prefix",
   "batch": "batch or lot number exactly as printed",
   "exp_date": "expiry date exactly as printed, e.g. EXP 03/2027",
   "mfg_date": "manufacture date exactly as printed, or empty",
+  "best_before": "best-before or use-by date exactly as printed, or empty",
+  "pin": "scratch-panel PIN exactly as printed, no spaces, or empty",
+  "shortcode": "the number to text the PIN to, digits only, or empty",
   "strength": "strength as printed, e.g. 500 mg",
   "pack_size": "pack size as printed, e.g. 10 x 10's",
   "legible": true,
@@ -342,10 +348,13 @@ def _extract_meta(
         nafdac_number=_s(body.get("nafdac_number")),
         barcode=find_barcode(_s(body.get("barcode"))) or _s(body.get("barcode")),
         product_name=_s(body.get("product_name")),
-        manufacturer=_s(body.get("manufacturer")),
+        manufacturer=_strip_maker(_s(body.get("manufacturer"))),
         batch=_s(body.get("batch")),
         exp_date=_s(body.get("exp_date")),
         mfg_date=_s(body.get("mfg_date")),
+        best_before=_s(body.get("best_before")),
+        pin=re.sub(r"\s+", "", _s(body.get("pin"))).upper(),
+        shortcode=re.sub(r"\D", "", _s(body.get("shortcode"))),
         strength=_s(body.get("strength")),
         pack_size=_s(body.get("pack_size")),
         raw_text=json.dumps(body, ensure_ascii=False),
@@ -353,6 +362,15 @@ def _extract_meta(
         provider=f"meta:{model or MODEL}",
         warnings=warnings + ([_s(body.get("notes"))] if body.get("notes") else []),
     )
+
+
+_MAKER_PREFIX = re.compile(
+    r"(?i)^(manufactured|made|produced)\s+(by|for)\s+")
+
+
+def _strip_maker(name: str) -> str:
+    """Drop a 'Manufactured by' lead-in, the way the label parser does."""
+    return _MAKER_PREFIX.sub("", name).strip(" .,-")
 
 
 def _s(v) -> str:

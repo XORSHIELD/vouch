@@ -22,7 +22,8 @@ from typing import Any
 from actions import Document, escalation_plan
 from engine import Assessment, PackInput
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".data")
+DATA_DIR = os.path.join(os.environ.get("VOUCH_DATA_DIR")
+                        or os.path.dirname(os.path.abspath(__file__)), ".data")
 DB_PATH = os.path.join(DATA_DIR, "vouch.sqlite")
 
 

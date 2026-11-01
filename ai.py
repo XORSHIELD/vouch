@@ -213,9 +213,8 @@ def _limits(a) -> str:
     if a.band == "incomplete":
         return (" A photograph of the back panel, or the number typed in, is "
                 "usually all it takes to move this forward.")
-    return (" That is narrower than 'safe'. It says the paperwork reconciles, "
-            "not that the pack was stored well or that it came from the factory "
-            "it names.")
+    return (" It says the paperwork reconciles, not that the pack was "
+            "stored well or that it came from the factory it names.")
 
 
 def _next(a) -> str:

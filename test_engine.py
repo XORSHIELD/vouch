@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from datetime import date
+import os
+import tempfile
 
 import engine as G
+import manufacturer as MFR
 
 TODAY = date(2026, 10, 27)
 fails = 0
@@ -106,19 +109,69 @@ for label, a in [
     check(f"{label}: no binary authenticity language", not hit, f"found {hit}")
 
 print("\noffline mode degrades honestly")
-a = G.assess(uncached := G.PackInput(**{**GENUINE.__dict__, "nafdac_number": "A98-7777"}),
-             today=TODAY, offline=True)
-check("offline registry check is unverifiable",
-      any(c.id == "registry" and c.state == G.UNKNOWN for c in a.checks),
-      str([(c.id, c.state) for c in a.checks]))
-check("offline cache miss is not treated as not-found",
-      not any(c.id == "registry" and c.state == G.HIGH for c in a.checks),
-      str([(c.id, c.state) for c in a.checks]))
+_empty = tempfile.mkdtemp(prefix="vouch-offline-")
+_old_cache = G.R.CACHE_DIR
+try:
+    # Hermetic: whatever the developer's real mirror holds, "no data"
+    # is only testable against an empty cache.
+    G.R.CACHE_DIR = _empty
+    a = G.assess(uncached := G.PackInput(**{**GENUINE.__dict__, "nafdac_number": "A98-7777"}),
+                 today=TODAY, offline=True)
+    check("offline registry check is unverifiable",
+          any(c.id == "registry" and c.state == G.UNKNOWN for c in a.checks),
+          str([(c.id, c.state) for c in a.checks]))
+    check("offline cache miss is not treated as not-found",
+          not any(c.id == "registry" and c.state == G.HIGH for c in a.checks),
+          str([(c.id, c.state) for c in a.checks]))
+finally:
+    G.R.CACHE_DIR = _old_cache
 
 print("\nserialisation")
 d = G.assess(GENUINE, today=TODAY).to_dict()
 check("to_dict has counts", "counts" in d and isinstance(d["counts"], dict))
 check("to_dict is json-safe", isinstance(str(d), str))
+
+print("\nmanufacturer serial")
+_old_mfr = MFR.verify
+_old_url = os.environ.get("VOUCH_MFR_URL")
+try:
+    os.environ.pop("VOUCH_MFR_URL", None)
+    a = G.assess(G.PackInput(**{**GENUINE.__dict__, "serial": "SN-1"}), today=TODAY)
+    check("unconnected maker adds no check",
+          not any(c.id == "manufacturer" for c in a.checks),
+          str([(c.id, c.state) for c in a.checks]))
+    os.environ["VOUCH_MFR_URL"] = "demo"
+    a = G.assess(GENUINE, today=TODAY)
+    check("no serial adds no check even when connected",
+          not any(c.id == "manufacturer" for c in a.checks))
+    a = G.assess(G.PackInput(**{**GENUINE.__dict__, "serial": "SN-1"}), today=TODAY)
+    check("demo unknown is unverifiable, not a signal",
+          any(c.id == "manufacturer" and c.state == G.UNKNOWN for c in a.checks)
+          and a.band == G.BAND_CLEAR, f"got {a.band}")
+    MFR.verify = lambda mfr, sn: {"connected": True, "verdict": "suspicious",
+                                  "detail": "Not in maker records."}
+    a = G.assess(G.PackInput(**{**GENUINE.__dict__, "serial": "SN-9"}), today=TODAY)
+    check("suspicious serial makes high risk",
+          a.band == G.BAND_HIGH
+          and any(c.id == "manufacturer" and c.state == G.HIGH for c in a.checks),
+          f"got {a.band}")
+    check("suspicious serial recommends a NAFDAC report",
+          any(x.kind == "nafdac_report" for x in a.actions))
+    check("suspicious serial never declares fake",
+          "fake" not in (a.headline + " " + " ".join(
+              x.label + " " + x.why for x in a.actions)).lower())
+    MFR.verify = lambda mfr, sn: {"connected": True, "verdict": "authentic",
+                                  "detail": ""}
+    a = G.assess(G.PackInput(**{**GENUINE.__dict__, "serial": "SN-2"}), today=TODAY)
+    check("authentic serial verifies without clearing anything by itself",
+          any(c.id == "manufacturer" and c.state == G.VERIFIED for c in a.checks)
+          and a.band == G.BAND_CLEAR, f"got {a.band}")
+finally:
+    MFR.verify = _old_mfr
+    if _old_url is None:
+        os.environ.pop("VOUCH_MFR_URL", None)
+    else:
+        os.environ["VOUCH_MFR_URL"] = _old_url
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

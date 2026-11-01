@@ -22,6 +22,7 @@ from typing import Any
 import expiry as E
 import registry as R
 import barcode as B
+import manufacturer as M
 
 # --------------------------------------------------------------------------
 # Vocabulary
@@ -40,8 +41,8 @@ BAND_INCOMPLETE = "incomplete"
 
 DISCLOSURE = (
     "Vouch is evidence assistance, not a regulator. It reports what it could "
-    "check and what it could not. It does not certify a product as safe, and it "
-    "does not declare a product fake. A 'high-risk' result means: preserve the "
+    "check and what it could not. It offers no certification, and it does not "
+    "declare a product fake. A 'high-risk' result means: preserve the "
     "pack, keep the receipt, and let NAFDAC decide."
 )
 
@@ -79,6 +80,7 @@ class PackInput:
     manufacturer: str = ""
     product_name: str = ""
     batch: str = ""
+    serial: str = ""
     mfg_date: str = ""
     exp_date: str = ""
     pack_size: str = ""
@@ -365,7 +367,7 @@ def _barcode_checks(pack: PackInput, bar: B.Result, kind: str) -> list[Check]:
                       f"{' by ' + pack.manufacturer if pack.manufacturer else ''}."),
             proves="The code printed on this pack belongs to a different product.",
             does_not_prove="That the contents are harmful. Product databases are "
-                           "crowd-sourced and can lag a genuine repackaging; "
+                           "crowd-sourced and can lag an actual repackaging; "
                            "confirm the code against a second pack.",
             source=f"{item.source} + pack",
             detail=[f"Name similarity {idm['name_score']:.2f}, brand "
@@ -403,6 +405,54 @@ def _barcode_checks(pack: PackInput, bar: B.Result, kind: str) -> list[Check]:
 # Main entry point
 # --------------------------------------------------------------------------
 
+def manufacturer_check(pack: PackInput) -> Check | None:
+    """Ask the maker about the serial — only when there is one to ask about.
+
+    No serial, or no maker connected: no check at all (the alerts
+    convention). A "suspicious" answer is evidence, never a verdict on its own.
+    """
+    serial = (pack.serial or "").strip()
+    if not serial:
+        return None
+    out = M.verify(pack.manufacturer, serial)
+    if not out.get("connected"):
+        return None
+    verdict = out.get("verdict") or "unknown"
+    detail = (out.get("detail") or "").strip()
+    if verdict == "authentic":
+        return Check(
+            id="manufacturer", label="Maker serial", state=VERIFIED, severity=0,
+            evidence=f"The maker confirms serial {serial} as theirs."
+                     + (f" {detail}" if detail else ""),
+            proves="This serial is in the maker's records.",
+            does_not_prove="That this physical pack came from that maker — "
+                           "a valid serial can be copied onto a fake pack.",
+            source="manufacturer",
+        )
+    if verdict == "suspicious":
+        return Check(
+            id="manufacturer", label="Maker serial", state=HIGH, severity=3.0,
+            evidence=f"The maker flags serial {serial} as not theirs."
+                     + (f" {detail}" if detail else ""),
+            proves="The maker does not recognise this serial.",
+            does_not_prove="That the medicine inside is wrong, or that any "
+                           "named seller is at fault. Only a regulator or a "
+                           "laboratory can make a formal finding.",
+            source="manufacturer",
+            detail=["Preserve the pack and receipt.",
+                    "File a NAFDAC report from the Reports tab."],
+        )
+    return Check(
+        id="manufacturer", label="Maker serial", state=UNKNOWN, severity=0,
+        evidence="The maker could not confirm this serial."
+                 + (f" {detail}" if detail else ""),
+        proves="Nothing.",
+        does_not_prove="Anything about this pack.",
+        source="manufacturer",
+        detail=["Retry when the service is back; do not treat this as a signal."],
+    )
+
+
 def assess(
     pack: PackInput,
     today: date | None = None,
@@ -410,6 +460,7 @@ def assess(
     seen_batches: list[str] | None = None,
     registry_result: R.Result | None = None,
     barcode_result: B.Result | None = None,
+    alert_matches: list[dict] | None = None,
 ) -> Assessment:
     today = today or date.today()
     checks: list[Check] = []
@@ -474,7 +525,7 @@ def assess(
                 source="pack",
                 detail=["Every medicine sold in Nigeria must carry a NAFDAC "
                         "registration number. Find it on the back or side panel.",
-                        "If there is genuinely no number anywhere on the pack, "
+                        "If there is truly no number anywhere on the pack, "
                         "that is itself a finding."],
             ))
     elif reg is None:
@@ -589,7 +640,7 @@ def assess(
             id="expiry", label=expiry_label, state=ATTENTION, severity=1.5,
             evidence=exp_assess.message,
             proves="The pack is close to expiry.",
-            does_not_prove="That it is unsafe today.",
+            does_not_prove="That the pack is fit to use today.",
             source="pack", detail=exp_assess.signals,
         ))
     elif exp_assess.state in (E.IMPLAUSIBLE, E.SEQUENCE_ERROR):
@@ -646,6 +697,41 @@ def assess(
 
     # 6. Batch plausibility.
     checks.append(batch_check(pack.batch, seen_batches))
+
+    # 6b. Official alerts. Only an exact batch-level match from a configured
+    # source reaches here; an unconfigured source produces no check at all.
+    if alert_matches:
+        first = alert_matches[0]
+        where = first.get("source") or "the configured alert file"
+        levels = {m.get("match_level") for m in alert_matches}
+        if "batch" in levels:
+            basis = "this batch"
+        elif "barcode" in levels:
+            basis = "this barcode"
+        else:
+            basis = "this product or registration number (the alert states no batch)"
+        checks.append(Check(
+            id="alert",
+            label="Official alert",
+            state=HIGH,
+            severity=4.0,
+            evidence=(f"{len(alert_matches)} alert(s) name {basis}"
+                      + (f" ({first.get('product_name')})" if first.get("product_name") else "")
+                      + f". Source: {where}."),
+            proves="This product, barcode or batch has been named in an official warning.",
+            does_not_prove="That every pack with this batch is counterfeit, or that "
+                           "the pack in your hand is chemically the same as the sample "
+                           "that was tested.",
+            source=where,
+            detail=[x for x in [first.get("reason"), first.get("published"),
+                                first.get("url")] if x],
+        ))
+
+    # 6c. Maker serial. Only when a serial was supplied and a maker is
+    # connected; otherwise no check at all.
+    maker = manufacturer_check(pack)
+    if maker is not None:
+        checks.append(maker)
 
     # 7. Pack integrity, as observed by the person or the vision layer.
     checks.append(integrity_check(pack.flags))
@@ -777,6 +863,10 @@ def _actions_for(
         out.append(Action("nafdac_report", "Report to NAFDAC",
                           "The number belongs to another company. That is the "
                           "copied-number pattern.", 0, "regulator"))
+    if "manufacturer" in ids:
+        out.append(Action("nafdac_report", "Report to NAFDAC",
+                          "The maker does not recognise this serial. That is a "
+                          "reportable finding.", 0, "regulator"))
     if "registry" in ids and reg is not None and reg.verdict == R.INACTIVE:
         out.append(Action("ask_pharmacist", "Ask the pharmacist to confirm the "
                           "registration is current",

@@ -158,6 +158,86 @@ eq("QR code value", qr_out["code"], "5010162000164")
 yes("QR payload noted", "5010162000164" in qr_out["qr_payload"],
     str(qr_out))
 
+print("\nlive text candidates")
+strong = S.live_candidates("NAFDAC REG NO: A11-0551\nBATCH NO: ACD1902\nEXP 03/2027")
+values = [c["value"] for c in strong]
+yes("labelled NAFDAC is read", "A11-0551" in values, values)
+yes("letter prefix is strong",
+    next(c for c in strong if c["value"] == "A11-0551")["strength"] == "strong")
+
+bare = S.live_candidates("01-2345")
+eq("bare number is reported", bare[0]["value"] if bare else "", "01-2345")
+eq("bare number is weak", bare[0]["strength"] if bare else "", "weak")
+
+labelled_bare = S.live_candidates("NAFDAC No: 01-2345")
+eq("label makes a bare number strong",
+   labelled_bare[0]["strength"] if labelled_bare else "", "strong")
+
+leave = S.live_candidates("NO 11-0551")
+eq("a label word is not a prefix", leave[0]["value"] if leave else "", "11-0551")
+eq("the number after a label word stays weak",
+   leave[0]["strength"] if leave else "", "weak")
+eq("number seen through OCR is repaired",
+   S.live_candidates("NAFDAC All-0551")[0]["value"], "A11-0551")
+
+date = S.live_candidates("EXP 03-2027")
+eq("a date is never strong", date[0]["strength"] if date else "", "weak")
+
+print("\nlive read")
+if Image is None:
+    print("  SKIP  Pillow not available")
+else:
+    from PIL import ImageDraw, ImageFont
+    img = Image.new("RGB", (760, 460), "white")
+    draw = ImageDraw.Draw(img)
+    try:
+        font_big = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 46)
+        font = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 34)
+    except OSError:
+        font_big = font = ImageFont.load_default()
+    draw.text((34, 30), "AC-DREX TABLET", font=font_big, fill="black")
+    draw.text((34, 130), "NAFDAC REG NO: A11-0551", font=font, fill="black")
+    draw.text((34, 220), "BATCH NO: ACD1902", font=font, fill="black")
+    draw.text((34, 310), "EXP DATE: 03/2027", font=font, fill="black")
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    label = buf.getvalue()
+
+    try:
+        read = S.live_read(label)
+        eq("live reader reports its engine", read["reader"], "windows-ocr")
+        yes("live reader is not AI", read["ai_used"] is False)
+        yes("live reader finds the NAFDAC number",
+            any(c["value"] == "A11-0551" for c in read["nafdac"]), str(read["nafdac"]))
+        yes("live reader returns fields", bool(read["fields"]), str(read["fields"]))
+        yes("live reader records timing", isinstance(read.get("ms"), int))
+    except vision.VisionUnavailable as exc:
+        print(f"  SKIP  no on-device text reader: {exc}")
+
+    # Hints must still be reconciled when the still-frame reader fails.
+    original = vision.extract_from_image
+
+    def fail(*args, **kwargs):
+        raise vision.VisionUnavailable("no reader in this test")
+
+    vision.extract_from_image = fail
+    try:
+        out = S.analyze([{
+            "label": "Back panel", "data": label, "media_type": "image/png",
+            "barcode": None, "qr": [],
+            "live": {"nafdac": "A11-0551", "strength": "strong",
+                     "fields": {"batch": "ACD1902", "exp_date": "03/2027"}},
+        }])
+        eq("live hint fills the NAFDAC number", out["merged"]["nafdac_number"], "A11-0551")
+        eq("live hint fills the batch", out["merged"]["batch"], "ACD1902")
+        yes("live reader is named", "live-text" in out["readers"], str(out["readers"]))
+        yes("live read is surfaced", out["live"]["nafdac"][0]["value"] == "A11-0551",
+            str(out["live"]))
+        yes("hint read is marked lower confidence",
+            out["sides"][0]["confidence"] < 0.5, str(out["sides"][0]))
+    finally:
+        vision.extract_from_image = original
+
 print("\nemergency exits")
 eq("no barcodes at all", S._resolve_barcodes([{"label": "A"}], [], {}), None)
 try:

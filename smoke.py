@@ -14,6 +14,8 @@ import sys
 import urllib.error
 import urllib.request
 
+import safety
+
 BASE = "http://127.0.0.1:8077"
 fails = 0
 passes = 0
@@ -28,12 +30,17 @@ def ok(cond: bool, label: str, detail: str = "") -> None:
         print(f"  FAIL  {label}" + (f"\n        {detail}" if detail else ""))
 
 
+TOKEN = ""
+
+
 def call(path: str, method: str = "GET", body: dict | None = None,
          raw: bool = False):
     data = json.dumps(body).encode() if body is not None else None
+    headers = {"Content-Type": "application/json"}
+    if TOKEN:
+        headers["Authorization"] = "Bearer " + TOKEN
     req = urllib.request.Request(
-        BASE + path, data=data, method=method,
-        headers={"Content-Type": "application/json"},
+        BASE + path, data=data, method=method, headers=headers,
     )
     try:
         with urllib.request.urlopen(req, timeout=90) as r:
@@ -63,6 +70,20 @@ print("\nui")
 status, html = call("/", raw=True)
 ok(status == 200 and "Vouch" in html, "index serves", f"status={status}")
 ok("Check it. Chase it." in html, "tagline present")
+
+print("\nauth")
+status, _ = call("/api/cases")
+ok(status == 401, "cases need sign-in", f"status={status}")
+call("/api/auth/register", "POST",
+     {"username": "smoke", "password": "smoke-smoke-1"})
+status, sess = call("/api/auth/login", "POST",
+                    {"username": "smoke", "password": "smoke-smoke-1"})
+ok(status == 200 and isinstance(sess, dict) and sess.get("token"),
+   "smoke signs in", str(sess)[:120])
+TOKEN = sess.get("token") if isinstance(sess, dict) else ""
+status, who = call("/api/auth/me")
+ok(status == 200 and who.get("user", {}).get("username") == "smoke",
+   "session works", str(who)[:120])
 
 print("\ndemo packs")
 status, packs = call("/api/demo/packs")
@@ -290,6 +311,156 @@ try:
 except ImportError:
     print("  (requests not installed, skipped)")
 
+print("\nlive frame read")
+try:
+    import requests
+
+    with open("samples/img/sample-expired.png", "rb") as fh:
+        r = requests.post(
+            BASE + "/api/scan/live",
+            files={"file": ("frame.png", fh, "image/png")},
+            timeout=180,
+        )
+    ok(r.status_code == 200, "live: frame is read", r.text[:300])
+    live = r.json()
+    ok(live.get("reader") == "windows-ocr", "live: names the reader",
+       str(live.get("reader")))
+    ok(live.get("ai_used") is False, "live: does not call a model",
+       str(live.get("ai_used")))
+    values = [c.get("value") for c in live.get("nafdac", [])]
+    ok("A11-0551" in values, "live: finds the NAFDAC number", str(values))
+    ok(isinstance(live.get("ms"), int), "live: reports its timing",
+       str(live.get("ms")))
+
+    empty = requests.post(
+        BASE + "/api/scan/live",
+        files={"file": ("frame.png", b"", "image/png")},
+        timeout=60,
+    )
+    ok(empty.status_code == 400, "live: an empty frame is refused",
+       empty.text[:200])
+
+    big = requests.post(
+        BASE + "/api/scan/live",
+        files={"file": ("frame.png", b"0" * (8 * 1024 * 1024 + 1), "image/png")},
+        timeout=120,
+    )
+    ok(big.status_code == 413, "live: an oversized frame is refused",
+       big.text[:200])
+except ImportError:
+    print("  (requests not installed, skipped)")
+
+print("\nsafety intelligence")
+status, summary = call("/api/safety/summary")
+ok(status == 200, "safety: summary runs", str(summary)[:300])
+ok(isinstance(summary.get("patterns"), list), "safety: summary carries patterns",
+   str(summary)[:300])
+ok(isinstance(summary.get("limits"), list) and len(summary["limits"]) >= 3,
+   "safety: summary states its limits", str(summary.get("limits")))
+alert_source = summary.get("alerts") or {}
+if alert_source.get("configured"):
+    ok(bool(alert_source.get("source")) or alert_source.get("count") is not None,
+       "safety: configured source is named or counted", str(alert_source))
+else:
+    ok("does not invent alerts" in (alert_source.get("note") or ""),
+       "safety: no source is stated honestly", str(alert_source))
+
+status, alerts = call("/api/safety/alerts?q=drex")
+ok(status == 200 and "alerts" in alerts, "safety: alert search runs", str(alerts)[:300])
+status, watch = call("/api/safety/batch?nafdac=A11-0551&batch=ACD1902")
+ok(status == 200 and watch.get("status") in (
+    "alert_match", "pattern", "reports", "no_match", "no_alert_source"),
+   "safety: batch watch gives a known status", str(watch)[:300])
+ok(bool(watch.get("message")), "safety: batch watch explains itself",
+   str(watch)[:300])
+
+try:
+    import requests
+
+    def submit_safety(**fields):
+        return requests.post(BASE + "/api/safety/reports", data=fields, timeout=60)
+
+    first = submit_safety(
+        product_name="AC-Drex Tablet", nafdac_number="A11-0551",
+        batch="SMOKE1902", seller="Smoke test shop", location="Lagos",
+        issue="suspected counterfeit",
+        notes="The expiry print sits on a sticker that peels at the corner.",
+        contact="0800 000 0000",
+    )
+    ok(first.status_code == 200, "safety: submission is accepted", first.text[:300])
+    made = first.json()
+    ok(str(made.get("id", "")).startswith("rpt_"), "safety: submission has an id",
+       str(made)[:200])
+    ok("submission, not a finding" in (made.get("message") or ""),
+       "safety: submission is not a finding", str(made.get("message")))
+    ok("contact" not in (made.get("report") or {}),
+       "safety: contact is not published", str(made.get("report")))
+
+    with_photo = requests.post(
+        BASE + "/api/safety/reports",
+        data={"product_name": "AC-Drex Tablet", "batch": "SMOKE1902",
+              "notes": "The foil is torn and the tablets are damp."},
+        files={"file": ("evidence.png", b"\x89PNG\r\n\x1a\nsmoke", "image/png")},
+        timeout=60,
+    )
+    ok(with_photo.status_code == 200, "safety: photo submission is accepted",
+       with_photo.text[:300])
+    photo_id = with_photo.json().get("id", "")
+    photo_url = (with_photo.json().get("report") or {}).get("photo_url", "")
+    if photo_url:
+        got = requests.get(BASE + photo_url, timeout=30)
+        ok(got.status_code == 200 and got.content.startswith(b"\x89PNG"),
+           "safety: evidence photo is served", got.text[:200] if got.status_code != 200 else "")
+
+    missing = requests.get(BASE + "/api/safety/photo/rpt_missing", timeout=30)
+    ok(missing.status_code == 404, "safety: unknown photo is absent", missing.text[:200])
+
+    empty = submit_safety(notes="too short")
+    ok(empty.status_code == 400, "safety: an empty submission is refused", empty.text[:200])
+    short = submit_safety(product_name="AC-Drex Tablet", notes="bad")
+    ok(short.status_code == 400, "safety: short notes are refused", short.text[:200])
+    bad_file = requests.post(
+        BASE + "/api/safety/reports",
+        data={"product_name": "AC-Drex Tablet",
+              "notes": "This is not an image at all."},
+        files={"file": ("notes.txt", b"hello", "text/plain")},
+        timeout=60,
+    )
+    ok(bad_file.status_code == 400, "safety: non-image evidence is refused",
+       bad_file.text[:200])
+    big = requests.post(
+        BASE + "/api/safety/reports",
+        data={"product_name": "AC-Drex Tablet",
+              "notes": "An oversized photo should be refused."},
+        files={"file": ("big.png", b"0" * (safety.MAX_PHOTO + 1), "image/png")},
+        timeout=120,
+    )
+    ok(big.status_code == 413, "safety: oversized photo is refused", big.text[:200])
+
+    third = submit_safety(
+        product_name="AC-Drex Tablet", nafdac_number="A11-0551",
+        batch="SMOKE1902", issue="label or seal problem",
+        notes="The batch number looks re-printed over the original text.",
+    )
+    ok(third.status_code == 200, "safety: third submission is accepted",
+       third.text[:200])
+    status, watch2 = call("/api/safety/batch?nafdac=A11-0551&batch=SMOKE1902")
+    ok(watch2.get("status") == "pattern" and watch2.get("pattern"),
+       "safety: three submissions raise a pattern for review", str(watch2)[:400])
+    ok("not proven" in (watch2.get("message") or "")
+       or "review" in (watch2.get("message") or ""),
+       "safety: a pattern is not an accusation", str(watch2.get("message")))
+    ok((watch2.get("pattern") or {}).get("level") == "review",
+       "safety: pattern level is review", str(watch2.get("pattern")))
+
+    status, listed = call("/api/safety/reports?q=SMOKE1902")
+    ok(status == 200 and listed.get("count", 0) >= 3,
+       "safety: submissions can be listed", str(listed)[:300])
+    ok(all("contact" not in r for r in listed.get("reports", [])),
+       "safety: listing hides contact", str(listed.get("reports"))[:300])
+except ImportError:
+    print("  (requests not installed, skipped)")
+
 print("\ntext extraction")
 status, ex = call("/api/extract/text", "POST", {
     "text": "AC-Drex Tablet\nNAFDAC REG NO: A11-0551\nBATCH NO: ACD2401\n"
@@ -304,6 +475,8 @@ ok(e.get("exp_date"), "extracts the expiry", str(e))
 print("\nreset")
 status, r = call("/api/demo/reset", "POST")
 ok(status == 200 and r["stats"]["cases"] == 0, "reset clears cases", str(r))
+status, after = call("/api/safety/summary")
+ok(status == 200 and after.get("reports") == 0, "reset clears safety reports", str(after)[:300])
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} "
       f"({passes} passed, {fails} failed)")

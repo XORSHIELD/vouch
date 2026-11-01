@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import io
 import re
+import time
 from collections import Counter, defaultdict
 
 import barcode as B
@@ -32,6 +33,10 @@ TEXT_FIELDS = (
     "nafdac_number", "product_name", "manufacturer", "batch",
     "exp_date", "mfg_date", "strength", "pack_size",
 )
+
+# Fields the live camera reader is allowed to contribute. A date is only sent
+# when two frames agree on it, so a mis-aimed frame cannot set it alone.
+LIVE_FIELDS = ("nafdac_number", "product_name", "batch", "exp_date", "mfg_date")
 
 DATE_FIELDS = {"exp_date", "mfg_date"}
 CODE_FIELDS = {"nafdac_number", "batch", "barcode"}
@@ -51,7 +56,238 @@ _NAFDAC_IN_TEXT = re.compile(
     r"(?:NO\.?|NUMBER)?[^A-Z0-9]{0,8}([A-Z]{0,2}\s?\d{1,2}\s?[-\s]?\s?\d{3,7})",
     re.IGNORECASE,
 )
-_NAFDAC_BARE = re.compile(r"\b([A-Z]{1,2}\s?\d{1,2}\s?-\s?\d{3,7})\b")
+_NAFDAC_BARE = re.compile(
+    r"(?<![A-Z0-9])([A-Z]{0,2}\s?\d{1,2}\s?-\s?\d{3,7})(?![\dA-Z])"
+)
+# A registration number can also be printed with no prefix at all ("01-2345").
+# That shape collides with dates, so it is reported as a weak candidate and is
+# never used to lock a frame on its own.
+_LIVE_BARE = re.compile(r"(?<![\dA-Z])(\d{1,2}\s?-\s?\d{3,7})(?![\dA-Z])")
+_LABEL_WORDS = {"NO", "NR", "BN", "REG", "LOT", "EXP", "MFG", "REF", "CODE"}
+
+# Date labels for the live pass. Best-before is kept apart from expiry: on food
+# and drink it is a quality limit, while a medicine expiry is a hard limit.
+_LIVE_DATE_LABELS = (
+    ("best_before", re.compile(r"BEST\s*BEFORE|BBE|USE\s*BY", re.IGNORECASE)),
+    ("exp", re.compile(r"EXP(?:IRY|IRES|IRATION)?|EXP\.?\s*DATE", re.IGNORECASE)),
+    ("mfg", re.compile(r"MFG|MFD|MANUFACTURED|PROD(?:UCTION)?|P\.?\s*DATE",
+                       re.IGNORECASE)),
+)
+
+
+def _nafdac_value(token: str) -> str:
+    return re.sub(r"\s+", "", str(token or "")).upper()
+
+
+def _prep_codes(text: str) -> str:
+    """Repair the one OCR confusion that is safe to fix before matching.
+
+    A lowercase ``l`` inside a printed code is almost always a digit one; the
+    Windows reader turns "A11-0551" into "All-0551". Only the code-matching
+    copy is changed, never the text shown to the user.
+    """
+    return re.sub(r"[l|]", "1", str(text or ""))
+
+
+def live_candidates(text: str) -> list[dict]:
+    """Pull NAFDAC-shaped tokens out of live OCR.
+
+    A token is *strong* when the label says NAFDAC next to it, or when it has
+    the letter prefix used by drugs and devices (A11-0551). A bare "01-2345"
+    is weak: it can be a registration number or a date, so the UI asks for a
+    second look or a registry match before it is trusted.
+    """
+    raw = _prep_codes(text or "")
+    found: dict[str, dict] = {}
+
+    def add(token: str, strength: str, source: str) -> None:
+        value = _nafdac_value(token)
+        if not re.fullmatch(r"[A-Z0-9]{0,2}\d{1,2}-\d{3,7}", value):
+            return
+        prefix = re.match(r"[A-Z]{0,2}", value).group(0)
+        if prefix in _LABEL_WORDS:
+            return
+        if not 5 <= len(re.sub(r"[^0-9]", "", value)) <= 9:
+            return
+        if strength == "strong" and source != "labelled" and not re.search(r"[A-Z]", value):
+            strength = "weak"
+        current = found.get(value)
+        if current is None:
+            found[value] = {"value": value, "strength": strength, "source": source}
+        elif strength == "strong":
+            current["strength"] = "strong"
+            current["source"] = source
+
+    for match in _NAFDAC_IN_TEXT.finditer(raw):
+        add(match.group(1), "strong", "labelled")
+    for match in _NAFDAC_BARE.finditer(raw):
+        add(match.group(1), "strong", "printed")
+    for match in _LIVE_BARE.finditer(raw):
+        add(match.group(1), "weak", "number-like")
+
+    order = {"strong": 0, "weak": 1}
+    return sorted(found.values(), key=lambda c: order.get(c["strength"], 2))[:4]
+
+
+# Scratch-to-verify panels (NAFDAC MAS and maker schemes): a hidden PIN under
+# a scratch strip, texted to a shortcode. The PIN is the product's own
+# authentication code, so reading it exactly matters more than reading fast.
+_PIN_LABEL = re.compile(
+    r"SCRATCH|PIN\b|CODE|SMS|TEXT|VERIFY|AUTHENTIC|REVEAL", re.IGNORECASE)
+_PIN_RUN = re.compile(r"(?<![A-Z0-9])([A-Z0-9]{6,16})(?![A-Z0-9])")
+_SHORTCODE_RES = (
+    re.compile(r"(?:SMS|TEXT|SEND)[^0-9]{0,20}(\d{3,6})", re.IGNORECASE),
+    re.compile(r"SHORT\s?CODE[^0-9]{0,8}(\d{3,6})", re.IGNORECASE),
+)
+# Printed barcodes share PIN lengths, so bare digit runs of barcode length are
+# never PINs on their own.
+_BARCODE_LENS = {8, 12, 13, 14}
+
+
+def _pin_labelled(text: str, at: int) -> bool:
+    window = (text or "")[max(0, at - 28):at + 28]
+    return bool(_PIN_LABEL.search(window))
+
+
+def live_pins(text: str) -> list[dict]:
+    """Pull scratch-PIN candidates out of OCR text.
+
+    A run counts when a scratch/PIN/SMS label sits next to it, or when it is
+    a long digit-heavy run no barcode or batch code could be. Strength says
+    which: strong reads can lock a frame, weak ones only corroborate.
+    """
+    raw = str(text or "").upper()
+    found: dict[str, dict] = {}
+
+    def add(value: str, strength: str) -> None:
+        value = re.sub(r"\s+", "", value).upper()
+        if "-" in value or len(value) < 6:
+            return
+        digits = sum(ch.isdigit() for ch in value)
+        if strength == "strong" and digits < 2:
+            strength = "weak"
+        current = found.get(value)
+        if current is None:
+            found[value] = {"value": value, "strength": strength}
+        elif strength == "strong":
+            current["strength"] = "strong"
+
+    spans: list[tuple[str, int]] = []
+    # PINs are printed grouped ("4829 1047 2213", "4829-1047-2213"): join
+    # the groups first. Dashes inside one run are PIN separators, so the
+    # joined value must never contain one when it reaches add().
+    for match in re.finditer(r"\b(\d{3,4}(?:[\s-]+\d{3,4}){1,3})\b", raw):
+        token = re.sub(r"[\s-]+", "", match.group(1))
+        if 6 <= len(token) <= 16:
+            spans.append((token, match.start(1)))
+    for match in _PIN_RUN.finditer(raw):
+        spans.append((match.group(1), match.start(1)))
+    for token, at in spans:
+        digits = sum(ch.isdigit() for ch in token)
+        if _pin_labelled(raw, at):
+            if digits >= 2:
+                add(token, "strong")
+        elif (len(token) >= 10 and digits >= 4
+                and not (token.isdigit() and len(token) in _BARCODE_LENS)):
+            add(token, "weak")
+
+    order = {"strong": 0, "weak": 1}
+    return sorted(found.values(),
+                  key=lambda c: order.get(c["strength"], 2))[:3]
+
+
+def live_shortcode(text: str) -> str:
+    """The number to text the PIN to, when the label states one."""
+    for pattern in _SHORTCODE_RES:
+        match = pattern.search(text or "")
+        if match:
+            return match.group(1)
+    return ""
+
+
+def live_dates(text: str) -> list[dict]:
+    """Pull labelled dates out of live OCR: best-before, expiry, manufacture.
+
+    A date only counts when its label is printed next to it, so a stray batch
+    digit can never become an expiry. Each hit carries a `month` key
+    ("YYYY-MM" or "YYYY") that the camera loop uses to vote across frames.
+    """
+    out: list[dict] = []
+    seen: set[str] = set()
+    for kind, labels in _LIVE_DATE_LABELS:
+        for match in labels.finditer(text or ""):
+            window = (text or "")[match.end():match.end() + 26]
+            parsed = E.parse_date(window)
+            if parsed is None:
+                continue
+            month = (f"{parsed.year:04d}-{parsed.month:02d}"
+                     if parsed.month else f"{parsed.year:04d}")
+            key = kind + ":" + month
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append({
+                "kind": kind,
+                "label": match.group(0).strip().upper(),
+                "text": parsed.raw,
+                "month": month,
+            })
+            break
+    return out[:3]
+
+
+def live_read(data: bytes) -> dict:
+    """Read one frame from the live camera.
+
+    This is the fast path behind the scanning reticle: it only transcribes, so
+    the same rules as the rest of Vouch apply. It never decides that a product
+    is real or fake, and a failure to read is reported as a failure.
+    """
+    started = time.time()
+    try:
+        text = vision.windows_ocr(data, timeout=25)
+    except vision.OcrUnavailable as exc:
+        raise vision.VisionUnavailable(
+            f"No on-device text reader is available ({exc})."
+        ) from exc
+
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    plain = "\n".join(lines)
+    fields: dict[str, str] = {}
+    candidates = live_candidates(plain)
+    dates = live_dates(plain)
+    pins = live_pins(plain)
+    shortcode = live_shortcode(plain)
+    if plain:
+        try:
+            ex = vision.parse_label_text(plain)
+        except vision.VisionUnavailable:
+            ex = None
+        if ex is not None:
+            payload = ex.to_dict()
+            for name in TEXT_FIELDS:
+                value = payload.get(name)
+                if value:
+                    fields[name] = value
+    if "nafdac_number" not in fields:
+        strong = [c for c in candidates if c["strength"] == "strong"]
+        if strong:
+            fields["nafdac_number"] = strong[0]["value"]
+
+    return {
+        "ok": True,
+        "reader": "windows-ocr",
+        "ai_used": False,
+        "text": plain[:900],
+        "nafdac": candidates,
+        "dates": dates,
+        "pins": pins,
+        "shortcode": shortcode,
+        "fields": fields,
+        "lines_read": len(lines),
+        "ms": int((time.time() - started) * 1000),
+    }
+
 
 
 # --------------------------------------------------------------------------
@@ -397,12 +633,15 @@ def analyze(frames: list[dict]) -> dict:
     """Read and reconcile a list of frames.
 
     `frames` items: {label, data: bytes, media_type, barcode: {...}|None,
-    qr: [payloads]}. Returns per-side evidence and one merged reading.
+    qr: [payloads], live: {...}}. Returns per-side evidence and one merged
+    reading.
     """
     sides: list[dict] = []
     qr_payloads: list[str] = []
     providers: list[str] = []
     warnings: list[str] = []
+    live_conflicts: list[dict] = []
+    live_nafdac: list[dict] = []
 
     for idx, frame in enumerate(frames):
         label = _collapse(frame.get("label")) or f"Side {idx + 1}"
@@ -411,6 +650,22 @@ def analyze(frames: list[dict]) -> dict:
         barcode = frame.get("barcode") or None
         qr = [str(x) for x in (frame.get("qr") or []) if str(x).strip()]
         qr_payloads.extend(qr)
+
+        hint = frame.get("live") or {}
+        hint_fields = {
+            name: _collapse((hint.get("fields") or {}).get(name, ""))
+            for name in LIVE_FIELDS
+        }
+        hint_fields = {k: v for k, v in hint_fields.items() if v}
+        hint_number = _nafdac_value(hint.get("nafdac") or "")
+        if hint_number and not hint_fields.get("nafdac_number"):
+            hint_fields["nafdac_number"] = hint_number
+        if hint_number:
+            live_nafdac.append({
+                "value": hint_number,
+                "strength": str(hint.get("strength") or "weak"),
+                "side": label,
+            })
 
         extraction = None
         error = ""
@@ -428,6 +683,30 @@ def analyze(frames: list[dict]) -> dict:
             error = str(exc)
             warnings.append(f"{label}: {error}")
 
+        if hint_fields:
+            if extraction is None:
+                # The live text reader saw this side even though the still frame
+                # could not be read. Keep it, but mark it as a weaker read.
+                extraction = {name: "" for name in TEXT_FIELDS}
+                extraction.update({
+                    "confidence": 0.42,
+                    "provider": "live-text",
+                    "warnings": ["Read from the live camera, not the saved frame."],
+                })
+                if "live-text" not in providers:
+                    providers.append("live-text")
+            for name, value in hint_fields.items():
+                still = _collapse(extraction.get(name, ""))
+                if not still:
+                    extraction[name] = value
+                elif _field_key(name, still) != _field_key(name, value):
+                    live_conflicts.append({
+                        "field": name,
+                        "still": still,
+                        "live": value,
+                        "side": label,
+                    })
+
         sides.append({
             "index": idx,
             "label": label,
@@ -437,11 +716,53 @@ def analyze(frames: list[dict]) -> dict:
             "extraction": extraction,
             "barcode": barcode,
             "qr": qr,
+            "live": {
+                "nafdac": hint_number,
+                "strength": str(hint.get("strength") or ""),
+                "fields": hint_fields,
+                "verdict": str(hint.get("verdict") or ""),
+            },
             "error": error,
         })
 
     merged, conflicts = _merge_text(sides)
     barcode = _resolve_barcodes(sides, qr_payloads, merged)
+
+    # Scratch PINs vote across sides like any other field: the value seen
+    # most (strong reads first) wins, and rivals stay in the conflicts.
+    pin_votes: dict[str, dict] = {}
+    shortcodes: Counter = Counter()
+    for idx, side in enumerate(sides):
+        raw = (side.get("extraction") or {}).get("raw_text", "")
+        label = side.get("label") or f"Side {idx + 1}"
+        for pin in live_pins(raw):
+            entry = pin_votes.setdefault(pin["value"], {
+                "value": pin["value"], "count": 0, "strength": "weak",
+                "sides": [],
+            })
+            entry["count"] += 1
+            if pin["strength"] == "strong":
+                entry["strength"] = "strong"
+            if label not in entry["sides"]:
+                entry["sides"].append(label)
+        code = live_shortcode(raw)
+        if code:
+            shortcodes[code] += 1
+    if pin_votes:
+        ranked = sorted(pin_votes.values(),
+                        key=lambda e: (e["strength"] == "strong",
+                                       e["count"], len(e["value"])),
+                        reverse=True)
+        merged["pin"] = ranked[0]["value"]
+        if len(ranked) > 1:
+            conflicts.append({
+                "field": "pin",
+                "chosen": ranked[0]["value"],
+                "values": [{"value": e["value"], "sides": e["sides"],
+                            "count": e["count"]} for e in ranked],
+            })
+    if shortcodes:
+        merged["shortcode"] = shortcodes.most_common(1)[0][0]
 
     read = [s for s in sides if s.get("extraction")]
     if not read and not barcode:
@@ -463,6 +784,8 @@ def analyze(frames: list[dict]) -> dict:
         "merged": {
             **{name: merged.get(name, "") for name in TEXT_FIELDS},
             "barcode": (barcode or {}).get("code", ""),
+            "pin": merged.get("pin", ""),
+            "shortcode": merged.get("shortcode", ""),
         },
         "sides": sides,
         "barcode": barcode,
@@ -478,9 +801,14 @@ def analyze(frames: list[dict]) -> dict:
         "ai_used": ai_used,
         "frames": len(sides),
         "frames_read": len(read),
+        "live": {
+            "nafdac": live_nafdac[:6],
+            "conflicts": live_conflicts[:6],
+        },
         "limits": [
             "The vision reader transcribes; it does not decide whether a pack is real.",
             "A frame read on one side only is reported with lower confidence, not promoted to fact.",
             "A barcode is an identifier and is copyable. A match is not proof of authenticity.",
+            "Text read from the live camera is marked separately from the saved frame it came from.",
         ],
     }
