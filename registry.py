@@ -161,6 +161,79 @@ def normalise(raw: str) -> list[str]:
     return out
 
 
+NUMBER_SCAN = re.compile(r"[A-Z]{0,2}\s?\d{1,2}\s?-?\s?\d{3,7}")
+SERIES_SHAPE = re.compile(r"[A-Z]{0,2}\d{1,2}-\d{4}(\d{2})?")
+_NUMBER_LABEL = re.compile(r"nafdac|reg(?:istration)?(?:\s*(?:no|number|#))?",
+                           re.IGNORECASE)
+
+
+def _confirmed_number(cand: str, confirm=None) -> bool:
+    """Is this dashless candidate a real registration? Never a guess.
+
+    Callers inject confirm in tests; production asks the local mirror
+    only — no network, so offline paths stay offline. Any doubt refuses.
+    """
+    if confirm is not None:
+        try:
+            return bool(confirm(cand))
+        except Exception:
+            return False
+    try:
+        if not mirror_ready():
+            return False
+        want = set(normalise(cand))
+        for d in _mirror_exact(cand):
+            if want & set(normalise(Record.from_api(d).nafdac)):
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def extract_number(text: str, *, codes_only: bool = False,
+                   confirm=None) -> str:
+    """First defensible NAFDAC number in free text, or "".
+
+    The single rule for chat transcripts and OCR text alike. A candidate
+    must be a whole token (fragments of longer pack codes are batch
+    material, never numbers), resolve to a true series shape, and show
+    a dash, sit in labelled text, or be the only thing in the message
+    (caller's option). A dashless, labelless candidate is accepted only
+    when confirm() verifies it against the register.
+    """
+    msg = text or ""
+    up = msg.upper()
+    labelled = bool(_NUMBER_LABEL.search(msg))
+    pos = 0
+    while pos < len(up):
+        m = NUMBER_SCAN.search(up, pos)
+        if not m:
+            return ""
+        raw = m.group(0)
+        # A greedy letter-grab ("EE 04-0271") must not eat the number it
+        # sits on: retry with leading letters stripped before moving on.
+        for strip in range(len(raw)):
+            if strip and not raw[strip - 1].isalpha():
+                break  # only strip leading letters, never digits
+            cand = raw[strip:].strip()
+            start = m.start() + strip
+            while start < m.end() and up[start] == " ":
+                start += 1
+            before = up[start - 1] if start > 0 else " "
+            after = up[m.end()] if m.end() < len(up) else " "
+            if before.isalnum() or after.isalnum():
+                continue  # a fragment of a longer pack code, not a number
+            if not any(SERIES_SHAPE.fullmatch(f)
+                       for f in normalise(cand)):
+                continue
+            if "-" in cand or labelled or codes_only:
+                return cand
+            if _confirmed_number(cand, confirm):
+                return cand
+        pos = m.start() + 1
+    return ""
+
+
 def explore_variants(printed: str) -> list[str]:
     """The disjoint spelling of a number. DISPLAY ONLY.
 

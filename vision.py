@@ -78,11 +78,6 @@ class Extraction:
 # 2. Paste-the-label parser (deterministic, no model)
 # --------------------------------------------------------------------------
 
-_NAFDAC_RE = re.compile(
-    r"NAFDAC[^A-Z0-9]{0,12}(?:REG\.?|REGISTRATION)?[^A-Z0-9]{0,6}"
-    r"(?:NO\.?|NUMBER)?[^A-Z0-9]{0,6}([A-Z]{0,2}\s?\d{1,2}\s?[-\s]?\s?\d{3,7})",
-    re.IGNORECASE,
-)
 _BATCH_RE = re.compile(
     r"(?:BATCH|LOT|B\.?\s*NO\.?|BATCH\s*NO\.?)[^A-Z0-9]{0,6}([A-Z0-9][A-Z0-9\-\/]{2,19})",
     re.IGNORECASE,
@@ -91,10 +86,6 @@ _MFG_RE = re.compile(
     r"(?:MANUFACTURED|MADE|PRODUCED)\s+(?:BY|FOR)[^A-Z0-9]{0,4}([A-Z0-9][A-Z0-9&.,'\- ]{2,60})",
     re.IGNORECASE,
 )
-# A number without its NAFDAC label. Dashed is intent (agent's rule);
-# dashless is only accepted when the register confirms it exists.
-_STANDALONE_NUMBER = re.compile(r"\b([A-Z]{1,2}\d{1,2}-\d{3,7})\b")
-_DASHLESS_NUMBER = re.compile(r"\b([A-Z]{1,2}\d{4,7})\b")
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
@@ -103,28 +94,6 @@ def _clean_text(s: str) -> str:
     return re.sub(r"[ \t]{2,}", " ", _CONTROL.sub("", s or ""))
 
 
-def _confirmed(cand: str, confirm=None) -> bool:
-    """Is this dashless candidate a real registration? Never a guess.
-
-    Tests inject confirm; production asks the local mirror only — no
-    network, so the offline OCR path stays offline. Any doubt refuses.
-    """
-    if confirm is not None:
-        try:
-            return bool(confirm(cand))
-        except Exception:
-            return False
-    try:
-        if not R.mirror_ready():
-            return False
-        want = set(R.normalise(cand))
-        for d in R._mirror_exact(cand):
-            got = set(R.normalise(R.Record.from_api(d).nafdac))
-            if want & got:
-                return True
-        return False
-    except Exception:
-        return False
 _STRENGTH_RE = re.compile(r"\b(\d+(?:\.\d+)?\s*(?:MG|ML|MCG|G|%|IU))\b", re.IGNORECASE)
 _PACK_RE = re.compile(
     r"\b(\d{1,3}\s*[X×]\s*\d{1,3}|\d{1,3}\s*(?:TABLETS?|CAPSULES?|SACHETS?|PIECES?|BOTTLES?))\b",
@@ -195,17 +164,7 @@ def parse_label_text(text: str, confirm=None) -> Extraction:
 
     warnings: list[str] = []
 
-    m = _NAFDAC_RE.search(raw)
-    nafdac = re.sub(r"\s+", "", m.group(1)).upper() if m else ""
-    if not nafdac:
-        m = _STANDALONE_NUMBER.search(raw)
-        if m:
-            nafdac = m.group(1).upper()
-    if not nafdac:
-        for cand in _DASHLESS_NUMBER.findall(raw):
-            if _confirmed(cand, confirm):
-                nafdac = cand.upper()
-                break
+    nafdac = R.extract_number(raw, confirm=confirm)
     if not nafdac:
         warnings.append("No NAFDAC number found in the text.")
 

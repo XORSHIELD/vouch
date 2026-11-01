@@ -70,11 +70,16 @@ _reqs = [ln.split("#")[0].strip()
                         encoding="utf-8")]
 _reqs = [r for r in _reqs if r]
 check("requirements listed", len(_reqs) >= 3, str(_reqs))
-_EVIDENCE = {"pillow": "from PIL import", "httpx": "TestClient"}
+_EVIDENCE = {"pillow": "from PIL import", "httpx": "TestClient",
+             "winrt-Windows.Graphics.Imaging":
+                 "winrt.windows.graphics.imaging",
+             "winrt-Windows.Media.Ocr": "winrt.windows.media.ocr",
+             "winrt-Windows.Storage": "winrt.windows.storage"}
 for _r in _reqs:
-    _ev = _EVIDENCE.get(_r, f"import {_r}")
-    _found = _ev in PY or f"from {_r} import" in PY
-    check(f"{_r} is used", _found, _r)
+    _name = re.split(r"[;\s<>=!~]", _r, 1)[0].strip()
+    _ev = _EVIDENCE.get(_name, f"import {_name}")
+    _found = _ev in PY or f"from {_name} import" in PY
+    check(f"{_name} is used", _found, _r)
 _ci = open(os.path.join(HERE, ".github", "workflows", "ci.yml"),
            encoding="utf-8").read()
 check("CI installs requirements.txt",
@@ -84,6 +89,10 @@ check("old inline pip line gone",
 check("CI runs the tour test", "python test_tour.py" in _ci)
 check("CI runs the i18n test", "python test_i18n.py" in _ci)
 check("CI runs the voice test", "python test_voice.py" in _ci)
+check("CI runs the batchdecode test", "python test_batchdecode.py" in _ci)
+check("CI runs the deploy test", "python test_deploy.py" in _ci)
+check("CI runs the server unit test",
+      "python test_server_unit.py" in _ci)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

@@ -46,9 +46,7 @@ MAX_IMAGE_B64 = 12_000_000
 TIMEOUT = 45
 CASE_WORDS = re.compile(r"open a case|report this|file (a )?report|escalate",
                         re.IGNORECASE)
-NUMBER_SCAN = re.compile(r"[A-Z]{0,2}\s?\d{1,2}\s?-?\s?\d{3,7}")
 BARCODE_SCAN = re.compile(r"\b\d{8}\b|\b\d{12,14}\b")
-_SERIES_SHAPE = re.compile(r"[A-Z]{0,2}\d{1,2}-\d{4}(\d{2})?")
 
 
 def capabilities() -> dict:
@@ -262,8 +260,6 @@ _CHECK_IT = re.compile(r"\b(check|verify|assess)\b", re.IGNORECASE)
 _RESET = re.compile(
     r"\banother\b|\bdifferent\b|\bnew pack\b|\bnext pack\b"
     r"|\bstart over\b|\bforget (it|that|this)\b", re.IGNORECASE)
-_LABELLED = re.compile(r"nafdac|reg(?:istration)?(?:\s*(?:no|number|#))?",
-                       re.IGNORECASE)
 _CODES_ONLY = re.compile(r"[\dA-Z\s\-/#.,:]*")
 _CODE_RUN = re.compile(r"[A-Z0-9][A-Z0-9 :/\-]*[A-Z0-9]|[A-Z0-9]")
 _CORRECTION = [
@@ -348,21 +344,9 @@ def _extract_fields(text: str) -> dict:
         m = BARCODE_SCAN.search(squashed)
         if m:
             out["barcode"] = re.sub(r"\s+", "", m.group(0))
-    labelled = bool(_LABELLED.search(msg))
-    codes_only = bool(re.fullmatch(_CODES_ONLY, up)) and bool(
-        re.search(r"\d", up))
-    for m in NUMBER_SCAN.finditer(up):
-        cand = m.group(0).strip()
-        before = up[m.start() - 1] if m.start() > 0 else " "
-        after = up[m.end()] if m.end() < len(up) else " "
-        if before.isalnum() or after.isalnum():
-            continue  # a fragment of a longer pack code, not a number
-        if not any(_SERIES_SHAPE.fullmatch(f)
-                   for f in R.normalise(cand)):
-            continue
-        if "-" in cand or labelled or codes_only:
-            out["nafdac_number"] = cand
-            break
+    codes_only = (bool(re.fullmatch(_CODES_ONLY, up)) and bool(
+        re.search(r"\d", up)) and not batch_context)
+    out["nafdac_number"] = R.extract_number(msg, codes_only=codes_only)
     if not out["nafdac_number"] and not out["barcode"]:
         for run in _CODE_RUN.findall(msg):
             letters = re.search(r"[A-Z]", run)

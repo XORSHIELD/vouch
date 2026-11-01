@@ -96,8 +96,30 @@ def test_lookup() -> None:
                               R.UNVERIFIABLE, R.NOT_FOUND, R.AMBIGUOUS})
 
 
+def test_extract_number() -> None:
+    print("\nextract_number: one rule for chat and OCR text")
+    check("labelled number found",
+          R.extract_number("NAFDAC Reg No A11-0551") == "A11-0551")
+    check("dashed standalone found",
+          R.extract_number("number A11-0551 here") == "A11-0551")
+    check("numeric series standalone found",
+          R.extract_number("see 04-0271 here") == "04-0271")
+    check("batch fragment refused",
+          R.extract_number("BB 290927AJ57") == "")
+    check("phone number refused",
+          R.extract_number("call 08031234567") == "")
+    check("codes-only message accepted",
+          R.extract_number("A11 0551", codes_only=True) == "A11 0551")
+    check("dashless needs confirmation",
+          R.extract_number("A110551", confirm=lambda c: False) == "")
+    check("confirmed dashless accepted",
+          R.extract_number("A110551",
+                           confirm=lambda c: c == "A110551") == "A110551")
+
+
 def main() -> int:
     test_normalise()
+    test_extract_number()
     try:
         test_lookup()
     except R.RegistryUnavailable as exc:
