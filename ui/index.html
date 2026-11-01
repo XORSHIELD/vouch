@@ -139,6 +139,12 @@
   .btn.accent{background:var(--green);border-color:var(--green)}
 
   .demos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .reg-row{display:flex;gap:10px;align-items:center;padding:9px 2px;border-top:1px solid var(--line)}
+  .reg-row:first-child{border-top:0}
+  .reg-main{flex:1;min-width:0}
+  .reg-name{display:block;font-size:13.5px}
+  .reg-meta{display:block;font-size:12px;color:var(--ink-3);margin-top:2px}
+  .reg-meta .mono{font-family:var(--mono);letter-spacing:.03em}
   .chip{
     border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;
     font-size:13px;font-weight:600;color:var(--ink-2);transition:all .16s ease;display:inline-flex;align-items:center;gap:8px
@@ -1144,6 +1150,32 @@
         <div class="card" style="margin-bottom:24px">
           <div class="hd">
             <div class="hd-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+            </div>
+            <h2 data-i18n="regsearch.title">Search the register</h2>
+          </div>
+          <div class="bd">
+            <p class="hint" style="margin:0 0 10px" data-i18n="regsearch.hint">Browse the licensed products in the NAFDAC Greenbook.</p>
+            <div style="display:flex;gap:8px">
+              <input id="regSearchInput" data-i18n-ph="regsearch.ph" placeholder="Product name, manufacturer or NAFDAC number…" autocomplete="off" style="flex:1;min-width:0" />
+              <button class="btn sm" id="regSearchBtn" data-i18n="regsearch.button">Search</button>
+            </div>
+            <div id="regFresh" class="hint" style="margin:8px 0 0"></div>
+            <div id="regList" style="margin-top:4px"></div>
+            <p class="hint hidden" id="regEmpty" style="margin:8px 0 0" data-i18n="regsearch.empty">No licensed products match that search.</p>
+            <p class="hint" style="margin:10px 0 0" data-i18n="regsearch.note">Registration confirms a licence record, not that a particular pack is authentic.</p>
+            <template id="regRow">
+              <div class="reg-row">
+                <div class="reg-main"><b class="reg-name"></b><span class="reg-meta"></span></div>
+                <button class="btn ghost sm reg-use" type="button">Use this number</button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px">
+          <div class="hd">
+            <div class="hd-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
             </div>
             <h2 data-i18n="check.demos">Try a Demo Scenario</h2>
@@ -2069,6 +2101,67 @@ async function loadFoodDemos(){
     $$('#foodDemos .chip').forEach(c => c.onclick = () => runBarcodeDemo(c.dataset.bdemo, c));
   } catch(e){ $('#foodDemos').innerHTML = '<span class="hint" style="margin:0">Barcode demos unavailable.</span>'; }
 }
+
+/* ---------- register search ---------- */
+async function runRegSearch(){
+  const q = $('#regSearchInput').value.trim();
+  const list = $('#regList'), empty = $('#regEmpty'), fresh = $('#regFresh');
+  if (!q){ list.innerHTML = ''; empty.classList.add('hidden'); return; }
+  list.innerHTML = '<span class="hint" style="margin:0">Searching…</span>';
+  empty.classList.add('hidden');
+  try {
+    const r = await api('/api/registry/search?q=' + encodeURIComponent(q) + '&limit=10');
+    const m = r.mirror || {};
+    if (m.ready && m.records){
+      const d = m.finished_at
+        ? new Date(m.finished_at * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'})
+        : '';
+      fresh.textContent = Number(m.records).toLocaleString() + ' licensed products' + (d ? ' · updated ' + d : '');
+    } else {
+      fresh.textContent = '';
+    }
+    const rows = r.records || [];
+    list.innerHTML = '';
+    empty.classList.toggle('hidden', rows.length > 0);
+    const tpl = $('#regRow');
+    rows.forEach(rec => {
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.reg-name').textContent = rec.product_name || 'Unnamed product';
+      const meta = node.querySelector('.reg-meta');
+      meta.textContent = '';
+      if (rec.nafdac){
+        const num = document.createElement('span');
+        num.className = 'mono';
+        num.textContent = rec.nafdac;
+        meta.appendChild(num);
+      }
+      const rest = [rec.manufacturer, rec.status].filter(Boolean).join(' · ');
+      if (rest) meta.appendChild(document.createTextNode((rec.nafdac ? ' · ' : '') + rest));
+      const btn = node.querySelector('.reg-use');
+      btn.textContent = t('regsearch.use');
+      btn.onclick = () => {
+        const f = document.querySelector('#form input[name="nafdac_number"]');
+        if (f && rec.nafdac){
+          f.value = rec.nafdac;
+          toast('Number filled — press Verify This Pack.');
+          try { f.scrollIntoView({behavior:'smooth', block:'center'}); f.focus({preventScroll:true}); } catch {}
+        }
+      };
+      list.appendChild(node);
+    });
+    if ((r.matched || 0) > rows.length){
+      const more = document.createElement('p');
+      more.className = 'hint';
+      more.style.margin = '8px 0 0';
+      more.textContent = 'Showing ' + rows.length + ' of ' + r.matched + ' matches — narrow the search.';
+      list.appendChild(more);
+    }
+  } catch(e){ list.innerHTML = ''; toast(e.message || 'Register search failed'); }
+}
+$('#regSearchBtn').onclick = runRegSearch;
+$('#regSearchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); runRegSearch(); }
+});
 
 async function runBarcodeDemo(key, btn){
   if (btn) btn.disabled = true;
