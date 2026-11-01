@@ -51,6 +51,40 @@ check("h&s shares the p&g rule", d.confidence == "decoded", repr(d))
 d = B.decode("Ariel", "1234", today=TODAY)
 check("short code refused", d.confidence == "unknown", repr(d))
 
+print("loreal group (garnier, maybelline, ...)")
+d = B.decode("Garnier", "38S60OS", today=TODAY)
+check("garnier 7-char code decodes",
+      d.confidence == "decoded" and d.made == date(2019, 6, 1)
+      and d.precision == "month", repr(d))
+check("22-year cycle disclosed",
+      d.alt_years == [1997], repr(d.alt_years))
+d = B.decode("Kiehl's", "28Y801", today=TODAY)
+check("documented kiehl's example matches",
+      d.confidence == "decoded" and d.made == date(2024, 8, 1),
+      repr(d))
+d = B.decode("Maybelline", "22U300T", today=TODAY)
+check("dated forum example matches",
+      d.confidence == "decoded" and d.made == date(2021, 3, 1),
+      repr(d))
+d = B.decode("L'Oreal Paris", "91TN00K", today=TODAY)
+check("letter month N is november",
+      d.confidence == "decoded" and d.made == date(2020, 11, 1),
+      repr(d))
+d = B.decode("Garnier", "SGT20WA", today=TODAY)
+check("letter-led plant accepted",
+      d.confidence == "decoded" and d.made == date(2020, 2, 1),
+      repr(d))
+d = B.decode("Garnier", "CD126", today=TODAY)
+check("old 5-char format decodes",
+      d.confidence == "decoded" and d.made == date(2007, 5, 6)
+      and d.precision == "day", repr(d))
+d = B.decode("Garnier", "38Q60OS", today=TODAY)
+check("skipped year letter refused", d.confidence == "unknown",
+      repr(d))
+d = B.decode("Dudu Osun", "38S60OS", today=TODAY)
+check("right shape, wrong brand refused",
+      d.confidence == "unknown", repr(d))
+
 print("guidance brands")
 d = B.decode("Dove soap", "12661", today=TODAY)
 check("unilever guided, not decoded",

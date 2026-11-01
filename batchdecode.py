@@ -1,22 +1,27 @@
 """
 Vouch — batch-code manufacture-date decoding (pilot).
 
-Two verified algorithms, each corroborated by two independent public
+Three verified algorithms, each corroborated by at least two independent public
 sources (retailer Q&As quoting the makers, plus decoder references):
 
 - Beiersdorf (Nivea): 8 digits, first = last digit of the year, next
   two = production week. Trailing plant letters allowed.
 - P&G (Olay, Head & Shoulders, Oral-B, Gillette, Ariel, Safeguard):
   first digit = last digit of the year, next three = day of the year.
+- L'Oreal group (Garnier, Maybelline, L'Oreal Paris, CeraVe, Dark &
+  Lovely and kin): two plant characters, a year letter, a month
+  character (1-9, O, N, D), then the lot. Older 5-character codes use
+  origin letter + year letter + 3 day-digits instead.
 
 Brands whose makers print open dates (Unilever, Colgate, Reckitt) get
 guidance to those dates. Everything else answers "not verified" —
 a guessed decode would be an invented fact, and this module will not
 produce one.
 
-Single-digit years repeat every decade, so every decode carries all
-plausible years, most recent first. Callers must show the ambiguity,
-never just the top date.
+Year marks repeat on a cycle (every decade for digits, about every
+22 years for letters), so every decode carries all plausible years,
+most recent first. Callers must show the ambiguity, never just the
+top date.
 """
 
 from __future__ import annotations
@@ -70,6 +75,9 @@ _ALIASES = {
     "beiersdorf": ["nivea", "beiersdorf"],
     "pg": ["olay", "head shoulders", "head and shoulders", "oral b",
            "oralb", "gillette", "ariel", "safeguard", "pantene", "crest"],
+    "loreal": ["garnier", "maybelline", "loreal", "l oreal", "cerave",
+               "dark lovely", "dark and lovely", "nyx", "lancome",
+               "kiehls", "kiehl s", "yves saint laurent", "ysl"],
     "unilever": ["dove", "lux", "vaseline", "close up", "closeup",
                  "rexona", "axe", "lifebuoy", "pepsodent"],
     "colgate": ["colgate", "palmolive"],
@@ -79,10 +87,25 @@ _ALIASES = {
 _LABELS = {
     "beiersdorf": "Nivea",
     "pg": "P&G",
+    "loreal": "L'Oreal",
     "unilever": "Unilever",
     "colgate": "Colgate",
     "reckitt": "Reckitt",
 }
+
+# L'Oreal year letters: A=2004, running forward, skipping I, O, Q and V
+# (lookalikes and reserved). Anchored by dated reports at both ends —
+# A=2004..E=2008 on the old 5-character codes, M=2015..U=2021 and Y=2024
+# on the current format — so M-Z is firmer ground than A-L.
+_LOREAL_YEARS = {
+    "A": 2004, "B": 2005, "C": 2006, "D": 2007, "E": 2008, "F": 2009,
+    "G": 2010, "H": 2011, "J": 2012, "K": 2013, "L": 2014, "M": 2015,
+    "N": 2016, "P": 2017, "R": 2018, "S": 2019, "T": 2020, "U": 2021,
+    "W": 2022, "X": 2023, "Y": 2024, "Z": 2025,
+}
+_LOREAL_CYCLE = 22  # usable letters before the sequence repeats
+_LOREAL_MONTHS = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6,
+                  "7": 7, "8": 8, "9": 9, "O": 10, "N": 11, "D": 12}
 
 _GUIDANCE = {
     "unilever": ("Unilever packs (Dove, Lux, Vaseline, Close-Up and kin) "
@@ -99,9 +122,11 @@ _GUIDANCE = {
 }
 
 _UNKNOWN_NOTE = ("No verified decoder for this brand yet. Vouch decodes "
-                 "Nivea and the P&G group (Olay, Head & Shoulders, Oral-B, "
-                 "Gillette, Ariel, Safeguard), and points Unilever, "
-                 "Colgate and Dettol packs to their printed dates.")
+                 "Nivea, the P&G group (Olay, Head & Shoulders, Oral-B, "
+                 "Gillette, Ariel, Safeguard) and the L'Oreal group "
+                 "(Garnier, Maybelline, L'Oreal Paris, Dark & Lovely), "
+                 "and points Unilever, Colgate and Dettol packs to their "
+                 "printed dates.")
 
 
 def match_group(brand_text: str) -> str:
@@ -126,13 +151,13 @@ def _decade_years(digit: int, today: date) -> list[int]:
     return years
 
 
-def _ambiguity_note(alts: list[int]) -> str:
+def _ambiguity_note(alts: list[int], cycle: str = "") -> str:
     if not alts:
         return ""
     shown = ", ".join(str(y) for y in alts[:3])
-    return (f"Single-digit years repeat every decade — {shown} fit the "
-            "same code. Judge by the pack's condition and any printed "
-            "dates.")
+    lead = cycle or "Single-digit years repeat every decade"
+    return (f"{lead} — {shown} fit the same code. Judge by the pack's "
+            "condition and any printed dates.")
 
 
 def _decode_beiersdorf(code: str, today: date) -> Decode | None:
@@ -191,7 +216,72 @@ def _decode_pg(code: str, today: date) -> Decode | None:
         note=_ambiguity_note(alts))
 
 
-_DECODERS = {"beiersdorf": _decode_beiersdorf, "pg": _decode_pg}
+def _loreal_years(letter: str, today: date) -> list[int]:
+    base = _LOREAL_YEARS[letter]
+    years = []
+    year = base
+    while year >= 1990:
+        years.append(year)
+        year -= _LOREAL_CYCLE
+    year = base + _LOREAL_CYCLE
+    while year <= today.year + 1:
+        years.append(year)
+        year += _LOREAL_CYCLE
+    return sorted((y for y in years if y >= 1990), reverse=True)
+
+
+def _decode_loreal(code: str, today: date) -> Decode | None:
+    made: date | None = None
+    alts: list[int] = []
+    letter = ""
+    m = re.fullmatch(r"[A-Z0-9]{2}([A-Z])([1-9OND])([A-Z0-9]+)", code)
+    if m and len(code) >= 6:
+        letter = m.group(1)
+        if letter not in _LOREAL_YEARS:
+            return None
+        month = _LOREAL_MONTHS[m.group(2)]
+        for year in _loreal_years(letter, today):
+            cand = date(year, month, 1)
+            if cand <= today:
+                if made is None:
+                    made = cand
+                else:
+                    alts.append(year)
+        method = ("Two plant characters, a year letter, a month "
+                  "character (1-9, O, N, D), then the lot.")
+        precision = "month"
+    else:
+        b = re.fullmatch(r"[A-Z]([A-H])(\d{3})", code)
+        if not b:
+            return None
+        letter = b.group(1)
+        day = int(b.group(2))
+        if not 1 <= day <= 366:
+            return None
+        cand = date(_LOREAL_YEARS[letter], 1, 1) + timedelta(days=day - 1)
+        if cand.year != _LOREAL_YEARS[letter] or cand > today:
+            return None
+        made = cand
+        method = ("Older L'Oreal format: origin letter, year letter, "
+                  "3 day-digits.")
+        precision = "day"
+    if made is None:
+        return None
+    note = _ambiguity_note(alts, "Year letters repeat about every 22 years")
+    if letter and letter < "M":
+        note += (" Year letters A-L rest on fewer dated reports than "
+                 "M-Z.")
+    if made.year > 2025 or any(y > 2025 for y in alts):
+        note += (" Years after 2025 assume the letter cycle restarted — "
+                 "treat with extra care.")
+    return Decode(
+        confidence="decoded", group="loreal", brand_label="L'Oreal",
+        made=made, precision=precision, alt_years=alts,
+        method=method, note=note.strip())
+
+
+_DECODERS = {"beiersdorf": _decode_beiersdorf, "pg": _decode_pg,
+             "loreal": _decode_loreal}
 
 
 def decode(brand_text: str, code: str,
@@ -208,9 +298,10 @@ def decode(brand_text: str, code: str,
     hit = _DECODERS[group](cleaned, today)
     if hit is not None:
         return hit
-    shape = ("8 digits, first = year, next two = week"
-             if group == "beiersdorf"
-             else "a digit, 3 day-digits, then plant characters")
+    shape = {"beiersdorf": "8 digits, first = year, next two = week",
+               "pg": "a digit, 3 day-digits, then plant characters",
+               "loreal": ("2 plant characters, a year letter, a month "
+                          "character, then the lot")}.get(group, "a known shape")
     return Decode(confidence="unknown", group=group,
                   brand_label=_LABELS[group],
                   note=(f"That code does not match the documented "
@@ -230,6 +321,10 @@ def supported() -> list[dict]:
         {"id": "pg", "label": "P&G",
          "brands": ["Olay", "Head & Shoulders", "Oral-B", "Gillette",
                     "Ariel", "Safeguard", "Pantene", "Crest"],
+         "mode": "decode"},
+        {"id": "loreal", "label": "L'Oreal",
+         "brands": ["Garnier", "Maybelline", "L'Oreal Paris", "CeraVe",
+                    "Dark & Lovely", "NYX", "Lancome", "Kiehl's"],
          "mode": "decode"},
         {"id": "unilever", "label": "Unilever",
          "brands": ["Dove", "Lux", "Vaseline", "Close-Up", "Rexona",
