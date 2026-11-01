@@ -264,5 +264,30 @@ server._maybe_auto_sync()
 check("disabled by default", threading.active_count() == before,
       f"{before} -> {threading.active_count()}")
 
+print("agent photo receipt")
+import base64 as _b64
+import vision as _vision2
+_real_ex = _vision2.extract_from_image
+_vision2.extract_from_image = lambda *a, **k: _vision2.Extraction()
+try:
+    _scope = {"type": "http", "method": "POST",
+              "path": "/api/agent/chat",
+              "query_string": b"", "headers": []}
+    _img = _b64.b64encode(b"fake-photo-bytes").decode()
+    _r = server.agent_chat(
+        server.AgentBody(message="", history=[], image_b64=_img),
+        Request(_scope))
+    check("photo receipt echoed", _r.get("image_received") is True)
+    check("photo answer acknowledges the miss",
+          "received your photo" in _r.get("answer", "").lower(),
+          _r.get("answer", "")[:160])
+    _r2 = server.agent_chat(
+        server.AgentBody(message="hello", history=[]),
+        Request(_scope))
+    check("no photo means no receipt",
+          _r2.get("image_received") is False)
+finally:
+    _vision2.extract_from_image = _real_ex
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

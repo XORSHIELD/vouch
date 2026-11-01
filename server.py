@@ -481,8 +481,10 @@ def agent_chat(body: AgentBody, request: Request) -> dict:
             image_bytes = agent.decode_image(body.image_b64)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
-    return agent.chat(body.message, body.history, image_bytes,
-                      body.image_type or "image/jpeg")
+    out = agent.chat(body.message, body.history, image_bytes,
+                     body.image_type or "image/jpeg")
+    out["image_received"] = image_bytes is not None
+    return out
 
 
 @app.post("/api/ask")

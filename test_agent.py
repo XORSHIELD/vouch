@@ -174,5 +174,31 @@ check("explicit check still proposes",
       and r.get("provider") == "vouch-composer",
       str(r.get("proposal"))[:160])
 
+print("photo acknowledgment")
+import vision as _vision
+_real_extract = _vision.extract_from_image
+try:
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction()
+    r = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    check("empty photo read is acknowledged",
+          "received your photo" in r["answer"].lower()
+          and "could not read" in r["answer"].lower(),
+          r["answer"][:200])
+    check("empty photo keeps its extraction + assessment",
+          r.get("extraction") is not None
+          and r.get("assessment") is not None)
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction(
+        nafdac_number="A11-0551", product_name="AC-Drex Tablet")
+    r2 = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    check("readable photo needs no apology",
+          "could not read" not in r2["answer"].lower(),
+          r2["answer"][:200])
+    check("readable photo drives the assessment",
+          r2["assessment"].get("input", {}).get("nafdac_number")
+          == "A11-0551",
+          repr(r2["assessment"].get("input"))[:160])
+finally:
+    _vision.extract_from_image = _real_extract
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

@@ -1504,6 +1504,7 @@
       <div class="bd">
         <div id="agentMsgs" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;flex:1;min-height:24vh;max-height:56vh;overflow:auto"></div>
         <div id="agentProposal"></div>
+        <div id="agentPreview" class="hidden" style="gap:8px;align-items:center;margin-bottom:8px;font-size:12px;color:var(--ink-3)"></div>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="attach-cluster">
           <label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" id="agentPhoto" accept="image/*" class="hidden"></label>
@@ -2028,11 +2029,13 @@ async function agentSend(){
       for (let i = 0; i < bytes.length; i += 8192)
         bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
       image_b64 = btoa(bin);
-      $('#agentPhoto').value = '';
     }
     const r = await api('/api/agent/chat', {method:'POST', body:JSON.stringify({message:text, history:agentHist.slice(-8), image_b64})});
+    agentClearPhoto();
     thinking.className = 'vmsg bot';
     thinking.textContent = r.answer || '(no answer)';
+    if (file && r.image_received === false)
+      agentBubble('bot', 'Your photo did not reach me — please attach it again.');
     agentHist.push({role:'assistant', text:r.answer || ''});
     if (agentVoiceReply){ agentVoiceReply = false; if (r.answer) agentSpeak(r.answer); }
     if (r.proposal) agentProposalCard(r.proposal);
@@ -2045,6 +2048,36 @@ async function agentSend(){
 }
 $('#agentSend').onclick = agentSend;
 $('#agentInput').addEventListener('keydown', e => { if (e.key === 'Enter') agentSend(); });
+let agentPhotoURL = '';
+function agentClearPhoto(){
+  const inp = $('#agentPhoto');
+  if (inp) inp.value = '';
+  if (agentPhotoURL){ try { URL.revokeObjectURL(agentPhotoURL); } catch {} agentPhotoURL = ''; }
+  const prev = $('#agentPreview');
+  if (prev){ prev.classList.add('hidden'); prev.innerHTML = ''; }
+}
+$('#agentPhoto').addEventListener('change', () => {
+  const f = $('#agentPhoto').files[0];
+  const prev = $('#agentPreview');
+  if (agentPhotoURL){ try { URL.revokeObjectURL(agentPhotoURL); } catch {} agentPhotoURL = ''; }
+  if (!f || !prev){ if (prev){ prev.classList.add('hidden'); prev.innerHTML = ''; } return; }
+  agentPhotoURL = URL.createObjectURL(f);
+  prev.classList.remove('hidden');
+  prev.style.display = 'flex';
+  prev.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = agentPhotoURL;
+  img.alt = '';
+  img.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid var(--line)';
+  const nm = document.createElement('span');
+  nm.textContent = f.name + ' (' + Math.max(1, Math.round(f.size / 1024)) + ' KB)';
+  const rm = document.createElement('button');
+  rm.type = 'button';
+  rm.className = 'mini-btn';
+  rm.textContent = 'Remove';
+  rm.onclick = agentClearPhoto;
+  prev.append(img, nm, rm);
+});
 
 /* ---------- agent mic ---------- */
 let agentRec = null, agentListening = false, agentVoiceReply = false;

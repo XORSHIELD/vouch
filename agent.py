@@ -555,6 +555,9 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
         ctx["assessment"] = _assess(ctx["pack"])
     if not answer:
         answer, provider = ai.compose(ctx["assessment"], message)
+        _ex = ctx.get("extraction")
+        if _ex is not None and _extraction_empty(_ex):
+            answer = _PHOTO_UNREADABLE + answer
     pack = confirmed_pack or ctx["pack"]
     proposal = None
     if pack is not None and (pack.nafdac_number or pack.barcode):
@@ -710,6 +713,21 @@ def _fragment_ack(pack: PackInput, fresh: dict,
     return " ".join(bits) + f" {_tail(pack, assessment, history)}"
 
 
+_PHOTO_FIELDS = ("nafdac_number", "barcode", "product_name", "manufacturer",
+                 "batch", "exp_date", "mfg_date")
+
+_PHOTO_UNREADABLE = (
+    "I received your photo, but I could not read the label from it — "
+    "no name, number, date or batch came through. "
+    "Fill the frame with one panel, hold still, and keep glare off the "
+    "print, then send it again. ")
+
+
+def _extraction_empty(ex) -> bool:
+    """Nothing usable came off the photo: say so, don't ignore it."""
+    return not any(getattr(ex, f, "") for f in _PHOTO_FIELDS)
+
+
 def _pipeline(message: str, image_bytes: bytes | None,
               image_type: str, history=None) -> dict:
     pack, fresh, changed = _working_pack(history, message)
@@ -729,6 +747,8 @@ def _pipeline(message: str, image_bytes: bytes | None,
                 setattr(pack, key, val)
         assessment = _assess(pack)
         text, who = ai.compose(assessment, message)
+        if _extraction_empty(extraction):
+            text = _PHOTO_UNREADABLE + text
     else:
         assessment = _assess(pack)
         said = _converse(pack, fresh, message, assessment, history)
