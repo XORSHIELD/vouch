@@ -4,6 +4,7 @@ uvicorn
 httpx
 pillow
 numpy  # frame-quality scoring in scan.py
+python-multipart  # Form/File routes (photo upload) in server.py
 winrt-Windows.Graphics.Imaging; sys_platform == "win32"  # in-process OCR; without these the PowerShell fallback is used
 winrt-Windows.Media.Ocr; sys_platform == "win32"
 winrt-Windows.Storage; sys_platform == "win32"

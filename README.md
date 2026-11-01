@@ -29,10 +29,10 @@ Then open:
 - `http://127.0.0.1:8077/api/health` — service status
 
 No API key is required. Needs Python 3.10 or newer (CI runs 3.13). The product
-code is standard library plus FastAPI/Uvicorn/Pillow/numpy (and the
-`winrt-Windows.*` packages on Windows for in-process OCR — without them the
-PowerShell fallback is used); the test client needs httpx and the smoke
-script needs requests.
+code is standard library plus FastAPI/Uvicorn/Pillow/numpy/python-multipart
+(and the `winrt-Windows.*` packages on Windows for in-process OCR — without
+them the PowerShell fallback is used); the test client needs httpx and the
+smoke script needs requests.
 
 ### Optional: use a model for explanations
 

@@ -71,6 +71,7 @@ _reqs = [ln.split("#")[0].strip()
 _reqs = [r for r in _reqs if r]
 check("requirements listed", len(_reqs) >= 3, str(_reqs))
 _EVIDENCE = {"pillow": "from PIL import", "httpx": "TestClient",
+             "python-multipart": "UploadFile",
              "winrt-Windows.Graphics.Imaging":
                  "winrt.windows.graphics.imaging",
              "winrt-Windows.Media.Ocr": "winrt.windows.media.ocr",
