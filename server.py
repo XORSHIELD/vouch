@@ -1072,6 +1072,50 @@ def safety_photo(report_id: str) -> FileResponse:
     return FileResponse(path, media_type=media_type)
 
 
+class ReviewBody(BaseModel):
+    id: str = ""
+    approved: bool = False
+
+
+class AlertBody(BaseModel):
+    product_name: str = ""
+    nafdac_number: str = ""
+    batch: str = ""
+    reason: str = ""
+    report_ids: list = PField(default_factory=list)
+
+
+@app.get("/api/alerts")
+def published_alerts(q: str = "", nafdac: str = "",
+                     batch: str = "") -> dict:
+    """Public alerts: official file plus moderated community alerts."""
+    return safety.published_alerts(query=q, nafdac=nafdac, batch=batch)
+
+
+@app.get("/api/safety/review-queue")
+def review_queue(user: dict = Depends(auth.require_inspector)) -> dict:
+    """Submissions awaiting moderation. Inspectors and admins."""
+    return {"reports": safety.review_queue()}
+
+
+@app.post("/api/safety/review")
+def review_report(body: ReviewBody,
+                  user: dict = Depends(auth.require_inspector)) -> dict:
+    out = safety.review(body.id, body.approved, user["username"])
+    if out is None:
+        raise HTTPException(404, "No such submission.")
+    return {"ok": True, "report": out}
+
+
+@app.post("/api/alerts")
+def publish_alert(body: AlertBody,
+                  user: dict = Depends(auth.require_inspector)) -> dict:
+    try:
+        return safety.publish_alert(body.model_dump(), user["username"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+
+
 # --------------------------------------------------------------------------
 # Static UI
 # --------------------------------------------------------------------------

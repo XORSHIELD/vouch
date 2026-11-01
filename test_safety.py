@@ -83,6 +83,53 @@ except OSError:
 check("no leaked db handle after every call", closed,
       "Windows refuses to delete a sqlite file with an open connection; "
       "POSIX always passes")
+print("moderated alerts")
+_r1 = safety.submit(pack("Tayo Stores", batch="PX9",
+                         notes="Tablets crumbled and the foil looked reglued."))
+_r2 = safety.submit(pack("Tayo Stores", batch="PX9",
+                         notes="Same stall, same batch, expiry scraped off."))
+_r3 = safety.submit(pack("Other Shop", batch="ZZ1",
+                         notes="Seal was already broken on arrival here."))
+_q = safety.review_queue()
+check("submissions queue for review",
+      {r["id"] for r in _q} >= {_r1["id"], _r2["id"], _r3["id"]},
+      str([r["id"] for r in _q]))
+check("missing review reads nothing",
+      safety.review("rpt_nope", True) is None)
+check("approve flags the report",
+      safety.review(_r1["id"], True, "insp")["reviewed"] == 1)
+check("dismissed leaves the queue",
+      safety.review(_r3["id"], False, "insp")["reviewed"] == -1
+      and _r3["id"] not in {r["id"] for r in safety.review_queue()})
+try:
+    safety.publish_alert({"product_name": "AC-DREX Tablet", "batch": "PX9",
+                          "reason": "", "report_ids": [_r1["id"]]})
+    check("reason required", False)
+except ValueError:
+    check("reason required", True)
+try:
+    safety.publish_alert({"product_name": "AC-DREX Tablet", "batch": "PX9",
+                          "reason": "x", "report_ids": [_r2["id"]]})
+    check("unapproved link refused", False)
+except ValueError:
+    check("unapproved link refused", True)
+_pub = safety.publish_alert(
+    {"product_name": "AC-DREX Tablet", "nafdac_number": "A11-0551",
+     "batch": "PX9", "reason": "Two approved submissions name this batch.",
+     "report_ids": [_r1["id"]]}, "insp")
+check("publish returns an id",
+      _pub["ok"] and _pub["id"].startswith("alt_"), str(_pub))
+_merged = safety.published_alerts(batch="PX9")
+check("published alert listed",
+      any(a["id"] == _pub["id"] and a.get("local") is True
+          for a in _merged["alerts"]),
+      str(_merged["alerts"]))
+check("configured by community alone", _merged["configured"] is True)
+_bw = safety.batch_watch(batch="PX9")
+check("batch watch matches community alert",
+      _bw["status"] == "alert_match"
+      and any(m.get("local") for m in _bw["alerts"]), _bw["status"])
+
 shutil.rmtree(TMP, ignore_errors=True)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")

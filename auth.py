@@ -269,3 +269,7 @@ def require_user(request: Request) -> dict:
 
 def require_admin(request: Request) -> dict:
     return _require("admin", request)
+
+
+def require_inspector(request: Request) -> dict:
+    return _require("inspector", request)

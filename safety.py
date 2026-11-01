@@ -88,6 +88,18 @@ def init() -> None:
         )
         con.execute("CREATE INDEX IF NOT EXISTS safety_batch ON safety_reports(nafdac, batch)")
         con.execute("CREATE INDEX IF NOT EXISTS safety_seller ON safety_reports(seller)")
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS public_alerts ("
+            "  id TEXT PRIMARY KEY,"
+            "  created_at REAL NOT NULL,"
+            "  product_name TEXT NOT NULL DEFAULT '',"
+            "  nafdac TEXT NOT NULL DEFAULT '',"
+            "  batch TEXT NOT NULL DEFAULT '',"
+            "  reason TEXT NOT NULL DEFAULT '',"
+            "  source TEXT NOT NULL DEFAULT '',"
+            "  reports TEXT NOT NULL DEFAULT '',"
+            "  published_by TEXT NOT NULL DEFAULT '')"
+        )
     finally:
         con.close()
 
@@ -220,7 +232,7 @@ def match_alerts(nafdac: str = "", batch: str = "", barcode: str = "") -> list[d
     """
     if not (nafdac or batch or barcode):
         return []
-    found = alerts(nafdac=nafdac, batch=batch)["alerts"]
+    found = published_alerts(nafdac=nafdac, batch=batch)["alerts"]
     want_batch = _batch(batch)
     want_code = _number(barcode)
     out: list[dict] = []
@@ -446,13 +458,13 @@ def batch_watch(nafdac: str = "", batch: str = "", barcode: str = "") -> dict:
         status = "alert_match"
         levels = {m.get("match_level") for m in matches}
         if "batch" in levels:
-            message = ("This batch matches a configured official alert. Do not use it; "
+            message = ("This batch matches a safety alert. Do not use it; "
                        "follow the alert's guidance.")
         elif "barcode" in levels:
-            message = ("This barcode matches a configured official alert. Check the "
+            message = ("This barcode matches a safety alert. Check the "
                        "alert's batch before concluding; do not use a pack named in the alert.")
         else:
-            message = ("This product or registration number matches a configured official "
+            message = ("This product or registration number matches a safety "
                        "alert. The alert does not state a batch, so it cannot be tied to the "
                        "pack in your hand; check with the manufacturer or regulator.")
     elif group:
@@ -508,6 +520,156 @@ def summary() -> dict:
             "A pattern is a reason to investigate, never a public accusation.",
         ],
     }
+
+
+_LOCAL_SOURCE = "Vouch community review"
+
+
+def review_queue(limit: int = 30) -> list[dict]:
+    """Pending submissions first, then approved ones awaiting publish."""
+    init()
+    con = _connect()
+    try:
+        rows = con.execute(
+            "SELECT * FROM safety_reports WHERE reviewed IN (0, 1)"
+            " ORDER BY reviewed ASC, created_at DESC LIMIT ?",
+            (max(1, min(100, int(limit))),)).fetchall()
+    finally:
+        con.close()
+    return [_row(r) for r in rows]
+
+
+def review(report_id: str, approved: bool, reviewer: str = "") -> dict | None:
+    """Approve or dismiss one submission. Returns it, or None if missing."""
+    init()
+    con = _connect()
+    try:
+        row = con.execute("SELECT id FROM safety_reports WHERE id = ?",
+                          (report_id,)).fetchone()
+        if not row:
+            return None
+        con.execute("UPDATE safety_reports SET reviewed = ? WHERE id = ?",
+                    (1 if approved else -1, report_id))
+        con.commit()
+    finally:
+        con.close()
+    try:
+        import audit
+        audit.log("report_reviewed", reviewer,
+                  f"{report_id} {'approved' if approved else 'dismissed'}")
+    except Exception:
+        pass
+    return get(report_id)
+
+
+def publish_alert(payload: dict, publisher: str = "") -> dict:
+    """Publish a community-reviewed alert. Linked reports must be approved."""
+    init()
+    reason = _clean(payload.get("reason"), 300)
+    product = _clean(payload.get("product_name"), 160)
+    nafdac = _nafdac(payload.get("nafdac_number"))
+    batch = _batch(payload.get("batch"))
+    if not reason:
+        raise ValueError("An alert needs a reason.")
+    if not (product or nafdac or batch):
+        raise ValueError("Name a product, registration number or batch.")
+    report_ids = [str(r) for r in (payload.get("report_ids") or [])][:20]
+    con = _connect()
+    try:
+        for rid in report_ids:
+            row = con.execute(
+                "SELECT reviewed FROM safety_reports WHERE id = ?",
+                (rid,)).fetchone()
+            if row is None:
+                raise ValueError(f"No report {rid}.")
+            if row["reviewed"] != 1:
+                raise ValueError(f"Report {rid} is not approved yet.")
+        alert_id = "alt_" + secrets.token_hex(6)
+        con.execute(
+            "INSERT INTO public_alerts (id, created_at, product_name, nafdac,"
+            " batch, reason, source, reports, published_by)"
+            " VALUES (?,?,?,?,?,?,?,?,?)",
+            (alert_id, time.time(), product, nafdac, batch, reason,
+             _LOCAL_SOURCE, json.dumps(report_ids), _clean(publisher, 64)),
+        )
+        con.commit()
+    finally:
+        con.close()
+    try:
+        import audit
+        audit.log("alert_published", publisher, alert_id)
+    except Exception:
+        pass
+    return {"ok": True, "id": alert_id}
+
+
+def _local_recs() -> list[dict]:
+    """Published community alerts in the same shape as file alerts."""
+    init()
+    con = _connect()
+    try:
+        rows = con.execute(
+            "SELECT * FROM public_alerts ORDER BY created_at DESC").fetchall()
+    finally:
+        con.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            reports = json.loads(d["reports"]) if d["reports"] else []
+        except ValueError:
+            reports = []
+        out.append({
+            "id": d["id"], "product_name": d["product_name"],
+            "nafdac_number": d["nafdac"], "batch": d["batch"],
+            "barcode": "", "manufacturer": "",
+            "reason": d["reason"],
+            "published": time.strftime("%Y-%m-%d",
+                                       time.localtime(d["created_at"])),
+            "url": "", "source": d["source"] or _LOCAL_SOURCE,
+            "demo": False, "local": True, "reports": reports,
+        })
+    return out
+
+
+def _local_match(rec: dict, want_n: str, want_b: str, q: str) -> bool:
+    """Same matching rules as alerts(): number, batch, free text."""
+    if want_n and _number(rec["nafdac_number"]) != want_n:
+        return False
+    if want_b and _batch(rec["batch"]) != want_b:
+        return False
+    if q:
+        hay = " ".join(str(rec[k]) for k in
+                       ("product_name", "nafdac_number", "batch", "barcode",
+                        "manufacturer", "reason")).lower()
+        if q not in hay:
+            return False
+    return True
+
+
+def published_alerts(query: str = "", nafdac: str = "",
+                     batch: str = "") -> dict:
+    """Public surface: file alerts plus moderated community alerts."""
+    base = alerts(query=query, nafdac=nafdac, batch=batch)
+    want_n = _number(nafdac)
+    want_b = _batch(batch)
+    q = _clean(query, 80).lower()
+    mine = [rec for rec in _local_recs()
+            if _local_match(rec, want_n, want_b, q)]
+    if not mine:
+        return base
+    if not base["configured"]:
+        return {"configured": True, "source": _LOCAL_SOURCE, "updated": "",
+                "alerts": mine[:50], "count": len(mine),
+                "note": ("No official alert file is configured. Showing Vouch "
+                         "community-reviewed alerts only.")}
+    joined = base["alerts"] + mine
+    return {"configured": True,
+            "source": " + ".join(s for s in
+                                 [base.get("source"), _LOCAL_SOURCE] if s),
+            "updated": base.get("updated", ""),
+            "alerts": joined[:50], "count": len(joined),
+            "note": base.get("note", "") + " Community-reviewed alerts are marked."}
 
 
 def reset() -> None:

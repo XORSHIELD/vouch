@@ -169,6 +169,56 @@ except Exception as exc:
     check("bad verify refused", "403" in str(exc), str(exc)[:80])
 
 
+print("moderated alerts")
+_pub0 = server.published_alerts()
+check("public alerts read without sign-in", "alerts" in _pub0,
+      str(_pub0)[:120])
+_sub = server.safety.submit(
+    {"product_name": "SrvTab", "batch": "SV1", "issue": "other",
+     "notes": "server test submission notes here"})
+_insp = server.auth.me(_tok2)
+_rq = server.review_queue(_insp)
+check("queue shows the submission",
+      any(r["id"] == _sub["id"] for r in _rq["reports"]))
+_req = Request({"type": "http", "method": "GET", "path": "/",
+                "query_string": b"", "headers": [
+                    (b"authorization", f"Bearer {_tok}".encode())]})
+try:
+    server.auth.require_inspector(_req)
+    check("consumer refused moderation", False)
+except Exception as exc:
+    check("consumer refused moderation", "403" in str(exc),
+          str(exc)[:80])
+check("inspector passes the gate",
+      server.auth.require_inspector(Request(
+          {"type": "http", "method": "GET", "path": "/",
+           "query_string": b"", "headers": [
+               (b"authorization", f"Bearer {_tok2}".encode())]}))["role"]
+      == "inspector")
+_rv = server.review_report(
+    server.ReviewBody(id=_sub["id"], approved=True), _insp)
+check("review approves", _rv["report"]["reviewed"] == 1)
+_po = server.publish_alert(server.AlertBody(
+    product_name="SrvTab", batch="SV1", reason="server test reason",
+    report_ids=[_sub["id"]]), _insp)
+check("publish ok", _po.get("ok") is True)
+check("public shows it",
+      any(a["id"] == _po["id"]
+          for a in server.published_alerts()["alerts"]))
+_deps = [getattr(d, "call", None) for r in server.app.routes
+         if getattr(r, "path", "") in ("/api/safety/review-queue",
+                                       "/api/safety/review", "/api/alerts")
+         for d in getattr(r.dependant, "dependencies", [])]
+check("moderation needs an inspector",
+      len(_deps) == 3 and
+      _deps.count(server.auth.require_inspector) == 3, str(len(_deps)))
+_pub_deps = [d for r in server.app.routes
+             if getattr(r, "path", "") == "/api/alerts"
+             and "GET" in (getattr(r, "methods", set()) or set())
+             for d in getattr(r.dependant, "dependencies", [])]
+check("public alerts need no sign-in", _pub_deps == [], str(_pub_deps))
+
+
 print("security headers")
 client = TestClient(server.app, raise_server_exceptions=False)
 r = client.get("/api/health")

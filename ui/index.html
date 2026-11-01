@@ -1528,6 +1528,13 @@
         </div>
       </div>
     </div>
+    <div class="card hidden" id="reviewCard" style="margin-bottom:18px">
+      <div class="hd">
+        <h2>Review queue</h2>
+        <span class="who" id="reviewCount" style="margin-left:auto"></span>
+      </div>
+      <div class="bd"><div id="reviewList"></div></div>
+    </div>
     <div id="queueList"></div>
     <div class="stats" id="caseStats"></div>
     <div id="caseList"></div>
@@ -1868,7 +1875,7 @@ function goTab(name){
   TABS.forEach(t => { const sec = $('#tab-' + t); if (sec) sec.classList.toggle('hidden', t !== name); });
   const shown = $('#tab-' + name);
   if (shown){ shown.classList.remove('anim-in'); void shown.offsetWidth; shown.classList.add('anim-in'); }
-  if (name === 'cases'){ loadCases(); loadSafety(); }
+  if (name === 'cases'){ loadCases(); loadSafety(); loadReview(); }
   if (name === 'history') renderHistory();
   if (name === 'settings'){ loadSettings(); loadSyncStatus(); renderSession(); }
   document.querySelectorAll('.hero,.flow-card').forEach(el => el.classList.toggle('hidden', name !== 'check'));
@@ -4864,6 +4871,62 @@ function safetyPatternHtml(p){
   </div>`;
 }
 
+async function loadReview(){
+  const card = $('#reviewCard'), list = $('#reviewList');
+  if (!card || !list) return;
+  let me = null;
+  try { me = await currentUser(); } catch { me = null; }
+  if (!me || (me.role !== 'admin' && me.role !== 'inspector')){
+    card.classList.add('hidden');
+    return;
+  }
+  try {
+    const {reports} = await api('/api/safety/review-queue');
+    card.classList.remove('hidden');
+    const waiting = reports.filter(r => r.reviewed === 0).length;
+    $('#reviewCount').textContent = waiting ? waiting + ' waiting' : 'all clear';
+    list.innerHTML = reports.length ? reports.map(r => `
+      <div class="caseitem">
+        <div class="top">
+          <span class="id">${esc(r.id)}</span>
+          <span class="pill ${r.reviewed === 1 ? 'clear' : 'open'}">${r.reviewed === 1 ? 'approved' : 'pending'}</span>
+        </div>
+        <h3>${esc(r.product_name || 'Unnamed product')}</h3>
+        <p class="scan-note" style="margin:0 0 8px">${esc(r.issue || '')} · batch ${esc(r.batch || '—')} · ${esc(r.seller || '—')}</p>
+        <p style="margin:0 0 4px;font-size:14px;line-height:1.55">${esc(r.notes || '')}</p>
+        <div class="docbtns" style="margin-top:8px">
+          ${r.reviewed === 0 ? `<button class="btn ghost sm" type="button" data-act="approve" data-id="${esc(r.id)}">Approve</button>
+          <button class="btn ghost sm" type="button" data-act="dismiss" data-id="${esc(r.id)}">Dismiss</button>` : ''}
+          ${r.reviewed === 1 ? `<button class="btn ghost sm" type="button" data-act="pubshow" data-id="${esc(r.id)}">Publish alert</button>` : ''}
+        </div>
+        <div class="hidden" id="pub-${esc(r.id)}" style="margin-top:8px">
+          <label class="f"><span>Public reason</span><input id="pubreason-${esc(r.id)}" value="${esc((r.issue || '') + (r.notes ? ' — ' + r.notes : ''))}" maxlength="300" /></label>
+          <div class="docbtns" style="margin-top:8px"><button class="btn sm" type="button" data-act="publish" data-id="${esc(r.id)}">Publish</button></div>
+        </div>
+      </div>`).join('') : '<div class="card"><div class="bd empty">Nothing waiting for review.</div></div>';
+    list.onclick = async (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const id = btn.dataset.id, act = btn.dataset.act;
+      try {
+        if (act === 'approve' || act === 'dismiss'){
+          await api('/api/safety/review', {method:'POST', body:JSON.stringify({id, approved: act === 'approve'})});
+          toast(act === 'approve' ? 'Approved' : 'Dismissed');
+        } else if (act === 'pubshow'){
+          const f = document.getElementById('pub-' + id);
+          if (f) f.classList.toggle('hidden');
+          return;
+        } else if (act === 'publish'){
+          const reason = (document.getElementById('pubreason-' + id) || {}).value || '';
+          const r = (await api('/api/safety/review-queue')).reports.find(x => x.id === id) || {};
+          await api('/api/alerts', {method:'POST', body:JSON.stringify({product_name: r.product_name || '', nafdac_number: r.nafdac || '', batch: r.batch || '', reason, report_ids: [id]})});
+          toast('Alert published');
+        }
+        loadReview();
+      } catch(err){ toast(err.message); }
+    };
+  } catch(e){ card.classList.add('hidden'); }
+}
 async function loadSafety(){
   const source = $('#safetySource');
   const a = state.assessment;
