@@ -77,6 +77,30 @@ check("run keeps the live layout",
       os.path.isfile(os.path.join(RUN, ".data", "vouch.sqlite"))
       and os.path.isfile(os.path.join(RUN, "data", "safety", "note.txt")))
 
+print("rotation + tolerance")
+ROT = os.path.join(TMP, "rotbackups")
+os.makedirs(ROT, exist_ok=True)
+_db_src = os.path.join(LIVE, ".data", "vouch.sqlite")
+_r1 = backup.backup_tree([_db_src], ROT, keep=1)
+check("run lands in a timestamped folder",
+      os.path.isdir(_r1["dest"]), str(_r1))
+check("everything reported copied is on disk",
+      all(os.path.exists(os.path.join(_r1["dest"], rel))
+          for rel in _r1["copied"]))
+_probe = sqlite3.connect(os.path.join(_r1["dest"], ".data", "vouch.sqlite"))
+try:
+    _row = _probe.execute("SELECT v FROM t").fetchone()
+finally:
+    _probe.close()  # unclosed handle locks the file on Windows
+check("sqlite copy is consistent", _row[0] == "before")
+_r2 = backup.backup_tree([_db_src, os.path.join(LIVE, "nope.sqlite")],
+                         ROT, keep=1)
+check("missing source reported, not fatal",
+      len(_r2["missing"]) == 1, str(_r2))
+backup.backup_tree([_db_src], ROT, keep=1)
+check("rotation keeps one run", len(os.listdir(ROT)) == 1,
+      str(os.listdir(ROT)))
+
 print("restore")
 _seed("after")
 open(os.path.join(LIVE, ".data", "vouch.sqlite-wal"), "w").write("x")
