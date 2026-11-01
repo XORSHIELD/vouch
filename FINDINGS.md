@@ -130,7 +130,7 @@ python registry.py A11-0551 --manufacturer "Emzor Pharmaceutical Industries Ltd"
                                              -> mismatch     (copied-number pattern)
 python registry.py --name coartem            -> brand search
 python test_registry.py                      -> 21 checks, 0 failures
-python measure.py                            -> the numbers above
+python tools/measure.py                      -> the numbers above
 ```
 
 Every verdict carries: the evidence record, the signals that produced it, the

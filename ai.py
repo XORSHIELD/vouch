@@ -193,9 +193,12 @@ def _core(a) -> str:
         joined = names[0]
     elif len(names) == 2:
         joined = " and ".join(names)
-    else:
+    elif names:
         joined = ", ".join(names[:-1]) + " and " + names[-1]
-    text = (f" {joined} all reconcile." if names else " The checks that ran reconciled.")
+    else:
+        joined = ""
+    text = (f" {joined} all reconcile." if names else
+            " No check came back verified, so there is nothing to reconcile yet.")
     if getattr(a, "rail", "nafdac") == "barcode":
         text += (" A barcode is an identity check: it says the code belongs to "
                  "this product, not that the contents match the label.")
@@ -417,8 +420,14 @@ Rules, all absolute:
 
 def model_text(a, question: str = "") -> str:
     """Ask the model, then validate. Raises on any doubt."""
+    max_body = 256 * 1024  # explanations are short
     if not API_KEY:
         raise RuntimeError("no key")
+    if not (API_BASE.startswith("https://")
+            or API_BASE.startswith("http://localhost")
+            or API_BASE.startswith("http://127.0.0.1")):
+        raise RuntimeError(
+            "refusing to send the API key over unencrypted HTTP")
     import urllib.error
     import urllib.request
 
@@ -445,7 +454,10 @@ def model_text(a, question: str = "") -> str:
     )
     try:
         with urllib.request.urlopen(req, timeout=40) as resp:
-            payload = json.loads(resp.read().decode("utf-8", "replace"))
+            raw = resp.read(max_body + 1)
+        if len(raw) > max_body:
+            raise RuntimeError("model reply too large")
+        payload = json.loads(raw.decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         raise RuntimeError(f"model {exc.code}") from exc
     except Exception as exc:

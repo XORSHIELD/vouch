@@ -4,10 +4,16 @@ Measure the registry's own numbering inconsistency.
 This produces the headline number for the pitch: what fraction of official
 records cannot be found by a naive exact match on their alternate spelling.
 
-Run:  python measure.py [samples] [page]
+Run from the repo root:  python tools/measure.py [samples] [page]
 """
 
 from __future__ import annotations
+
+import os as _os
+import sys as _sys
+
+_sys.path.insert(0, _os.path.dirname(
+    _os.path.dirname(_os.path.abspath(__file__))))
 
 import json
 import random

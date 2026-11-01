@@ -18,13 +18,18 @@ jobs:
           python test_scan.py
           python test_sync.py
           python test_auth.py
+          python test_actions.py
+          python test_ai.py
           python test_backup.py
+          python test_barcode.py
+          python test_cases.py
           python test_seams.py
           python test_mas.py
           python test_safety.py
           python test_vision.py
           python test_server.py
           python test_agent.py
+      - run: python eval.py
       - run: |
           python server.py & echo $! > server.pid
           sleep 10

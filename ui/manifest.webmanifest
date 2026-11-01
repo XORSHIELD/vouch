@@ -1,0 +1,15 @@
+{
+  "name": "Vouch — check medicines and goods",
+  "short_name": "Vouch",
+  "description": "Verify packs against the NAFDAC register and follow through with cases.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B100D",
+  "theme_color": "#0D1310",
+  "icons": [
+    {"src": "/ui/apple-touch-icon.png", "sizes": "180x180", "type": "image/png"},
+    {"src": "/ui/favicon.png", "sizes": "64x64", "type": "image/png"},
+    {"src": "/ui/logo.png", "sizes": "any", "type": "image/png"}
+  ]
+}

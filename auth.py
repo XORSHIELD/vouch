@@ -54,6 +54,10 @@ def _db() -> sqlite3.Connection:
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     con = sqlite3.connect(DB_PATH, timeout=10)
     con.row_factory = sqlite3.Row
+    try:
+        con.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        pass
     con.executescript(SCHEMA)
     cols = [r[1] for r in con.execute("PRAGMA table_info(users)")]
     if "email" not in cols:

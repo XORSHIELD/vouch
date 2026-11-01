@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="/ui/favicon.png" />
 <link rel="apple-touch-icon" href="/ui/apple-touch-icon.png" />
+<link rel="manifest" href="/ui/manifest.webmanifest" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Vouch" />
 <meta name="theme-color" content="#0D1310" id="metaTheme" />
 <script>try{if((localStorage.getItem("vouch.theme")||"dark")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
 <title>Vouch — Check it. Chase it. | Medicine Verification for Nigeria</title>
@@ -993,7 +997,7 @@
   /* ---- app shell: sidebar + chat-first main ---- */
   .app-shell{display:flex;align-items:stretch;min-height:calc(100vh - 69px)}
   aside.side{width:248px;flex:0 0 248px;background:var(--card);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:69px;height:calc(100vh - 69px);overflow:auto}
-  aside.side nav.tabs{display:flex;flex-direction:column;gap:4px;margin:0}
+  aside.side nav.tabs{display:flex;flex-direction:column;gap:4px;margin:0;background:transparent;border:0;padding:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
   aside.side nav.tabs button{text-align:left;border-radius:10px;padding:10px 14px;font-size:15px}
   .side-foot{margin-top:auto;padding-top:14px}
   .app-main{flex:1;min-width:0}

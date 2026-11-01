@@ -47,14 +47,18 @@ def verify(manufacturer: str, serial: str) -> dict:
     body = json.dumps({"manufacturer": manufacturer,
                        "serial": serial}).encode("utf-8")
     headers = {"Content-Type": "application/json",
-               "User-Agent": "Vouch/0.1 manufacturer-check"}
+               "User-Agent": "Vouch/0.4 manufacturer-check"}
     key = os.environ.get("VOUCH_MFR_KEY") or ""
     if key:
         headers["Authorization"] = "Bearer " + key
     req = urllib.request.Request(url, data=body, headers=headers)
+    max_body = 256 * 1024
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-            payload = json.loads(resp.read().decode("utf-8", "replace"))
+            raw = resp.read(max_body + 1)
+        if len(raw) > max_body:
+            raise ValueError("provider reply too large")
+        payload = json.loads(raw.decode("utf-8", "replace"))
     except Exception as exc:
         return {"connected": True, "verdict": "unknown",
                 "detail": f"The manufacturer service failed: {exc}",

@@ -21,6 +21,7 @@ os.environ["VOUCH_CACHE_DIR"] = os.path.join(TMP, "cache")
 
 import agent
 import ai
+import barcode as B
 import registry as R
 
 fails = 0
@@ -180,6 +181,44 @@ finally:
     agent._chat = real_chat
     agent.API_KEY = _old_key
     ai.API_KEY = real_ai_key
+
+print("text mining")
+mine = agent._pack_from_text
+got = mine("NAFDAC A11-0551 please")
+check("NAFDAC number mined",
+      got.nafdac_number == "A11-0551" and not got.barcode,
+      f"{got.nafdac_number!r}/{got.barcode!r}")
+got = mine("B40262")
+check("compact number mined", got.nafdac_number == "B40262",
+      repr(got.nafdac_number))
+got = mine("call 08031234567 about this")
+check("phone number is not a NAFDAC number",
+      not got.nafdac_number and not got.barcode,
+      f"{got.nafdac_number!r}/{got.barcode!r}")
+got = mine("expires 2027, batch 5")
+check("years are not numbers", not got.nafdac_number and not got.barcode,
+      f"{got.nafdac_number!r}/{got.barcode!r}")
+got = mine("check 5010162000164")
+check("barcode mined from text",
+      got.barcode == "5010162000164" and not got.nafdac_number,
+      f"{got.nafdac_number!r}/{got.barcode!r}")
+
+print("chat barcode rail (primed cache, no network)")
+item = B._from_product(
+    "4006381333931",
+    {"product_name": "Test Biscuits", "brands": "TestCo"},
+    "openfoodfacts", "https://world.openfoodfacts.org")
+B._cache_put("4006381333931", item.to_dict())
+out = agent.chat("check barcode 4006381333931")
+check("chat routes a barcode to the barcode rail",
+      out["assessment"]["rail"] == "barcode"
+      and out["assessment"]["band"] == "incomplete",
+      f"{out['assessment']['rail']}/{out['assessment']['band']}")
+out = agent.chat("call 08031234567")
+check("chat ignores a phone number",
+      out["assessment"]["input"]["nafdac_number"] == ""
+      and out["assessment"]["input"]["barcode"] == "",
+      str(out["assessment"]["input"]))
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

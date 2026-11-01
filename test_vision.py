@@ -7,8 +7,10 @@ Run:  python test_vision.py
 
 from __future__ import annotations
 
+import io
 import json
-import sys
+import urllib.error
+import urllib.request
 
 import vision
 
@@ -23,36 +25,42 @@ def check(label: str, ok: bool, detail: str = "") -> None:
         fails += 1
 
 
-class _Resp:
-    def __init__(self, status: int = 200, body: dict | None = None,
-                 text: str = "") -> None:
-        self.status_code = status
-        self._body = body
-        self.text = text or json.dumps(body or {})
+class _FakeResp:
+    """Stub for a urlopen response. Each test sets _FakeResp.next."""
 
-    def json(self) -> dict:
-        if isinstance(self._body, Exception):
-            raise self._body
-        return self._body or {}
-
-
-class _Requests:
-    """Stub for the requests module. Each test sets _Requests.next."""
     next: object = None
     posted: dict = {}
 
-    @classmethod
-    def post(cls, url: str, headers: dict | None = None,
-             json: dict | None = None, timeout: int = 0):  # noqa: A002
-        cls.posted = {"url": url, "headers": headers,
-                      "json": json, "timeout": timeout}
-        if isinstance(cls.next, Exception):
-            raise cls.next
-        return cls.next
+    def __init__(self, payload: bytes) -> None:
+        self._payload = payload
+
+    def read(self, n: int = -1) -> bytes:
+        return self._payload[:n] if n is not None and n >= 0 else self._payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
 
 
-_real_requests = sys.modules.get("requests")
-sys.modules["requests"] = _Requests  # type: ignore
+def _fake_urlopen(req, timeout=None):
+    _FakeResp.posted = {"url": req.full_url,
+                        "headers": dict(req.header_items()),
+                        "json": json.loads(req.data.decode()),
+                        "timeout": timeout}
+    if isinstance(_FakeResp.next, Exception):
+        raise _FakeResp.next
+    return _FakeResp(_FakeResp.next)
+
+
+def _canned(content: str) -> bytes:
+    return json.dumps(
+        {"choices": [{"message": {"content": content}}]}).encode()
+
+
+_real_urlopen = urllib.request.urlopen
+urllib.request.urlopen = _fake_urlopen
 _old_key = vision.API_KEY
 vision.API_KEY = "test-key"
 
@@ -66,8 +74,7 @@ try:
             "pin": "abcd 1234", "shortcode": "1393 ext",
             "strength": "500 mg", "pack_size": "1 x 100",
             "legible": True, "notes": ""}
-    _Requests.next = _Resp(
-        200, {"choices": [{"message": {"content": json.dumps(body)}}]})
+    _FakeResp.next = _canned(json.dumps(body))
     ex = vision._extract_meta(b"fake-bytes", "image/png")
     check("fields transcribed",
           ex.nafdac_number == "A11-0551" and ex.batch == "EMZ7781"
@@ -82,16 +89,15 @@ try:
     check("confident when legible", ex.confidence == 0.85,
           str(ex.confidence))
     check("key sent as bearer",
-          (_Requests.posted["headers"] or {}).get("Authorization")
+          (_FakeResp.posted["headers"] or {}).get("Authorization")
           == "Bearer test-key")
     check("standard-tier model only",
-          _Requests.posted["json"]["model"] == "muse-spark-1.3"
-          and _Requests.posted["url"].endswith("/chat/completions"),
-          str(_Requests.posted["json"].get("model")))
+          _FakeResp.posted["json"]["model"] == "muse-spark-1.3"
+          and _FakeResp.posted["url"].endswith("/chat/completions"),
+          str(_FakeResp.posted["json"].get("model")))
 
     body["legible"] = False
-    _Requests.next = _Resp(
-        200, {"choices": [{"message": {"content": json.dumps(body)}}]})
+    _FakeResp.next = _canned(json.dumps(body))
     ex = vision._extract_meta(b"x", "image/png")
     check("illegible lowers confidence",
           ex.confidence == 0.35
@@ -99,27 +105,28 @@ try:
           str(ex.warnings))
 
     print("meta failures stay honest")
-    _Requests.next = _Resp(401, {}, "unauthorized")
+    _FakeResp.next = urllib.error.HTTPError(
+        "http://127.0.0.1:9/x", 401, "Unauthorized", {}, None)
     try:
         vision._extract_meta(b"x", "image/png")
         check("401 names the key", False)
     except vision.VisionUnavailable as exc:
         check("401 names the key", "401" in str(exc), str(exc))
-    _Requests.next = _Resp(500, {}, "boom")
+    _FakeResp.next = urllib.error.HTTPError(
+        "http://127.0.0.1:9/x", 500, "boom", {}, io.BytesIO(b"boom"))
     try:
         vision._extract_meta(b"x", "image/png")
         check("500 carries the status", False)
     except vision.VisionUnavailable as exc:
         check("500 carries the status", "500" in str(exc), str(exc))
-    _Requests.next = RuntimeError("dns down")
+    _FakeResp.next = RuntimeError("dns down")
     try:
         vision._extract_meta(b"x", "image/png")
         check("network failure says so", False)
     except vision.VisionUnavailable as exc:
         check("network failure says so",
               "Could not reach" in str(exc), str(exc))
-    _Requests.next = _Resp(
-        200, {"choices": [{"message": {"content": "not json"}}]})
+    _FakeResp.next = _canned("not json")
     try:
         vision._extract_meta(b"x", "image/png")
         check("bad payload says so", False)
@@ -166,10 +173,7 @@ try:
         check("unknown fixture refused", True)
 finally:
     vision.API_KEY = _old_key
-    if _real_requests is None:
-        sys.modules.pop("requests", None)
-    else:
-        sys.modules["requests"] = _real_requests
+    urllib.request.urlopen = _real_urlopen
 
 print("photo variants")
 import visval

@@ -42,8 +42,8 @@ BAND_INCOMPLETE = "incomplete"
 DISCLOSURE = (
     "Vouch is evidence assistance, not a regulator. It reports what it could "
     "check and what it could not. It offers no certification, and it does not "
-    "declare a product fake. A 'high-risk' result means: preserve the "
-    "pack, keep the receipt, and let NAFDAC decide."
+    "declare what is inside the pack. A 'high-risk' result means: preserve "
+    "the pack, keep the receipt, and let NAFDAC decide."
 )
 
 

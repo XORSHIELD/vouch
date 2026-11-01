@@ -34,6 +34,20 @@ eq("bare year", E.parse_date("2027").precision, "year")
 eq("garbage", E.parse_date("BATCH 99X"), "BATCH 99X" and E.parse_date("BATCH 99X"))
 yes("nothing parses from junk", E.parse_date("XYZ") is None, str(E.parse_date("XYZ")))
 
+print("\nday/month 2-digit years")
+d = E.parse_date("15/03/27")
+eq("15/03/27 day-first", (d.year, d.month, d.day, d.precision), (2027, 3, 15, "day"))
+d = E.parse_date("EXP 15/03/27")
+eq("labelled 15/03/27", (d.year, d.month, d.day), (2027, 3, 15))
+d = E.parse_date("03/15/27")
+eq("03/15/27 month-first fallback", (d.year, d.month, d.day), (2027, 3, 15))
+yes("US-order flagged ambiguous", "ambiguous" in (d.note or "").lower(), d.note or "")
+
+print("\nimprecise dates are not inconsistent")
+a = E.assess_expiry("2026", "MFG 06/2026", today=TODAY)
+yes("year expiry with mid-year mfg is consistent",
+    not any("inconsistent" in s for s in a.signals), str(a.signals))
+
 print("\nexpiry states")
 a = E.assess_expiry("EXP 02/2026", today=TODAY)
 eq("past date is expired", a.state, E.EXPIRED)

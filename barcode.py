@@ -221,9 +221,18 @@ def _cache_path() -> str:
     return os.path.join(CACHE_DIR, "barcodes.sqlite")
 
 
+def _connect() -> sqlite3.Connection:
+    con = sqlite3.connect(_cache_path(), timeout=10)
+    try:
+        con.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        pass
+    return con
+
+
 def _cache_get(code: str) -> dict | None:
     try:
-        con = sqlite3.connect(_cache_path())
+        con = _connect()
         try:
             con.execute(
                 "CREATE TABLE IF NOT EXISTS items ("
@@ -243,7 +252,7 @@ def _cache_get(code: str) -> dict | None:
 
 def _cache_put(code: str, body: dict) -> None:
     try:
-        con = sqlite3.connect(_cache_path())
+        con = _connect()
         try:
             con.execute(
                 "CREATE TABLE IF NOT EXISTS items ("
@@ -285,9 +294,13 @@ def demos() -> list[dict]:
 # --------------------------------------------------------------------------
 
 def _fetch(url: str) -> dict:
+    max_body = 1024 * 1024  # product records are kilobytes
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return json.loads(resp.read().decode("utf-8", "replace"))
+        raw = resp.read(max_body + 1)
+    if len(raw) > max_body:
+        raise BarcodeUnavailable("product database reply too large")
+    return json.loads(raw.decode("utf-8", "replace"))
 
 
 def _query(base: str, code: str) -> dict | None:
@@ -373,6 +386,12 @@ def lookup(code: str, offline: bool = False, use_fixtures: bool = True) -> Resul
 
     if tried and len(tried) == len(SOURCES):
         raise BarcodeUnavailable("; ".join(tried))
+    if tried:
+        signals.append(
+            "Only some product databases answered "
+            f"({'; '.join(tried)[:300]}). A record in one that could "
+            "not be reached would have been missed."
+        )
 
     if valid is False:
         signals.append(

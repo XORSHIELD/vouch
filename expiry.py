@@ -114,6 +114,21 @@ def parse_date(text: str | None, today: date | None = None) -> ParsedDate | None
             return ParsedDate(y, a, b, m.group(0), "day", ambiguous=True,
                               note="month/day order")
 
+    # 4b. Day-or-month / month / two-digit year: "15/03/27", "03/15/27".
+    m = re.search(r"\b(\d{1,2})\s*[-/ ]\s*(\d{1,2})\s*[-/ ]\s*(\d{2})\b", s)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        y, _guessed = _fix_year(int(m.group(3)))
+        if 1 <= a <= 31 and 1 <= b <= 12:
+            return ParsedDate(y, b, a, m.group(0), "day", ambiguous=True,
+                              note="day/month order assumed (Nigerian "
+                              "convention); two-digit year expanded "
+                              "automatically")
+        if 1 <= b <= 31 and 1 <= a <= 12:
+            return ParsedDate(y, a, b, m.group(0), "day", ambiguous=True,
+                              note="month/day order is ambiguous; two-digit "
+                              "year expanded automatically")
+
     # 5. Month / year: "03/2027"
     m = re.search(r"\b(\d{1,2})\s*[-/ ]\s*(20\d{2}|19\d{2})\b", s)
     if m:
@@ -185,8 +200,8 @@ def assess_expiry(
     attention_days: int = 90,
 ) -> ExpiryAssessment:
     today = today or date.today()
-    exp = parse_labelled(printed_expiry, EXP_LABELS) or parse_date(printed_expiry)
-    mfg = parse_labelled(printed_mfg, MFG_LABELS) or parse_date(printed_mfg)
+    exp = parse_labelled(printed_expiry, EXP_LABELS)
+    mfg = parse_labelled(printed_mfg, MFG_LABELS)
 
     signals: list[str] = []
 
@@ -221,12 +236,13 @@ def assess_expiry(
                          "made after and expiring before."],
             )
         months = (exp.year - mfg.year) * 12 + ((exp.month or 1) - (mfg.month or 1))
+        # No negative branch: true inversions already returned above, and
+        # with imprecise dates the month arithmetic can go negative on
+        # perfectly consistent packs.
         if months > 72:
             signals.append(
                 f"Stated shelf life is {months} months, unusually long for a medicine."
             )
-        elif months < 0:
-            signals.append("Dates are internally inconsistent.")
 
     days_left = (exp.end_of_period() - today).days
 

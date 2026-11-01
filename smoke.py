@@ -85,6 +85,35 @@ status, who = call("/api/auth/me")
 ok(status == 200 and who.get("user", {}).get("username") == "smoke",
    "session works", str(who)[:120])
 
+print("\nagent chat")
+st, b = call("/api/agent/chat", "POST",
+             {"message": "NAFDAC A99-9999, open a case"})
+ok(st == 200 and (b.get("proposal") or {}).get("action") == "open_case"
+   and b.get("provider"), "agent proposes a case", f"{st} {b}"[:300])
+st, b = call("/api/agent/chat", "POST", {"message": "hello there"})
+ok(st == 200 and not b.get("proposal") and b.get("answer"),
+   "plain chat answers", f"{st}")
+_old_token = TOKEN
+TOKEN = ""
+st, b = call("/api/agent/chat", "POST",
+             {"confirmed_action": {"action": "open_case", "pack": {}}})
+ok(st == 401, "confirm needs sign-in", f"{st}")
+TOKEN = _old_token
+
+print("\nemail sign-in")
+call("/api/auth/register", "POST", {"username": "smoke-mail",
+                                    "password": "smoke-mail-1",
+                                    "email": "smoke@example.com"})
+st, b = call("/api/auth/login", "POST", {"username": "smoke@example.com",
+                                         "password": "smoke-mail-1"})
+ok(st == 200 and b.get("token"), "login with email", f"{st}")
+
+print("\nask endpoint")
+st, b = call("/api/ask", "POST", {"nafdac_number": "A11-0551",
+                                  "question": "is it ok?"})
+ok(st == 200 and b.get("answer") and b.get("guardrails") == [],
+   "ask answers cleanly", f"{st} {b}"[:300])
+
 print("\ndemo packs")
 status, packs = call("/api/demo/packs")
 keys = [p["key"] for p in packs.get("packs", [])]

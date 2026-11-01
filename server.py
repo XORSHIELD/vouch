@@ -382,7 +382,7 @@ def barcode_demos() -> dict:
 
 
 @app.post("/api/demo/barcode")
-def demo_barcode(body: BarcodeDemoBody) -> dict:
+def demo_barcode(body: BarcodeDemoBody, request: Request) -> dict:
     demo = next((d for d in B.demos() if d.get("key") == body.key), None)
     if demo is None:
         raise HTTPException(404, f"No barcode demo '{body.key}'.")
@@ -398,7 +398,15 @@ def demo_barcode(body: BarcodeDemoBody) -> dict:
     assessment = _assess(pack)
     out = {"assessment": assessment.to_dict(), "demo": demo, "pack": p}
     if body.create_case:
-        case = cases.create_case(pack, assessment)
+        opener = None
+        try:
+            opener = auth.me(auth.bearer_token(request))
+        except Exception:
+            opener = None
+        if not opener:
+            raise HTTPException(401, "Sign in to open cases.")
+        case = cases.create_case(pack, assessment,
+                                 username=opener["username"])
         for doc in actions.all_documents(pack, assessment).values():
             cases.attach_document(case["id"], doc)
         out["case_id"] = case["id"]
@@ -499,6 +507,11 @@ class AuthBody(BaseModel):
     email: str = ""
 
 
+class RoleBody(BaseModel):
+    username: str = ""
+    role: str = ""
+
+
 @app.post("/api/auth/register")
 def auth_register(body: AuthBody) -> dict:
     """Create a consumer account, with an optional email for sign-in."""
@@ -529,13 +542,36 @@ def auth_me(user: dict = Depends(auth.require_user)) -> dict:
     return {"user": user}
 
 
+@app.post("/api/auth/role")
+def auth_set_role(body: RoleBody,
+                  user: dict = Depends(auth.require_admin)) -> dict:
+    """Grant a role. Admins only."""
+    if not auth.set_role(body.username, body.role):
+        raise HTTPException(400, "Unknown user or role.")
+    audit.log("role_changed", user.get("username", ""),
+              f"{body.username} -> {body.role}")
+    return {"ok": True, "username": (body.username or "").strip().lower(),
+            "role": body.role}
+
+
+def _owned_case(case_id: str, user: dict) -> dict:
+    """One case, or 404 when it is missing or belongs to someone else."""
+    c = cases.get_case(case_id)
+    if not c or not cases.can_access(c.get("username", ""),
+                                      user.get("username", ""),
+                                      user.get("role", "")):
+        raise HTTPException(404, "No such case.")
+    return c
+
+
 @app.post("/api/cases")
 def create_case(body: PackBody, user: dict = Depends(auth.require_user)) -> dict:
     pack = body.to_pack()
     assessment = _assess(
         pack, seen_batches=cases.seen_batches_for(pack.nafdac_number)
     )
-    case = cases.create_case(pack, assessment)
+    case = cases.create_case(pack, assessment,
+                               username=user.get("username", ""))
     docs = actions.all_documents(pack, assessment)
     audit.log("case_opened", user.get("username", ""), case["id"])
     for doc in docs.values():
@@ -545,23 +581,20 @@ def create_case(body: PackBody, user: dict = Depends(auth.require_user)) -> dict
 
 @app.get("/api/cases")
 def list_cases(status: Optional[str] = None, limit: int = 50, user: dict = Depends(auth.require_user)) -> dict:
-    return {"cases": cases.list_cases(limit=limit, status=status),
+    return {"cases": cases.list_cases(limit=limit, status=status,
+                                        username=user["username"],
+                                        role=user["role"]),
             "stats": cases.stats()}
 
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str, user: dict = Depends(auth.require_user)) -> dict:
-    c = cases.get_case(case_id)
-    if not c:
-        raise HTTPException(404, "No such case.")
-    return c
+    return _owned_case(case_id, user)
 
 
 @app.post("/api/cases/{case_id}/documents/{kind}")
 def make_document(case_id: str, kind: str, user: dict = Depends(auth.require_user)) -> dict:
-    c = cases.get_case(case_id)
-    if not c:
-        raise HTTPException(404, "No such case.")
+    c = _owned_case(case_id, user)
     a = c.get("assessment") or {}
     payload = a.get("input") or {}
     pack = PackInput(**{k: payload.get(k, "") for k in PackInput().__dict__})
@@ -581,9 +614,7 @@ def make_document(case_id: str, kind: str, user: dict = Depends(auth.require_use
 
 @app.get("/api/cases/{case_id}/documents/{kind}", response_class=PlainTextResponse)
 def download_document(case_id: str, kind: str, user: dict = Depends(auth.require_user)) -> str:
-    c = cases.get_case(case_id)
-    if not c:
-        raise HTTPException(404, "No such case.")
+    c = _owned_case(case_id, user)
     a = c.get("assessment") or {}
     payload = a.get("input") or {}
     pack = PackInput(**{k: payload.get(k, "") for k in PackInput().__dict__})
@@ -601,6 +632,7 @@ def download_document(case_id: str, kind: str, user: dict = Depends(auth.require
 
 @app.post("/api/cases/{case_id}/close")
 def close_case(case_id: str, body: CloseBody, user: dict = Depends(auth.require_user)) -> dict:
+    _owned_case(case_id, user)
     c = cases.close_case(case_id, body.outcome, body.status)
     audit.log("case_closed", user.get("username", ""), case_id)
     if not c:
@@ -610,35 +642,35 @@ def close_case(case_id: str, body: CloseBody, user: dict = Depends(auth.require_
 
 @app.post("/api/cases/{case_id}/event")
 def add_event(case_id: str, body: EventBody, user: dict = Depends(auth.require_user)) -> dict:
-    if not cases.get_case(case_id):
-        raise HTTPException(404, "No such case.")
+    _owned_case(case_id, user)
     cases.add_event(case_id, body.kind, body.note)
     return cases.get_case(case_id)
 
 
 @app.get("/api/cluster")
 def get_cluster(nafdac: str = "", batch: str = "", user: dict = Depends(auth.require_user)) -> dict:
-    return cases.cluster(nafdac, batch)
+    return cases.cluster(nafdac, batch, username=user["username"],
+                         role=user["role"])
 
 
 @app.get("/api/queue")
 def get_queue(limit: int = 50, user: dict = Depends(auth.require_user)) -> dict:
     """What is due now. The follow-through half of the product."""
-    return {"queue": cases.queue(limit=limit), "stats": cases.stats()}
+    return {"queue": cases.queue(limit=limit, username=user["username"],
+                                 role=user["role"]),
+            "stats": cases.stats()}
 
 
 @app.post("/api/cases/{case_id}/steps/{day}")
 def complete_step(case_id: str, day: int, body: EventBody | None = None, user: dict = Depends(auth.require_user)) -> dict:
-    if not cases.get_case(case_id):
-        raise HTTPException(404, "No such case.")
+    _owned_case(case_id, user)
     c = cases.mark_step(case_id, day, (body.note if body else "") or "")
     return c or {}
 
 
 @app.post("/api/cases/{case_id}/snooze")
 def snooze_case(case_id: str, days: int = 3, user: dict = Depends(auth.require_user)) -> dict:
-    if not cases.get_case(case_id):
-        raise HTTPException(404, "No such case.")
+    _owned_case(case_id, user)
     return cases.snooze(case_id, days) or {}
 
 
@@ -652,7 +684,7 @@ def demo_packs() -> dict:
 
 
 @app.post("/api/demo/seed")
-def demo_seed(user: dict = Depends(auth.require_user)) -> dict:
+def demo_seed(user: dict = Depends(auth.require_admin)) -> dict:
     """Create three cases with different pasts, so the follow-up screen can be
     shown honestly without waiting a week.
 
@@ -675,7 +707,8 @@ def demo_seed(user: dict = Depends(auth.require_user)) -> dict:
         ex = vision.from_fixture(key)
         pack = PackInput(flags=f.get("flags", []), **ex.to_pack_kwargs())
         a = _assess(pack)
-        c = cases.create_case(pack, a, opened_on=date.today() - timedelta(days=age))
+        c = cases.create_case(pack, a, opened_on=date.today() - timedelta(days=age),
+                                username=user["username"])
         for doc in actions.all_documents(pack, a).values():
             cases.attach_document(c["id"], doc)
         for day in done_days:
@@ -685,7 +718,7 @@ def demo_seed(user: dict = Depends(auth.require_user)) -> dict:
 
 
 @app.post("/api/demo/run")
-def demo_run(body: DemoBody) -> dict:
+def demo_run(body: DemoBody, request: Request) -> dict:
     try:
         ex = vision.from_fixture(body.key)
     except vision.VisionUnavailable as exc:
@@ -695,7 +728,15 @@ def demo_run(body: DemoBody) -> dict:
     assessment = _assess(pack, seen_batches=cases.seen_batches_for(pack.nafdac_number))
     out = {"assessment": assessment.to_dict(), "pack": f}
     if body.create_case:
-        case = cases.create_case(pack, assessment)
+        opener = None
+        try:
+            opener = auth.me(auth.bearer_token(request))
+        except Exception:
+            opener = None
+        if not opener:
+            raise HTTPException(401, "Sign in to open cases.")
+        case = cases.create_case(pack, assessment,
+                                 username=opener["username"])
         for doc in actions.all_documents(pack, assessment).values():
             cases.attach_document(case["id"], doc)
         out["case_id"] = case["id"]
@@ -704,7 +745,7 @@ def demo_run(body: DemoBody) -> dict:
 
 
 @app.post("/api/demo/reset")
-def demo_reset(user: dict = Depends(auth.require_user)) -> dict:
+def demo_reset(user: dict = Depends(auth.require_admin)) -> dict:
     cases.reset()
     safety.reset()
     audit.log("demo_reset", user.get("username", ""), "")
@@ -810,7 +851,7 @@ def registry_sync_status() -> dict:
 
 
 @app.post("/api/registry/sync")
-def registry_sync_now(bg: BackgroundTasks, user: dict = Depends(auth.require_user)) -> dict:
+def registry_sync_now(bg: BackgroundTasks, user: dict = Depends(auth.require_admin)) -> dict:
     """Start a background sync of the whole Greenbook listing. Resumable."""
     if R.sync_running():
         return {"started": False, "status": R.sync_status()}
@@ -1001,4 +1042,5 @@ if __name__ == "__main__":
     auth.ensure_admin()
     _maybe_auto_sync()
     port = int(os.environ.get("VOUCH_PORT", "8077"))
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+    host = os.environ.get("VOUCH_HOST", "127.0.0.1")
+    uvicorn.run(app, host=host, port=port, log_level="info")

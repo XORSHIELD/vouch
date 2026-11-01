@@ -57,7 +57,8 @@ def init() -> None:
                 status TEXT NOT NULL DEFAULT 'open',
                 outcome TEXT,
                 next_action_at TEXT,
-                payload TEXT NOT NULL
+                payload TEXT NOT NULL,
+                username TEXT NOT NULL DEFAULT ''
             );
             CREATE TABLE IF NOT EXISTS documents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,6 +81,12 @@ def init() -> None:
             CREATE INDEX IF NOT EXISTS idx_events_case ON events(case_id);
             """
         )
+        cols = [r[1] for r in con.execute("PRAGMA table_info(cases)")]
+        if "username" not in cols:
+            con.execute(
+                "ALTER TABLE cases ADD COLUMN username TEXT NOT NULL DEFAULT ''")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_cases_user"
+                    " ON cases(username)")
         con.commit()
     finally:
         con.close()
@@ -89,11 +96,24 @@ def new_id() -> str:
     return "VC-" + uuid.uuid4().hex[:6].upper()
 
 
+def can_access(owner: str, username: str, role: str) -> bool:
+    """Who may read or touch one case. Consumers own their cases;
+    inspectors and admins read everything. Rows from before ownership
+    (owner "") stay visible while a household migrates."""
+    if (role or "") in ("inspector", "admin"):
+        return True
+    if not (owner or ""):
+        return True
+    return owner == (username or "")
+
+
 def create_case(pack: PackInput, assessment: Assessment,
-                opened_on: date | None = None) -> dict:
+                opened_on: date | None = None,
+                username: str = "") -> dict:
     """Open a case. `opened_on` lets a rehearsal create history that is already
     aged, so the follow-up screen can be shown without waiting a week."""
     init()
+    username = (username or "").strip().lower()
     cid = new_id()
     opened = opened_on or date.today()
     now = datetime.combine(opened, datetime.min.time()).replace(hour=9).isoformat(
@@ -107,13 +127,14 @@ def create_case(pack: PackInput, assessment: Assessment,
         con.execute(
             """INSERT INTO cases (id, created_at, band, score, headline, nafdac,
                    product, manufacturer, batch, seller, location, price,
-                   exp_date, status, next_action_at, payload)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   exp_date, status, next_action_at, payload, username)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 cid, now, assessment.band, assessment.score, assessment.headline,
                 pack.nafdac_number, pack.product_name, pack.manufacturer,
                 pack.batch, pack.seller, pack.location, pack.price, pack.exp_date,
                 "open", next_action, json.dumps(assessment.to_dict(), default=str),
+                username,
             ),
         )
         con.execute(
@@ -280,11 +301,13 @@ def snooze(case_id: str, days: int = 3) -> dict | None:
     return get_case(case_id)
 
 
-def queue(limit: int = 50) -> list[dict]:
+def queue(limit: int = 50, username: str | None = None,
+          role: str | None = None) -> list[dict]:
     """What a user actually needs on opening the app: what is due now."""
     today = date.today().isoformat()
     out = []
-    for c in list_cases(limit=limit, status="open"):
+    for c in list_cases(limit=limit, status="open",
+                        username=username, role=role):
         full = get_case(c["id"])
         if not full:
             continue
@@ -311,24 +334,28 @@ def queue(limit: int = 50) -> list[dict]:
 
 
 
-def list_cases(limit: int = 50, status: str | None = None) -> list[dict]:
+def list_cases(limit: int = 50, status: str | None = None,
+               username: str | None = None,
+               role: str | None = None) -> list[dict]:
     init()
+    scoped = username is not None and (role or "") not in ("inspector",
+                                                            "admin")
+    clauses, args = [], []
+    if status:
+        clauses.append("status = ?")
+        args.append(status)
+    if scoped:
+        clauses.append("(username = ? OR username = '')")
+        args.append(username)
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     con = _connect()
     try:
-        if status:
-            rows = con.execute(
-                "SELECT id, created_at, band, score, headline, nafdac, product, "
-                "batch, seller, status, next_action_at FROM cases "
-                "WHERE status = ? ORDER BY created_at DESC LIMIT ?",
-                (status, limit),
-            ).fetchall()
-        else:
-            rows = con.execute(
-                "SELECT id, created_at, band, score, headline, nafdac, product, "
-                "batch, seller, status, next_action_at FROM cases "
-                "ORDER BY created_at DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
+        rows = con.execute(
+            "SELECT id, created_at, band, score, headline, nafdac, product, "
+            "batch, seller, status, next_action_at FROM cases "
+            + where + " ORDER BY created_at DESC LIMIT ?",
+            (*args, limit),
+        ).fetchall()
     finally:
         con.close()
     today = date.today().isoformat()
@@ -347,10 +374,12 @@ def close_case(case_id: str, outcome: str, status: str = "closed") -> dict | Non
     init()
     con = _connect()
     try:
-        con.execute(
+        cur = con.execute(
             "UPDATE cases SET status = ?, outcome = ?, next_action_at = NULL "
             "WHERE id = ?", (status, outcome, case_id),
         )
+        if cur.rowcount == 0:
+            return None
         con.execute(
             "INSERT INTO events (case_id, at, kind, note) VALUES (?,?,?,?)",
             (case_id, datetime.now().isoformat(timespec="seconds"),
@@ -367,6 +396,8 @@ def close_case(case_id: str, outcome: str, status: str = "closed") -> dict | Non
 # --------------------------------------------------------------------------
 
 def seen_batches_for(nafdac_number: str) -> list[str]:
+    # Deliberately global: batch reuse across reporters is the signal, and
+    # the engine only learns that a batch string was seen, never by whom.
     if not nafdac_number:
         return []
     init()
@@ -381,24 +412,32 @@ def seen_batches_for(nafdac_number: str) -> list[str]:
     return [r["batch"] for r in rows]
 
 
-def cluster(nafdac_number: str = "", batch: str = "") -> dict:
+def cluster(nafdac_number: str = "", batch: str = "",
+            username: str | None = None,
+            role: str | None = None) -> dict:
     """How many times has this number or batch been reported?"""
     init()
+    scoped = username is not None and (role or "") not in ("inspector",
+                                                            "admin")
+    owner = " AND (username = ? OR username = '')" if scoped else ""
+    owner_args = (username,) if scoped else ()
     con = _connect()
     try:
         if nafdac_number:
             by_number = con.execute(
                 "SELECT COUNT(*) c, COUNT(DISTINCT batch) b, "
-                "COUNT(DISTINCT location) l FROM cases WHERE nafdac = ?",
-                (nafdac_number,),
+                "COUNT(DISTINCT location) l FROM cases WHERE nafdac = ?"
+                + owner,
+                (nafdac_number, *owner_args),
             ).fetchone()
         else:
             by_number = None
         if batch:
             by_batch = con.execute(
                 "SELECT COUNT(*) c, COUNT(DISTINCT location) l, "
-                "GROUP_CONCAT(DISTINCT location) locs FROM cases WHERE batch = ?",
-                (batch,),
+                "GROUP_CONCAT(DISTINCT location) locs FROM cases WHERE batch = ?"
+                + owner,
+                (batch, *owner_args),
             ).fetchone()
         else:
             by_batch = None

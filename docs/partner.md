@@ -10,7 +10,7 @@ Vouch POSTs one serial at a time:
 ```
 POST {VOUCH_MFR_URL}                    Content-Type: application/json
 Authorization: Bearer {VOUCH_MFR_KEY}   (sent only when the key is set)
-User-Agent: Vouch/0.1 manufacturer-check
+User-Agent: Vouch/0.4 manufacturer-check
 
 {"manufacturer": "ACME Ltd", "serial": "SN-1"}
 ```

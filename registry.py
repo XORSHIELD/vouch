@@ -201,11 +201,15 @@ def _cache_path() -> str:
 
 
 def _db() -> sqlite3.Connection:
-    con = sqlite3.connect(_cache_path())
+    con = sqlite3.connect(_cache_path(), timeout=10)
     con.execute(
         "CREATE TABLE IF NOT EXISTS lookups ("
         "  q TEXT PRIMARY KEY, at REAL NOT NULL, body TEXT NOT NULL)"
     )
+    try:
+        con.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        pass
     return con
 
 
@@ -293,9 +297,13 @@ def _fetch(term: str, length: int, start: int) -> dict:
             "Accept": "application/json",
         },
     )
+    max_body = 8 * 1024 * 1024  # listing pages are big; gigabytes are not
     try:
         with urllib.request.urlopen(req, timeout=45) as resp:
-            return json.loads(resp.read().decode("utf-8", "replace"))
+            raw = resp.read(max_body + 1)
+        if len(raw) > max_body:
+            raise RegistryUnavailable("Greenbook reply too large")
+        return json.loads(raw.decode("utf-8", "replace"))
     except (urllib.error.URLError, TimeoutError,
             json.JSONDecodeError) as exc:
         raise RegistryUnavailable(str(exc)) from exc

@@ -81,8 +81,8 @@ class _FakeResp:
     def __init__(self, payload: bytes) -> None:
         self._payload = payload
 
-    def read(self) -> bytes:
-        return self._payload
+    def read(self, n: int = -1) -> bytes:
+        return self._payload[:n] if n is not None and n >= 0 else self._payload
 
     def __enter__(self):
         return self
@@ -108,6 +108,11 @@ try:
           str(out))
     check("provider detail capped", len(out["detail"]) <= 500,
           str(len(out["detail"])))
+    urllib.request.urlopen = lambda req, timeout=None: _FakeResp(b"z" * 300000)
+    out = mas.verify("482910472213", "38353")
+    check("oversize reply refused",
+          out["verdict"] == "unknown" and "too large" in out["detail"],
+          str(out)[:200])
 finally:
     urllib.request.urlopen = _real_urlopen
     os.environ.pop("VOUCH_MAS_URL", None)

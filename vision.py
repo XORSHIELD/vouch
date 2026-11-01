@@ -19,6 +19,8 @@ import base64
 import json
 import os
 import re
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, asdict, field
 
 import expiry as E
@@ -303,7 +305,11 @@ def _extract_meta(
             "No MODEL_API_KEY set. Vouch can still check a pack if you paste "
             "the label text or use a demo fixture."
         )
-    import requests
+    if not (API_BASE.startswith("https://")
+            or API_BASE.startswith("http://localhost")
+            or API_BASE.startswith("http://127.0.0.1")):
+        raise VisionUnavailable(
+            "Refusing to send images to a non-HTTPS address.")
 
     b64 = base64.b64encode(data).decode("ascii")
     payload = {
@@ -319,23 +325,30 @@ def _extract_meta(
             ],
         }],
     }
+    max_body = 256 * 1024  # transcriptions are short
+    req = urllib.request.Request(
+        f"{API_BASE}/chat/completions",
+        data=json.dumps(payload).encode(),
+        headers={"Authorization": f"Bearer {API_KEY}",
+                 "Content-Type": "application/json"},
+        method="POST",
+    )
     try:
-        r = requests.post(
-            f"{API_BASE}/chat/completions",
-            headers={"Authorization": f"Bearer {API_KEY}",
-                     "Content-Type": "application/json"},
-            json=payload, timeout=timeout,
-        )
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            raw = r.read(max_body + 1)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            raise VisionUnavailable("The model API rejected the key (401).")
+        raise VisionUnavailable(
+            f"Model API error {exc.code}: "
+            f"{exc.read(300).decode('utf-8', 'replace')}") from exc
     except Exception as exc:                     # network
         raise VisionUnavailable(f"Could not reach the model API: {exc}") from exc
-
-    if r.status_code == 401:
-        raise VisionUnavailable("The model API rejected the key (401).")
-    if r.status_code >= 400:
-        raise VisionUnavailable(f"Model API error {r.status_code}: {r.text[:300]}")
+    if len(raw) > max_body:
+        raise VisionUnavailable("The model response was too large.")
 
     try:
-        content = r.json()["choices"][0]["message"]["content"]
+        content = json.loads(raw.decode())["choices"][0]["message"]["content"]
         body = json.loads(content) if isinstance(content, str) else content
     except Exception as exc:
         raise VisionUnavailable(f"Could not parse the model response: {exc}") from exc

@@ -45,6 +45,8 @@ TIMEOUT = 45
 CASE_WORDS = re.compile(r"open a case|report this|file (a )?report|escalate",
                         re.IGNORECASE)
 NUMBER_SCAN = re.compile(r"[A-Z]{0,2}\s?\d{1,2}\s?-?\s?\d{3,7}")
+BARCODE_SCAN = re.compile(r"\b\d{8}\b|\b\d{12,14}\b")
+_SERIES_SHAPE = re.compile(r"[A-Z]{0,2}\d{1,2}-\d{4}(\d{2})?")
 
 
 def capabilities() -> dict:
@@ -170,6 +172,12 @@ A photo already read for you appears as the first tool note."""
 
 
 def _chat(messages: list[dict]) -> str:
+    max_body = 256 * 1024  # planner replies are short
+    if not (API_BASE.startswith("https://")
+            or API_BASE.startswith("http://localhost")
+            or API_BASE.startswith("http://127.0.0.1")):
+        raise RuntimeError(
+            "refusing to send the API key over unencrypted HTTP")
     payload = {"model": MODEL, "temperature": 0,
                "response_format": {"type": "json_object"},
                "messages": messages}
@@ -178,7 +186,10 @@ def _chat(messages: list[dict]) -> str:
         headers={"Content-Type": "application/json",
                  "Authorization": f"Bearer {API_KEY}"}, method="POST")
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-        return json.loads(r.read().decode())["choices"][0]["message"]["content"]
+        raw = r.read(max_body + 1)
+    if len(raw) > max_body:
+        raise RuntimeError("model reply too large")
+    return json.loads(raw.decode())["choices"][0]["message"]["content"]
 
 
 def _plan(message: str, history: list[dict],
@@ -230,10 +241,23 @@ def _plan(message: str, history: list[dict],
 
 
 def _pack_from_text(message: str) -> PackInput:
-    """A pack carrying any registration number named in free text."""
+    """A pack carrying any registration number or barcode named in text.
+
+    Phone numbers and years are the trap: "call 08031234567" contains a
+    digit run the number pattern would otherwise accept (even grabbing
+    letters off the previous word), and normalise() never returns empty
+    for a non-empty string. So a bare run of digits only counts when it
+    resolves to a true series shape; an explicit dash is taken as intent.
+    """
     for cand in NUMBER_SCAN.findall((message or "").upper()):
-        if R.normalise(cand):
-            return PackInput(nafdac_number=cand.strip())
+        cand = cand.strip()
+        if "-" in cand or any(
+            _SERIES_SHAPE.fullmatch(f) for f in R.normalise(cand)
+        ):
+            return PackInput(nafdac_number=cand)
+    m = BARCODE_SCAN.search(message or "")
+    if m:
+        return PackInput(barcode=m.group(0))
     return PackInput()
 
 
@@ -314,7 +338,7 @@ def execute_confirmed(action: dict, username: str) -> dict:
         raise ValueError("Unknown action.")
     pack = _pack_fields((action or {}).get("pack") or {})
     assessment = _assess(pack)
-    case = cases.create_case(pack, assessment)
+    case = cases.create_case(pack, assessment, username=username)
     for doc in actions.all_documents(pack, assessment).values():
         cases.attach_document(case["id"], doc)
     audit.log("case_opened", username, case["id"])

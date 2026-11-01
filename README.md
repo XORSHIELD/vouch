@@ -14,6 +14,7 @@ statement of what the check does not prove.
 
 ```powershell
 cd vouch
+pip install fastapi uvicorn httpx pillow requests   # once; requests is only for smoke.py
 python server.py                 # http://127.0.0.1:8077
 $env:VOUCH_PORT = "8091"         # optional: run on another port
 python server.py
@@ -25,8 +26,9 @@ Then open:
 - `http://127.0.0.1:8077/app` — the working application
 - `http://127.0.0.1:8077/api/health` — service status
 
-No API key is required. The server uses only the Python standard library plus
-FastAPI/Uvicorn.
+No API key is required. Needs Python 3.10 or newer (CI runs 3.13). The product
+code is standard library plus FastAPI/Uvicorn/Pillow; the test client needs
+httpx and the smoke script needs requests.
 
 ### Optional: use a model for explanations
 
@@ -102,7 +104,11 @@ python test_registry.py
 python test_scan.py
 python test_sync.py
 python test_auth.py
+python test_actions.py
+python test_ai.py
 python test_backup.py
+python test_barcode.py
+python test_cases.py
 python test_seams.py
 python test_mas.py
 python test_safety.py
@@ -110,6 +116,7 @@ python test_vision.py
 python test_server.py
 python test_agent.py
 python smoke.py
+python eval.py
 ```
 
 Pushes also run the suite plus a server boot check in CI
@@ -139,6 +146,12 @@ panels name the source; sample and demo runs are labelled separately.
 
 ## Running it for real
 
+**Phone on the same Wi-Fi.** Set `VOUCH_HOST=0.0.0.0` (and allow the
+firewall prompt on a private network), find the laptop address with
+`ipconfig`, and open `http://<that-address>:8077/app` on the phone. Phone
+browsers only allow the camera over HTTPS, so on a phone use typed entries
+and gallery uploads; stop the server when done.
+
 **Accounts.** Checks never need sign-in; cases do. The first account
 registered is the admin. For scripted deploys, set `VOUCH_ADMIN_PASSWORD`
 before the first start instead. Sessions last 7 days; sign in from
@@ -159,7 +172,8 @@ Greenbook mirror daily by itself. Without it, sync from Settings or
 `python registry.py --sync`.
 
 **Locking down.** Set `VOUCH_ORIGINS=https://your-domain` so browsers only
-accept your site; without it, any origin is allowed (fine for local use).
+accept your site; without it, browsers block cross-origin API calls while
+same-origin use needs nothing.
 Uploads are verified as real JPG/PNG/WebP and stripped of camera metadata
 (including GPS) on arrival. Per-IP rate limits apply to every endpoint,
 tightest on auth and OCR. Security events land in `.data/audit.log`.
@@ -216,6 +230,7 @@ vouch/
   scan.py          frame quality, multi-side reconciliation, barcode/QR consensus
   vision.py        OCR extraction and fixtures
   ai.py            explanation layer, guardrails, streaming
+  agent.py         conversational agent, proposals, planner
   cases.py         case lifecycle, deadlines, queue and stats
   auth.py          accounts, sessions, roles
   audit.py         append-only security log
@@ -225,6 +240,9 @@ vouch/
   mas.py           scratch-PIN verification seam
   sms.py           SMS/USSD inbound seam
   actions.py       seller/regulator document builders
+  safety.py        safety reports, alerts, batch patterns
+  eval.py          release gate: calibration, OCR-noise stability
+  visval.py        vision validation battery (dev tool)
   ui/
     index.html     the application
     marketing.html the marketing site and docs pages

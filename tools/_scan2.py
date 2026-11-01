@@ -1,4 +1,8 @@
-﻿import json, collections, registry as R
+﻿import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.dirname(
+    _os.path.dirname(_os.path.abspath(__file__))))
+import json, collections, registry as R
 
 cats = collections.Counter()
 prod = collections.Counter()

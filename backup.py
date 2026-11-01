@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 SOURCES = [
     os.path.join(HERE, ".data", "vouch.sqlite"),
+    os.path.join(HERE, ".data", "audit.log"),
     os.path.join(HERE, "data", "vouch.sqlite"),
     os.path.join(HERE, "data", "alerts.json"),
     os.path.join(HERE, "data", "safety"),

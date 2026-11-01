@@ -59,6 +59,10 @@ def _connect() -> sqlite3.Connection:
     os.makedirs(DATA_DIR, exist_ok=True)
     con = sqlite3.connect(DB_PATH, timeout=10)
     con.row_factory = sqlite3.Row
+    try:
+        con.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        pass
     return con
 
 

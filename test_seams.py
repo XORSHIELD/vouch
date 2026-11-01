@@ -59,8 +59,8 @@ class _FakeResp:
     def __init__(self, payload: bytes) -> None:
         self._payload = payload
 
-    def read(self) -> bytes:
-        return self._payload
+    def read(self, n: int = -1) -> bytes:
+        return self._payload[:n] if n is not None and n >= 0 else self._payload
 
     def __enter__(self):
         return self
