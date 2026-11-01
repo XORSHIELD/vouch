@@ -41,6 +41,10 @@
   a{color:inherit;text-decoration:none}
   button{font:inherit;cursor:pointer}
   .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  #tab-agent{max-width:760px;margin:0 auto;min-height:62vh;display:flex;flex-direction:column}
+  #tab-agent > .card:last-child{flex:1;display:flex;flex-direction:column}
+  #tab-agent > .card:last-child > .bd{flex:1;display:flex;flex-direction:column}
+  #tab-agent .attach-cluster{display:flex;gap:8px;align-items:center;flex:0 0 auto}
 
   header.top{
     background:#FFFFFF; color:var(--ink); position:sticky; top:0; z-index:30;
@@ -1430,13 +1434,15 @@
     </div>
     <div class="card">
       <div class="bd">
-        <div id="agentMsgs" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:420px;overflow:auto"></div>
+        <div id="agentMsgs" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;flex:1;min-height:24vh;max-height:56vh;overflow:auto"></div>
         <div id="agentProposal"></div>
         <div style="display:flex;gap:8px;align-items:center">
+          <div class="attach-cluster">
           <label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" id="agentPhoto" accept="image/*" class="hidden"></label>
-          <button class="hero-ask-mic" id="agentMic" type="button" aria-label="Dictate with your voice" style="width:40px;flex:0 0 40px">
+          <button class="hero-ask-mic" id="agentMic" type="button" aria-label="Dictate with your voice" style="width:40px;flex:0 0 40px;align-self:stretch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
           </button>
+          </div>
           <input id="agentInput" placeholder="Ask about a pack, or attach a photo…" autocomplete="off" style="flex:1">
           <button class="btn sm" id="agentSend" type="button">Send</button>
         </div>
