@@ -133,6 +133,22 @@ repeat_reply = convo("6034000005424", "6034000005424")[1]["answer"]
 check("repeated detail noticed, not re-acked",
       "already" in repeat_reply.lower(), repeat_reply[:160])
 
+print("batch made-date")
+made = convo("this is Nivea Soft", "batch 64010123",
+             "when was it made?")
+check("batch fragment decoded in passing",
+      "Sep 2026" in made[1]["answer"], made[1]["answer"][:200])
+check("made-date answered with ambiguity",
+      "Sep 2026" in made[2]["answer"]
+      and "2016" in made[2]["answer"], made[2]["answer"][:300])
+guided = convo("this is Dove soap", "batch 12661", "how old is it?")
+check("open-dated brand guided",
+      "openly" in guided[2]["answer"], guided[2]["answer"][:200])
+unknown = convo("this is Dudu Osun", "batch ABC123", "how old is it?")
+check("unverified brand honest",
+      "No verified decoder" in unknown[2]["answer"],
+      unknown[2]["answer"][:200])
+
 print("single-turn checks unchanged")
 r = agent.chat("NAFDAC A99-9999, open a case")
 check("explicit check still proposes",

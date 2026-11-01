@@ -1344,6 +1344,20 @@
         </div>
       </details>
       <details class="guide-item">
+        <summary>Decode a batch code (made-date)</summary>
+        <div class="g-body">
+          <p>Some makers encode the production date in the batch. Type the brand and the code exactly as printed.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="batchBrand" list="batchBrandList" placeholder="Brand, e.g. Nivea" autocomplete="off" style="flex:1;min-width:140px" />
+            <datalist id="batchBrandList"></datalist>
+            <input id="batchCode" placeholder="Batch code" autocomplete="off" style="flex:1;min-width:140px;font-family:var(--mono)" />
+            <button class="btn sm" id="batchDecodeBtn" type="button">Decode</button>
+          </div>
+          <div id="batchResult" style="margin-top:10px"></div>
+          <p class="hint" style="margin:8px 0 0">Two verified patterns only (Nivea, P&amp;G) — other brands point at their printed dates or say so honestly. Years repeat every decade, so every answer lists the alternatives.</p>
+        </div>
+      </details>
+      <details class="guide-item">
         <summary>Common packaging irregularities</summary>
         <div class="g-body">
           <p>Watch for: a sticker over printed text; expiry printed over a different date; a seal or tamper band already broken; a missing hologram where the brand normally has one; blurred or uneven print; spelling errors in the brand or manufacturer name; loose or damaged tablets.</p>
@@ -2162,6 +2176,68 @@ $('#regSearchBtn').onclick = runRegSearch;
 $('#regSearchInput').addEventListener('keydown', e => {
   if (e.key === 'Enter'){ e.preventDefault(); runRegSearch(); }
 });
+
+/* ---------- batch decoder ---------- */
+async function loadBatchBrands(){
+  try {
+    const r = await api('/api/batch/brands');
+    const dl = $('#batchBrandList');
+    dl.innerHTML = '';
+    (r.groups || []).forEach(g => {
+      (g.brands || []).forEach(b => {
+        const o = document.createElement('option');
+        o.value = b;
+        dl.appendChild(o);
+      });
+    });
+  } catch(e){ /* suggestions are optional; free text still works */ }
+}
+async function runBatchDecode(){
+  const brand = $('#batchBrand').value.trim();
+  const code = $('#batchCode').value.trim();
+  const box = $('#batchResult');
+  if (!brand || !code){ box.innerHTML = ''; toast('Type a brand and a batch code.'); return; }
+  box.innerHTML = '<span class="hint" style="margin:0">Decoding…</span>';
+  try {
+    const r = await api('/api/batch/decode?brand=' + encodeURIComponent(brand) + '&code=' + encodeURIComponent(code));
+    box.innerHTML = '';
+    const head = document.createElement('p');
+    head.style.margin = '0 0 6px';
+    if (r.confidence === 'decoded' && r.made_label){
+      const b = document.createElement('b');
+      b.style.fontSize = '16px';
+      b.textContent = 'Made around ' + r.made_label;
+      head.appendChild(b);
+    } else if (r.confidence === 'guidance'){
+      head.textContent = 'No decoder — read the printed dates.';
+      head.style.fontWeight = '700';
+    } else {
+      head.textContent = 'Cannot decode this one.';
+      head.style.fontWeight = '700';
+    }
+    box.appendChild(head);
+    if (r.method){
+      const m = document.createElement('p');
+      m.className = 'hint';
+      m.style.margin = '0 0 6px';
+      m.textContent = r.method;
+      box.appendChild(m);
+    }
+    if (r.note){
+      const n = document.createElement('p');
+      n.style.margin = '0';
+      n.style.fontSize = '13.5px';
+      n.style.lineHeight = '1.6';
+      n.textContent = r.note;
+      box.appendChild(n);
+    }
+  } catch(e){ box.innerHTML = ''; toast(e.message || 'Decode failed'); }
+}
+$('#batchDecodeBtn').onclick = runBatchDecode;
+$('#batchCode').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); runBatchDecode(); }
+});
+loadBatchBrands();
 
 async function runBarcodeDemo(key, btn){
   if (btn) btn.disabled = true;

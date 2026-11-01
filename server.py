@@ -32,6 +32,7 @@ import agent
 import audit
 import auth
 import backup
+import batchdecode
 import ai
 import barcode as B
 import cases
@@ -974,6 +975,21 @@ def registry_sync_now(bg: BackgroundTasks, user: dict = Depends(auth.require_adm
     bg.add_task(R.sync_run)
     audit.log("sync_started", user.get("username", ""), "")
     return {"started": True, "status": R.sync_status()}
+
+
+@app.get("/api/batch/decode")
+def batch_decode(brand: str = "", code: str = "") -> dict:
+    """Made-date from a batch code, or an honest non-answer.
+
+    Only brands with a verified public pattern decode; open-dated
+    brands get guidance and the rest say so plainly. Read-only."""
+    return batchdecode.decode(brand, code).to_dict()
+
+
+@app.get("/api/batch/brands")
+def batch_brands() -> dict:
+    """Brand groups the decoder covers, and how (decode vs guidance)."""
+    return {"groups": batchdecode.supported()}
 
 
 @app.get("/api/registry/lookup/{number}")

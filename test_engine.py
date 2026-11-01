@@ -173,5 +173,27 @@ finally:
     else:
         os.environ["VOUCH_MFR_URL"] = _old_url
 
+print("\nbatch made-date")
+nivea = G.PackInput(product_name="Nivea Soft", manufacturer="Beiersdorf",
+                    batch="64010123")
+a = G.assess(nivea, today=TODAY)
+bc = next(c for c in a.checks if c.id == "batch")
+check("decoded date joins the evidence",
+      bc.state == G.VERIFIED and "Sep 2026" in bc.evidence, bc.evidence)
+check("decade ambiguity disclosed",
+      any("2016" in d for d in (bc.detail or [])), str(bc.detail))
+old = G.PackInput(product_name="Nivea Creme", batch="70115542")
+a = G.assess(old, today=TODAY)
+bc = next(c for c in a.checks if c.id == "batch")
+check("ancient-by-its-own-code flagged",
+      bc.state == G.ATTENTION and "over 6 years" in bc.proves,
+      f"{bc.state} {bc.proves}")
+dove = G.PackInput(product_name="Dove soap", batch="12661")
+a = G.assess(dove, today=TODAY)
+bc = next(c for c in a.checks if c.id == "batch")
+check("open-dated brand guided, not decoded",
+      bc.state == G.VERIFIED
+      and any("openly" in d for d in (bc.detail or [])), str(bc.detail))
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

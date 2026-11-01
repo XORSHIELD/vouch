@@ -22,6 +22,7 @@ from typing import Any
 import expiry as E
 import registry as R
 import barcode as B
+import batchdecode as BD
 import manufacturer as M
 
 # --------------------------------------------------------------------------
@@ -143,8 +144,13 @@ _BATCH_SHAPES = [
 ]
 
 
-def batch_check(batch: str, seen_batches: list[str] | None = None) -> Check:
-    """Is this a plausible batch/lot number, and does it fit known patterns?"""
+def batch_check(batch: str, seen_batches: list[str] | None = None,
+                brand_text: str = "", today: date | None = None) -> Check:
+    """Is this a plausible batch/lot number, and does it fit known patterns?
+
+    When the brand is one with a verified decoder, the made-date joins the
+    evidence — with its decade ambiguity, never as a bare claim.
+    """
     b = (batch or "").strip()
     if not b:
         return Check(
@@ -156,6 +162,16 @@ def batch_check(batch: str, seen_batches: list[str] | None = None) -> Check:
             source="pack",
             detail=["Photograph the crimp, the base of the carton, and the foil."],
         )
+    dec = (BD.decode(brand_text, b, today=today or date.today())
+           if (brand_text or "").strip() else None)
+    decode_lines: list[str] = []
+    if dec is not None and dec.confidence == "decoded" and dec.made:
+        alts = ", ".join(str(y) for y in dec.alt_years[:3])
+        decode_lines.append(
+            f"Batch matches the {dec.brand_label} pattern for "
+            f"{dec.made_label} ({dec.method} Also possible: {alts}.)")
+    elif dec is not None and dec.confidence == "guidance":
+        decode_lines.append(dec.note)
 
     signals: list[str] = []
     if len(b) < 3:
@@ -201,15 +217,40 @@ def batch_check(batch: str, seen_batches: list[str] | None = None) -> Check:
             does_not_prove="That the batch does not exist. Only a manufacturer "
                            "or NAFDAC can confirm a specific lot.",
             source="pack + Vouch reports",
-            detail=signals + ([shape_note] if shape_note else []),
+            detail=signals + ([shape_note] if shape_note else [])
+            + decode_lines,
         )
 
+    old = (dec is not None and dec.confidence == "decoded"
+           and dec.made is not None
+           and (dec.age_years(today or date.today()) or 0) >= 6)
+    if old and dec is not None and dec.made is not None:
+        # The age is read off the newest plausible decade, so a flag here
+        # means old under every reading of the code — never a guess.
+        return Check(
+            id="batch", label="Batch number", state=ATTENTION, severity=1.0,
+            evidence=f"{b} — decodes to {dec.made_label} by the "
+                     f"{dec.brand_label} pattern.",
+            proves="The batch decodes, by the maker's own pattern, to a "
+                   "date over 6 years ago.",
+            does_not_prove="That the contents are spoiled. Old stock is a "
+                           "reason to check the open-jar symbol and the "
+                           "printed dates, not a verdict on safety.",
+            source="pack",
+            detail=decode_lines,
+        )
+
+    evidence = b
+    if dec is not None and dec.confidence == "decoded" and dec.made:
+        evidence = (f"{b} — matches the {dec.brand_label} pattern for "
+                    f"{dec.made_label}.")
     return Check(
         id="batch", label="Batch number", state=VERIFIED, severity=0,
-        evidence=b,
+        evidence=evidence,
         proves="The batch string is well formed.",
         does_not_prove="That this lot was made by the registered manufacturer.",
         source="pack",
+        detail=decode_lines,
     )
 
 
@@ -696,7 +737,9 @@ def assess(
             ))
 
     # 6. Batch plausibility.
-    checks.append(batch_check(pack.batch, seen_batches))
+    checks.append(batch_check(
+        pack.batch, seen_batches,
+        f"{pack.product_name} {pack.manufacturer}", today))
 
     # 6b. Official alerts. Only an exact batch-level match from a configured
     # source reaches here; an unconfigured source produces no check at all.

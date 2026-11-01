@@ -26,6 +26,7 @@ from dataclasses import asdict, fields
 import actions
 import ai
 import audit
+import batchdecode as BD
 import cases
 import engine  # noqa: F401  (re-exported for Assessment/PackInput users)
 import manufacturer as M
@@ -298,6 +299,12 @@ _BRAND_STOP = {"NAFDAC", "REG", "NUMBER", "BATCH", "BARCODE", "SCAN",
                "OK", "YES", "NO", "FINE", "THANKS"}
 _QUESTION_INTENTS = ("VERDICT_INTENT", "SAFETY_INTENT", "EXPIRY_INTENT",
                      "REPORT_INTENT", "NEXT_INTENT")
+_MADE_IT = re.compile(
+    r"\bhow old\b|\bage of\b|when was (this|it|that) made\b"
+    r"|\bmanufacture(d| date)?\b|\bproduction date\b",
+    re.IGNORECASE)
+_SHELF_LINE = ("Most sealed cosmetics keep about 3 years; the open-jar "
+               "symbol (like 12M) counts from first opening.")
 
 
 def _extract_fields(text: str) -> dict:
@@ -315,9 +322,16 @@ def _extract_fields(text: str) -> dict:
     msg = text or ""
     up = msg.upper()
     squashed = re.sub(r"(?<=\d) (?=\d)", "", msg)
-    m = BARCODE_SCAN.search(squashed)
-    if m:
-        out["barcode"] = re.sub(r"\s+", "", m.group(0))
+    batch_word = bool(re.search(
+        r"\bbatch\b|\blot\s*(?:no\.?|number|#|:)?\s*[A-Z0-9]", msg,
+        re.IGNORECASE))
+    code_word = bool(re.search(r"\bbarcode\b|\bgtin\b|\bean\b", msg,
+                               re.IGNORECASE))
+    batch_context = batch_word and not code_word
+    if not batch_context:
+        m = BARCODE_SCAN.search(squashed)
+        if m:
+            out["barcode"] = re.sub(r"\s+", "", m.group(0))
     labelled = bool(_LABELLED.search(msg))
     codes_only = bool(re.fullmatch(_CODES_ONLY, up)) and bool(
         re.search(r"\d", up))
@@ -340,8 +354,14 @@ def _extract_fields(text: str) -> dict:
             if letters and digits and len(run.strip()) >= 4:
                 out["batch"] = run.strip().upper()
                 break
-        else:
-            if codes_only:
+        if not out["batch"]:
+            if batch_context:
+                for run in re.findall(r"\d(?:[\d ]*\d)?", msg):
+                    digits = re.sub(r"\s+", "", run)
+                    if 4 <= len(digits) <= 20:
+                        out["batch"] = digits
+                        break
+            elif codes_only:
                 code = re.sub(r"\s+", " ", up).strip(" .,;:#")
                 if (re.search(r"[A-Z]", code) and re.search(r"\d", code)
                         and len(code) >= 4
@@ -492,6 +512,8 @@ def _converse(pack: PackInput, fresh: dict, message: str,
         ack = (f"Got it — {name}, not {denied}. I've updated that."
                if denied else f"Got it — {name}. I've updated that.")
         return f"{ack} {_tail(pack, assessment, history)}"
+    if _MADE_IT.search(message or "") and pack.batch:
+        return _made_answer(pack)
     if _is_question(message) and (pack.nafdac_number or pack.barcode
                                   or pack.batch or pack.product_name):
         return ai.answer(message, assessment)
@@ -535,6 +557,24 @@ def _proposal(pack: PackInput, assessment: Assessment) -> dict:
             "pack": asdict(pack)}
 
 
+def _made_answer(pack: PackInput) -> str:
+    """When this pack was made, from its batch code — or why that is
+    not knowable. Decodes are quoted with their ambiguity, never bare."""
+    dec = BD.decode(f"{pack.product_name} {pack.manufacturer}", pack.batch)
+    if dec.confidence == "decoded" and dec.made:
+        age = dec.age_years() or 0
+        if age >= 1:
+            old = f"That makes it about {age:.0f} years old. "
+        elif age * 12 >= 1:
+            old = f"That makes it about {age * 12:.0f} months old. "
+        else:
+            old = "That makes it only weeks old. "
+        return (f"By {dec.brand_label}'s own batch pattern, this pack was "
+                f"made around {dec.made_label}: {dec.method} {old}"
+                f"{dec.note} {_SHELF_LINE}")
+    return dec.note
+
+
 def _fragment_ack(pack: PackInput, fresh: dict,
                   assessment: Assessment, history=None) -> str | None:
     """Acknowledge newly arrived details without a verdict dump."""
@@ -548,6 +588,12 @@ def _fragment_ack(pack: PackInput, fresh: dict,
                         "— I've kept it with this pack.")
         else:
             bits.append(f"Batch {code} recorded.")
+        brand = f"{pack.product_name} {pack.manufacturer}".strip()
+        if brand:
+            dec = BD.decode(brand, code)
+            if dec.confidence == "decoded" and dec.made:
+                bits.append(f"By {dec.brand_label}'s pattern, made around "
+                            f"{dec.made_label}.")
     if fresh.get("product_name") and not fresh.get("correction"):
         bits.append(f"Noted — {pack.product_name}.")
     if not bits:
