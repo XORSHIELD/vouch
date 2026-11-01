@@ -10,6 +10,8 @@ judgement; this file only moves data between them.
 
 from __future__ import annotations
 
+import csv
+import io
 import os
 from dataclasses import fields
 from datetime import date
@@ -18,7 +20,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi.responses import (FileResponse, PlainTextResponse,
+from fastapi.responses import (FileResponse, PlainTextResponse, Response,
                                StreamingResponse)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field as PField
@@ -554,6 +556,13 @@ def auth_set_role(body: RoleBody,
             "role": body.role}
 
 
+@app.get("/api/audit")
+def audit_log(limit: int = 50,
+              user: dict = Depends(auth.require_admin)) -> dict:
+    """Recent audit events. Admins only."""
+    return {"events": audit.recent(max(1, min(limit, 500)))}
+
+
 def _owned_case(case_id: str, user: dict) -> dict:
     """One case, or 404 when it is missing or belongs to someone else."""
     c = cases.get_case(case_id)
@@ -585,6 +594,33 @@ def list_cases(status: Optional[str] = None, limit: int = 50, user: dict = Depen
                                         username=user["username"],
                                         role=user["role"]),
             "stats": cases.stats()}
+
+
+def _csv_cell(v) -> str:
+    s = "" if v is None else str(v)
+    if s[:1] in ("=", "+", "-", "@"):
+        s = "'" + s  # spreadsheet formula injection
+    return s
+
+
+@app.get("/api/cases/export")
+def export_cases(user: dict = Depends(auth.require_user)):
+    """Cases as a CSV download. Scoped exactly like the list."""
+    cols = ["id", "created_at", "band", "score", "headline", "nafdac",
+            "product", "manufacturer", "batch", "seller", "location",
+            "price", "exp_date", "status", "outcome", "username"]
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["id", "created", "band", "score", "headline", "nafdac",
+                "product", "manufacturer", "batch", "seller", "location",
+                "price", "exp_date", "status", "outcome", "owner"])
+    for r in cases.export_rows(username=user["username"], role=user["role"]):
+        w.writerow([_csv_cell(r.get(c)) for c in cols])
+    return Response(
+        content=buf.getvalue(), media_type="text/csv",
+        headers={"Content-Disposition":
+                 f'attachment; filename="vouch-cases-{date.today().isoformat()}.csv"'},
+    )
 
 
 @app.get("/api/cases/{case_id}")

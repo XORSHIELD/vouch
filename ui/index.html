@@ -1396,9 +1396,10 @@
           <p style="margin:0 0 14px;font-size:13.5px;color:var(--ink-2)">Scan history lives in this browser. Cases live on this Vouch server.</p>
           <div class="docbtns" style="margin-top:0">
             <button class="btn ghost sm" id="btnExport" type="button">Export my history</button>
+            <button class="btn ghost sm" id="btnExportCases" type="button">Export my cases</button>
             <button class="btn ghost sm" id="btnResetCases" type="button">Reset demo cases</button>
           </div>
-          <p class="scan-note">Resetting demo cases deletes every case stored on this server, including rehearsals. It cannot be undone.</p>
+          <p class="scan-note" id="resetNote">Resetting demo cases deletes every case stored on this server, including rehearsals. It cannot be undone.</p>
         </div>
       </div>
       <div class="card">
@@ -3995,6 +3996,21 @@ $('#btnExport').onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   toast('History exported');
 };
+$('#btnExportCases').onclick = async () => {
+  try {
+    const token = localStorage.getItem('vouch.token') || '';
+    if (!token){ toast('Sign in first'); return; }
+    const r = await fetch('/api/cases/export', {headers:{'Authorization':'Bearer ' + token}});
+    if (!r.ok) throw new Error('Export failed (' + r.status + ')');
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'vouch-cases.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('Cases exported');
+  } catch(e){ toast(e.message); }
+};
 $('#btnResetCases').onclick = async () => {
   if (!confirm('Delete all cases on this Vouch server, including demo rehearsals?')) return;
   try {
@@ -4003,6 +4019,27 @@ $('#btnResetCases').onclick = async () => {
     loadCases();
   } catch (e) { toast(e.message); }
 };
+async function currentUser(){
+  let token = '';
+  try { token = localStorage.getItem('vouch.token') || ''; } catch {}
+  if (!token){ state.user = null; return null; }
+  if (!state.user || state.user._token !== token){
+    try {
+      const me = (await api('/api/auth/me')).user || null;
+      if (me) me._token = token;
+      state.user = me;
+    } catch { state.user = null; }
+  }
+  return state.user;
+}
+function applyRoleGates(user){
+  const admin = !!user && user.role === 'admin';
+  const sync = $('#btnSyncNow');
+  if (sync){ sync.disabled = !admin; sync.title = admin ? '' : 'Admins only'; }
+  const reset = $('#btnResetCases'), note = $('#resetNote');
+  if (reset) reset.style.display = admin ? '' : 'none';
+  if (note) note.style.display = admin ? '' : 'none';
+}
 async function renderSession(){
   const box = $('#sessionBox');
   if (!box) return;
@@ -4011,18 +4048,51 @@ async function renderSession(){
     const token = localStorage.getItem('vouch.token') || '';
     if (token) user = (await api('/api/auth/me')).user;
   } catch { user = null; }
+  applyRoleGates(user);
   if (user){
     box.innerHTML = `<p style="margin:0 0 12px;font-size:14px">Signed in as <b>${esc(user.username)}</b>${user.email ? ' <span style="color:var(--ink-2)">· ' + esc(user.email) + '</span>' : ''} <span class="hpill ${esc(user.role === 'admin' ? 'review' : 'clear')}">${esc(user.role)}</span></p>
       <div class="docbtns" style="margin-top:0">
         <button class="btn ghost sm" id="btnLogout" type="button">Sign out</button>
         <button class="btn ghost sm" id="btnWebsite" type="button">Return to website</button>
-      </div>`;
+      </div>
+      ${user.role === 'admin' ? `<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+        <div class="lbl2" style="margin-bottom:8px">Manage roles</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="roleUser" placeholder="username" style="flex:1;min-width:120px" autocomplete="off" />
+          <select id="roleRole" style="max-width:140px"><option value="consumer">consumer</option><option value="inspector">inspector</option><option value="admin">admin</option></select>
+          <button class="btn ghost sm" id="btnGrant" type="button">Grant</button>
+        </div>
+        <p class="scan-note" style="margin-bottom:0">Inspectors read every case. Consumers read only their own.</p>
+        <div class="lbl2" style="margin:12px 0 8px">Recent activity</div>
+        <div id="auditList"><p class="scan-note" style="margin:0">Loading…</p></div>
+      </div>` : ''}`;
     $('#btnLogout').onclick = async () => {
       try { await api('/api/auth/logout', {method:'POST'}); } catch {}
       try { localStorage.removeItem('vouch.token'); } catch {}
       renderSession();
     };
     $('#btnWebsite').onclick = () => { window.location.href = '/'; };
+    if (user.role === 'admin'){
+      $('#roleRole').value = 'inspector';
+      $('#btnGrant').onclick = async () => {
+        const name = $('#roleUser').value.trim();
+        if (!name){ toast('Type a username first'); return; }
+        try {
+          await api('/api/auth/role', {method:'POST', body:JSON.stringify({username:name, role:$('#roleRole').value})});
+          toast(`Role updated for ${name}`);
+          $('#roleUser').value = '';
+        } catch(e){ toast(e.message); }
+      };
+      const _audit = $('#auditList');
+      if (_audit){
+        try {
+          const {events} = await api('/api/audit?limit=30');
+          _audit.innerHTML = events.length ? events.map(ev =>
+            `<div class="kv"><span class="k">${esc(ev.at || '')}</span><span class="v"><b>${esc(ev.event || '')}</b> — ${esc(ev.actor || '—')}${ev.detail ? ' · ' + esc(ev.detail) : ''}</span></div>`
+          ).join('') : '<p class="scan-note" style="margin:0">No events yet.</p>';
+        } catch(e){ _audit.innerHTML = '<p class="scan-note" style="margin:0">Activity unavailable.</p>'; }
+      }
+    }
     return;
   }
   try { localStorage.removeItem('vouch.token'); } catch {}
@@ -4681,6 +4751,8 @@ async function openCase(fields){
 async function loadQueue(){
   try {
     const {queue, stats} = await api('/api/queue');
+    const _me = await currentUser();
+    const isAdmin = !!_me && _me.role === 'admin';
     const due = queue.filter(q => q.overdue || q.due_today);
     const later = queue.filter(q => !q.overdue && !q.due_today);
     const row = q => `
@@ -4702,9 +4774,9 @@ async function loadQueue(){
 
     let html = `<div class="card" style="margin-bottom:18px">
       <div class="hd"><h2>Due now${due.length ? ` — ${due.length}` : ''}</h2>
-        <button class="btn ghost sm" style="margin-left:auto" id="btnSeed"
+        ${isAdmin ? `<button class="btn ghost sm" style="margin-left:auto" id="btnSeed"
           title="Creates three aged rehearsal cases so you can see the follow-up screen">
-          Seed demo cases</button></div>
+          Seed demo cases</button>` : ''}</div>
       <div class="bd">`;
     if (!stats.open) {
       html += `<div class="empty" style="padding:14px 0">No open cases. Check a pack and open one — this is where the chasing lives.<br>

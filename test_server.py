@@ -51,6 +51,39 @@ check("agent route runs agent_chat()",
       repr(_routes.get("/api/agent/chat")))
 
 
+print("csv export + audit")
+server.auth_register(server.AuthBody(username="csvadmin", password="csvadmin-1"))
+server.auth_register(server.AuthBody(username="csvexp", password="csvexp-csv-1"))
+server.auth_register(server.AuthBody(username="csvother", password="csvother-1"))
+_toka = server.auth_login(server.AuthBody(username="csvadmin", password="csvadmin-1"))["token"]
+_tok = server.auth_login(server.AuthBody(username="csvexp", password="csvexp-csv-1"))["token"]
+_tok2 = server.auth_login(server.AuthBody(username="csvother", password="csvother-1"))["token"]
+_me = server.auth.me(_tok)
+_me2 = server.auth.me(_tok2)
+server.create_case(server.PackBody(product_name="CsvWidget"), _me)
+server.create_case(server.PackBody(product_name="=cmd"), _me)
+server.create_case(server.PackBody(product_name="OtherWidget"), _me2)
+_body = server.export_cases(_me).body.decode()
+check("csv has a header row", _body.startswith("id,created,band"), _body[:60])
+check("csv scoped to opener",
+      "CsvWidget" in _body and "OtherWidget" not in _body)
+check("formula cells neutralised", "'=cmd" in _body, _body[:400])
+check("download header set",
+      "attachment" in server.export_cases(_me).headers.get("content-disposition", ""))
+server.auth.set_role("csvother", "inspector")
+check("staff export sees everything",
+      "CsvWidget" in server.export_cases(server.auth.me(_tok2)).body.decode())
+server.audit.log("probe-event", "csvexp", "x")
+_evs = server.audit_log(50, server.auth.me(_toka))
+check("audit lists recent events",
+      any(e.get("event") == "probe-event" for e in _evs["events"]),
+      str(_evs["events"][-1:]))
+_deps = [getattr(d, "call", None) for r in server.app.routes
+         if getattr(r, "path", "") == "/api/audit"
+         for d in getattr(r.dependant, "dependencies", [])]
+check("audit needs an admin", server.auth.require_admin in _deps)
+
+
 print("security headers")
 client = TestClient(server.app, raise_server_exceptions=False)
 r = client.get("/api/health")

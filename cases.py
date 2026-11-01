@@ -334,19 +334,25 @@ def queue(limit: int = 50, username: str | None = None,
 
 
 
+def _scope(username: str | None, role: str | None):
+    """Owner filter clause. Staff and unscoped callers see everything."""
+    if username is None or (role or "") in ("inspector", "admin"):
+        return "", []
+    return "(username = ? OR username = '')", [username]
+
+
 def list_cases(limit: int = 50, status: str | None = None,
                username: str | None = None,
                role: str | None = None) -> list[dict]:
     init()
-    scoped = username is not None and (role or "") not in ("inspector",
-                                                            "admin")
     clauses, args = [], []
     if status:
         clauses.append("status = ?")
         args.append(status)
-    if scoped:
-        clauses.append("(username = ? OR username = '')")
-        args.append(username)
+    _c, _a = _scope(username, role)
+    if _c:
+        clauses.append(_c)
+        args.extend(_a)
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     con = _connect()
     try:
@@ -368,6 +374,26 @@ def list_cases(limit: int = 50, status: str | None = None,
         )
         out.append(d)
     return out
+
+
+def export_rows(username: str | None = None, role: str | None = None,
+                limit: int = 5000) -> list[dict]:
+    """Full case rows for CSV export, scoped like the list."""
+    init()
+    _c, _a = _scope(username, role)
+    where = (" WHERE " + _c) if _c else ""
+    con = _connect()
+    try:
+        rows = con.execute(
+            "SELECT id, created_at, band, score, headline, nafdac, product, "
+            "manufacturer, batch, seller, location, price, exp_date, status, "
+            "outcome, username FROM cases "
+            + where + " ORDER BY created_at DESC LIMIT ?",
+            (*_a, limit),
+        ).fetchall()
+    finally:
+        con.close()
+    return [dict(r) for r in rows]
 
 
 def close_case(case_id: str, outcome: str, status: str = "closed") -> dict | None:
@@ -417,10 +443,9 @@ def cluster(nafdac_number: str = "", batch: str = "",
             role: str | None = None) -> dict:
     """How many times has this number or batch been reported?"""
     init()
-    scoped = username is not None and (role or "") not in ("inspector",
-                                                            "admin")
-    owner = " AND (username = ? OR username = '')" if scoped else ""
-    owner_args = (username,) if scoped else ()
+    _c, _a = _scope(username, role)
+    owner = f" AND {_c}" if _c else ""
+    owner_args = tuple(_a)
     con = _connect()
     try:
         if nafdac_number:

@@ -88,7 +88,7 @@ check("reset empties the store", cases.stats()["cases"] == 0)
 print("ownership")
 alice = cases.create_case(_pack(batch="AO1"), _assess(), username="alice")
 bob = cases.create_case(_pack(batch="BO1"), _assess(), username="bob")
-cases.create_case(_pack(batch="LG1"), _assess())
+legacy = cases.create_case(_pack(batch="LG1"), _assess())
 check("create records the owner",
       cases.get_case(alice["id"])["username"] == "alice")
 mine = {c["id"] for c in
@@ -157,6 +157,17 @@ try:
     check("username column added", "username" in _cols, str(_cols))
 finally:
     cases.DATA_DIR, cases.DB_PATH = _real_data, _real_db
+
+print("export rows")
+_all = cases.export_rows()
+check("unscoped export sees everything", len(_all) == 3, str(len(_all)))
+_mine = {r["id"] for r in cases.export_rows(username="alice", role="consumer")}
+check("scoped export hides other users",
+      _mine == {alice["id"], legacy["id"]}, str(sorted(_mine)))
+check("staff export sees everything",
+      len(cases.export_rows(username="root", role="inspector")) == 3)
+check("export rows carry owner + outcome",
+      all("username" in r and "outcome" in r for r in _all))
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
