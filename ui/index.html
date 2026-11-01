@@ -2000,7 +2000,11 @@ function agentSpeak(text){
     if (voiceMuted || !('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = voiceLang || 'en-NG';
+    const chosen = voicePickVoice();
+    if (chosen) u.voice = chosen;
+    u.lang = (chosen && chosen.lang) || voiceLang || 'en-NG';
+    u.rate = 1.04;
+    u.pitch = 1.1;
     speechSynthesis.speak(u);
   } catch {}
 }
@@ -5410,12 +5414,25 @@ function voiceClean(text){
 
 function voicePickVoice(){
   if (!('speechSynthesis' in window)) return null;
-  const voices = speechSynthesis.getVoices() || [];
-  for (const want of ['en-NG', 'en-GB', 'en-US']){
-    const hit = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(want.toLowerCase()));
+  const voices = (speechSynthesis.getVoices() || [])
+    .filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+  if (!voices.length) return null;
+  // Tier 1: neural / natural-quality voices — the human-sounding ones.
+  let hit = voices.find(v => /natural|neural/i.test(v.name || ''));
+  if (hit) return hit;
+  // Tier 2: known-good built-ins (Chrome, Edge, Apple).
+  for (const want of ['google us english', 'google uk english female',
+                      'samantha', 'jenny', 'aria', 'microsoft guy']){
+    hit = voices.find(v => (v.name || '').toLowerCase().includes(want));
     if (hit) return hit;
   }
-  return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) || null;
+  // Tier 3: best available English. US/GB defaults are usually higher
+  // quality than the en-NG device voice, so they come first.
+  for (const want of ['en-us', 'en-gb', 'en-ng', 'en']){
+    hit = voices.find(v => (v.lang || '').toLowerCase().startsWith(want));
+    if (hit) return hit;
+  }
+  return voices[0];
 }
 
 function stopVoiceSpeech(){
@@ -5469,8 +5486,8 @@ function voiceSpeak(text){
     const u = new SpeechSynthesisUtterance(chunk);
     if (chosen) u.voice = chosen;
     u.lang = (chosen && chosen.lang) || 'en-GB';
-    u.rate = 1.0;
-    u.pitch = 1.0;
+    u.rate = 1.04;
+    u.pitch = 1.1;
     u.volume = 1.0;
     if (i === chunks.length - 1){
       u.onend = () => {
@@ -6083,6 +6100,13 @@ if (!(window.SpeechRecognition || window.webkitSpeechRecognition)){
 if (!('speechSynthesis' in window)){
   voiceMuteBtn.disabled = true;
   voiceMuteBtn.title = 'Speech playback is not available in this browser';
+} else {
+  // Voices load asynchronously in Chrome — warm the list so the first
+  // reply already gets the best voice instead of the default.
+  try { speechSynthesis.getVoices(); } catch {}
+  try {
+    speechSynthesis.onvoiceschanged = () => { try { speechSynthesis.getVoices(); } catch {} };
+  } catch {}
 }
 
 document.addEventListener('keydown', (e) => {
