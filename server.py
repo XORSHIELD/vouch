@@ -437,7 +437,6 @@ def explain_stream(body: ExplainBody) -> StreamingResponse:
     )
 
 
-@app.post("/api/ask")
 class AgentBody(BaseModel):
     message: str = ""
     history: list = PField(default_factory=list)
@@ -473,6 +472,7 @@ def agent_chat(body: AgentBody, request: Request) -> dict:
                       body.image_type or "image/jpeg")
 
 
+@app.post("/api/ask")
 def ask(body: ExplainBody) -> dict:
     pack = body.to_pack()
     assessment = _assess(

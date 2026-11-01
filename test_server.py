@@ -30,6 +30,20 @@ def check(label: str, ok: bool, detail: str = "") -> None:
         fails += 1
 
 
+print("route wiring")
+_routes: dict = {}
+for _r in server.app.routes:
+    _p = getattr(_r, "path", "")
+    if _p:
+        _routes[_p] = getattr(_r, "endpoint", None)
+check("ask route runs ask()",
+      _routes.get("/api/ask") is server.ask,
+      repr(_routes.get("/api/ask")))
+check("agent route runs agent_chat()",
+      _routes.get("/api/agent/chat") is server.agent_chat,
+      repr(_routes.get("/api/agent/chat")))
+
+
 print("security headers")
 client = TestClient(server.app, raise_server_exceptions=False)
 r = client.get("/api/health")
