@@ -37,6 +37,7 @@ import registry as R
 import scan as S
 import vision
 from engine import Assessment, PackInput
+from knowledge import KNOWLEDGE
 
 API_KEY = os.environ.get("MODEL_API_KEY") or os.environ.get("META_API_KEY") or ""
 API_BASE = os.environ.get("META_BASE", "https://api.meta.ai/v1")
@@ -194,10 +195,15 @@ def _chat(messages: list[dict]) -> str:
     return json.loads(raw.decode())["choices"][0]["message"]["content"]
 
 
+def _system_prompt() -> str:
+    """The planner briefing: operating rules plus project knowledge."""
+    return SYSTEM + "\n\n" + KNOWLEDGE
+
+
 def _plan(message: str, history: list[dict],
           image_bytes: bytes | None, image_type: str) -> dict:
     ctx: dict = {"pack": None, "assessment": None, "extraction": None}
-    messages = [{"role": "system", "content": SYSTEM}] + history
+    messages = [{"role": "system", "content": _system_prompt()}] + history
     if image_bytes:
         ex = vision.extract_from_image(image_bytes, image_type)
         ctx["extraction"] = ex

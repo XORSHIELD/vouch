@@ -374,5 +374,18 @@ try:
 finally:
     _vision.extract_from_image = _real_extract4
 
+print("project briefing")
+import knowledge as _know
+check("knowledge is present",
+      len(_know.KNOWLEDGE) > 500 and "Vouch" in _know.KNOWLEDGE)
+check("briefing carries rules + facts",
+      "never declare" in agent._system_prompt().lower()
+      and "34488" in agent._system_prompt()
+      and "A11-0551" in agent._system_prompt())
+check("briefing stays lean", len(_know.KNOWLEDGE) < 4000,
+      str(len(_know.KNOWLEDGE)))
+check("series shapes documented",
+      "A4-0271" in _know.KNOWLEDGE and "04-0271" in _know.KNOWLEDGE)
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
