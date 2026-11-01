@@ -244,10 +244,7 @@ REPORT_INTENT = r"\b(report|complain|fccpc|nafdac|where do i send|who do i)\b"
 EXPIRY_INTENT = r"\b(expire|expiry|expired|best before|shelf life|out of date)\b"
 
 
-def _small_talk(q: str) -> str | None:
-    """Greetings and mic checks, answered directly. Full-message matches
-    only, so a greeting in front of a real question never hijacks it."""
-    t = re.sub(r"\s+", " ", (q or "").strip().lower()).strip(" .!?,;:")
+def _small_talk_match(t: str) -> str | None:
     if t in ("hi", "hello", "hey", "yo", "good morning", "good afternoon",
              "good evening", "good day", "how far", "howfa"):
         return ("Hello! I check medicine packs against the NAFDAC register. "
@@ -270,6 +267,23 @@ def _small_talk(q: str) -> str | None:
                 "against the public register, then explain what the checks "
                 "found and what to do next. Try a NAFDAC number from one "
                 "of your packs.")
+    return None
+
+
+def _small_talk(q: str) -> str | None:
+    """Greetings and mic checks, answered directly. Full-message matches
+    only, so a greeting in front of a real question never hijacks it —
+    but a greeting in front of another pleasantry ("hello, can you hear
+    me?") still answers the pleasantry."""
+    t = re.sub(r"\s+", " ", (q or "").strip().lower()).strip(" .!?,;:")
+    hit = _small_talk_match(t)
+    if hit is not None:
+        return hit
+    stripped = re.sub(
+        r"^(hi|hello|hey|yo|good morning|good afternoon|good evening"
+        r"|good day|how far|howfa)[, ]+", "", t).strip(" .!?,;:")
+    if stripped and stripped != t:
+        return _small_talk_match(stripped)
     return None
 
 

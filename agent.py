@@ -241,24 +241,240 @@ def _plan(message: str, history: list[dict],
 
 
 def _pack_from_text(message: str) -> PackInput:
-    """A pack carrying any registration number or barcode named in text.
+    """A pack carrying any registration number or barcode named in text."""
+    f = _extract_fields(message or "")
+    return PackInput(nafdac_number=f.get("nafdac_number", ""),
+                     barcode=f.get("barcode", ""))
 
-    Phone numbers and years are the trap: "call 08031234567" contains a
-    digit run the number pattern would otherwise accept (even grabbing
-    letters off the previous word), and normalise() never returns empty
-    for a non-empty string. So a bare run of digits only counts when it
-    resolves to a true series shape; an explicit dash is taken as intent.
+
+# --------------------------------------------------------------------------
+# Conversation — the pipeline listens across turns instead of assessing
+# every message in isolation.
+# --------------------------------------------------------------------------
+
+_HOWTO_SCAN = re.compile(
+    r"\bhow\b[^.?!]{0,50}\bscan\b|\bscan\b[^.?!]{0,50}\bhow\b"
+    r"|\bhelp\b[^.?!]{0,50}\bscan\b|\bscan\b[^.?!]{0,50}\bhelp\b",
+    re.IGNORECASE)
+_CHECK_IT = re.compile(r"\b(check|verify|assess)\b", re.IGNORECASE)
+_RESET = re.compile(
+    r"\banother\b|\bdifferent\b|\bnew pack\b|\bnext pack\b"
+    r"|\bstart over\b|\bforget (it|that|this)\b", re.IGNORECASE)
+_LABELLED = re.compile(r"nafdac|reg(?:istration)?(?:\s*(?:no|number|#))?",
+                       re.IGNORECASE)
+_CODES_ONLY = re.compile(r"[\dA-Z\s\-/#.,:]*")
+_CODE_RUN = re.compile(r"[A-Z0-9][A-Z0-9 :/\-]*[A-Z0-9]|[A-Z0-9]")
+_CORRECTION = [
+    re.compile(r"\b(?:this|it)(?:'s| is)\s+(?:an?\s+)?"
+               r"([a-z][a-z ]*?)\s*,?\s+not\s+(?:an?\s+)?([a-z]+)",
+               re.IGNORECASE),
+    re.compile(r"\bno,?\s+(?:it'?s|this is|that'?s|that is)\s+"
+               r"(?:an?\s+)?([a-z][a-z ]*?)(?:[.!]|$)", re.IGNORECASE),
+    re.compile(r"\bactually,?\s+(?:it'?s|this is)\s+"
+               r"(?:an?\s+)?([a-z][a-z ]*?)(?:[.!]|$)", re.IGNORECASE),
+    re.compile(r"\bi meant\s+(?:an?\s+)?([a-z][a-z ]*?)(?:[.!]|$)",
+               re.IGNORECASE),
+]
+_KIND_WORDS = {
+    "water": "water", "sachet": "water",
+    "medicine": "medicine", "drug": "medicine", "tablet": "medicine",
+    "syrup": "medicine", "capsule": "medicine", "injection": "medicine",
+    "juice": "beverage", "malt": "beverage", "cola": "beverage",
+    "soda": "beverage", "milk": "beverage", "drink": "beverage",
+    "beverage": "beverage", "tea": "beverage", "coffee": "beverage",
+    "cream": "cosmetic", "lotion": "cosmetic", "soap": "cosmetic",
+    "shampoo": "cosmetic", "cosmetic": "cosmetic",
+    "deodorant": "cosmetic",
+}
+_BRAND = re.compile(r"\b([A-Z][A-Z0-9&']{2,})\b")
+_BRAND_WORDS = re.compile(
+    r"\b(?:called|brand(?: name)?|product(?: name)?)\s+"
+    r"(?:is\s+)?([A-Za-z][\w&']*)", re.IGNORECASE)
+_BRAND_IS = re.compile(
+    r"\b(?:it'?s|this is|that'?s|named)\s+(?:called\s+)?"
+    r"([A-Z][A-Za-z&']*)")
+_BRAND_STOP = {"NAFDAC", "REG", "NUMBER", "BATCH", "BARCODE", "SCAN",
+               "HELP", "PLEASE", "HELLO", "DETAILS", "DETAIL", "PACK",
+               "OK", "YES", "NO", "FINE", "THANKS"}
+_QUESTION_INTENTS = ("VERDICT_INTENT", "SAFETY_INTENT", "EXPIRY_INTENT",
+                     "REPORT_INTENT", "NEXT_INTENT")
+
+
+def _extract_fields(text: str) -> dict:
+    """Pack details named in one message: number, barcode, batch, brand.
+
+    Batch and date codes are the trap: "BB 290927AJ57" contains a run the
+    number pattern would otherwise accept while ignoring the trailing
+    letters. So a candidate only counts as a NAFDAC number when it is a
+    whole token (not a fragment of a longer code) with a series shape,
+    plus a dash, an explicit label, or a message that is only codes.
     """
-    for cand in NUMBER_SCAN.findall((message or "").upper()):
-        cand = cand.strip()
-        if "-" in cand or any(
-            _SERIES_SHAPE.fullmatch(f) for f in R.normalise(cand)
-        ):
-            return PackInput(nafdac_number=cand)
-    m = BARCODE_SCAN.search(message or "")
+    out: dict = {"nafdac_number": "", "barcode": "", "batch": "",
+                 "product_name": "", "kind_word": "", "denied": "",
+                 "correction": False}
+    msg = text or ""
+    up = msg.upper()
+    squashed = re.sub(r"(?<=\d) (?=\d)", "", msg)
+    m = BARCODE_SCAN.search(squashed)
     if m:
-        return PackInput(barcode=m.group(0))
-    return PackInput()
+        out["barcode"] = re.sub(r"\s+", "", m.group(0))
+    labelled = bool(_LABELLED.search(msg))
+    codes_only = bool(re.fullmatch(_CODES_ONLY, up)) and bool(
+        re.search(r"\d", up))
+    for m in NUMBER_SCAN.finditer(up):
+        cand = m.group(0).strip()
+        before = up[m.start() - 1] if m.start() > 0 else " "
+        after = up[m.end()] if m.end() < len(up) else " "
+        if before.isalnum() or after.isalnum():
+            continue  # a fragment of a longer pack code, not a number
+        if not any(_SERIES_SHAPE.fullmatch(f)
+                   for f in R.normalise(cand)):
+            continue
+        if "-" in cand or labelled or codes_only:
+            out["nafdac_number"] = cand
+            break
+    if not out["nafdac_number"] and not out["barcode"]:
+        for run in _CODE_RUN.findall(msg):
+            letters = re.search(r"[A-Z]", run)
+            digits = re.search(r"\d", run)
+            if letters and digits and len(run.strip()) >= 4:
+                out["batch"] = run.strip().upper()
+                break
+        else:
+            if codes_only:
+                code = re.sub(r"\s+", " ", up).strip(" .,;:#")
+                if (re.search(r"[A-Z]", code) and re.search(r"\d", code)
+                        and len(code) >= 4
+                        and not re.search(r"\d{8,}", code)):
+                    out["batch"] = code
+    for pat in _CORRECTION:
+        m = pat.search(msg)
+        if not m:
+            continue
+        claim, denied = m.group(1), (m.group(2) or "")
+        kind = ""
+        for word in claim.lower().split():
+            if word in _KIND_WORDS:
+                kind = _KIND_WORDS[word]
+        if kind or denied:
+            out["correction"] = True
+            out["kind_word"] = kind
+            out["denied"] = denied.lower()
+            if kind and not out["product_name"]:
+                out["product_name"] = kind
+            break
+        raw = re.findall(r"[A-Za-z][\w&']*", m.group(1))
+        if raw and raw[-1][0].isupper():
+            out["correction"] = True
+            out["product_name"] = raw[-1].capitalize()
+            break
+    brand = ""
+    for tok in _BRAND.findall(msg):
+        if not re.search(r"\d", tok) and tok not in _BRAND_STOP:
+            brand = tok.capitalize()
+            break
+    if not brand:
+        m = _BRAND_WORDS.search(msg)
+        if m and m.group(1).upper() not in _BRAND_STOP:
+            brand = m.group(1).capitalize()
+    if not brand:
+        m = _BRAND_IS.search(msg)
+        if (m and m.group(1).upper() not in _BRAND_STOP
+                and m.group(1).lower() not in _KIND_WORDS):
+            brand = m.group(1).capitalize()
+    if brand:
+        kind = out["kind_word"]
+        out["product_name"] = f"{brand} {kind}" if kind else brand
+    return out
+
+
+def _merge(pack: PackInput, f: dict) -> bool:
+    """Fold one message's fields into the working pack. True if new."""
+    changed = False
+    for key in ("nafdac_number", "barcode", "batch"):
+        if f.get(key) and getattr(pack, key) != f[key]:
+            setattr(pack, key, f[key])
+            changed = True
+    name = f.get("product_name") or ""
+    if name and pack.product_name != name:
+        if not f.get("kind_word"):
+            old_kind = next(
+                (w for w in pack.product_name.lower().split()
+                 if w in _KIND_WORDS.values()), "")
+            if old_kind and old_kind not in name.lower():
+                name = f"{name} {old_kind}"
+        pack.product_name = name
+        changed = True
+    return changed
+
+
+def _working_pack(history, message: str) -> tuple[PackInput, dict]:
+    """The pack across turns: history first, this message last."""
+    pack = PackInput()
+    if not _RESET.search(message or ""):
+        for h in _clean_history(history):
+            if h.get("role") == "user":
+                _merge(pack, _extract_fields(h.get("content", "")))
+    fresh = _extract_fields(message or "")
+    _merge(pack, fresh)
+    return pack, fresh
+
+
+def _have_line(pack: PackInput) -> str:
+    bits = []
+    if pack.product_name:
+        bits.append(pack.product_name)
+    if pack.nafdac_number:
+        bits.append(f"NAFDAC {pack.nafdac_number}")
+    if pack.barcode:
+        bits.append(f"barcode {pack.barcode}")
+    if pack.batch:
+        bits.append(f"batch {pack.batch}")
+    if not bits:
+        return ""
+    return "So far I have " + ", ".join(bits) + ". "
+
+
+def _next_line(assessment: Assessment) -> str:
+    if assessment.actions:
+        first = assessment.actions[0]
+        return f"Next: {first.label} — {first.why}"
+    return assessment.headline
+
+
+def _is_question(message: str) -> bool:
+    q = (message or "").lower()
+    return any(re.search(getattr(ai, name), q)
+               for name in _QUESTION_INTENTS)
+
+
+def _converse(pack: PackInput, fresh: dict, message: str,
+              assessment: Assessment) -> str | None:
+    """A conversational reply, or None when a full check is wanted."""
+    small = ai._small_talk(message or "")
+    if small is not None:
+        return small
+    if _HOWTO_SCAN.search(message or ""):
+        return ("To scan: open the Scan tab and point the camera at the "
+                "barcode until it reads — or just type the digits here "
+                "and I'll take it from there. The barcode alone can't "
+                "confirm a pack, so I'll still need the NAFDAC number or "
+                "the dates after.")
+    if fresh.get("correction"):
+        name = pack.product_name or "that"
+        denied = fresh.get("denied") or ""
+        ack = (f"Got it — {name}, not {denied}. I've updated that."
+               if denied else f"Got it — {name}. I've updated that.")
+        return f"{ack} {_have_line(pack)}{_next_line(assessment)}"
+    if _is_question(message) and (pack.nafdac_number or pack.barcode
+                                  or pack.batch or pack.product_name):
+        return ai.answer(message, assessment)
+    if _CHECK_IT.search(message or "") and not (
+            pack.nafdac_number or pack.barcode or pack.batch):
+        return ("I don't have anything on this pack yet. Send the NAFDAC "
+                "number, barcode, batch or a photo of the back panel and "
+                "I'll check it.")
+    return None
 
 
 def _final(answer: str, ctx: dict, steps: int, provider: str,
@@ -293,23 +509,70 @@ def _proposal(pack: PackInput, assessment: Assessment) -> dict:
             "pack": asdict(pack)}
 
 
+def _fragment_ack(pack: PackInput, fresh: dict,
+                  assessment: Assessment) -> str | None:
+    """Acknowledge newly arrived details without a verdict dump."""
+    bits = []
+    if fresh.get("barcode"):
+        bits.append(f"Barcode {fresh['barcode']} noted.")
+    if fresh.get("batch"):
+        code = fresh["batch"]
+        if re.match(r"\d{6}[A-Z]?", code):
+            bits.append(f"That reads like a date or batch code ({code}) "
+                        "— I've kept it with this pack.")
+        else:
+            bits.append(f"Batch {code} recorded.")
+    if fresh.get("product_name") and not fresh.get("correction"):
+        bits.append(f"Noted — {pack.product_name}.")
+    if not bits:
+        return None
+    return " ".join(bits) + f" {_have_line(pack)}{_next_line(assessment)}"
+
+
 def _pipeline(message: str, image_bytes: bytes | None,
-              image_type: str) -> dict:
+              image_type: str, history=None) -> dict:
+    pack, fresh = _working_pack(history, message)
+    has_history = bool(_clean_history(history))
     extraction = None
-    pack = PackInput()
     if image_bytes:
         try:
             extraction = vision.extract_from_image(image_bytes, image_type)
         except vision.VisionUnavailable as exc:
+            assessment = _assess(pack)
             return {"answer": str(exc) + " Or type what the pack says.",
                     "proposal": None, "extraction": None,
-                    "assessment": _assess(pack).to_dict(),
+                    "assessment": assessment.to_dict(),
                     "provider": "vouch-composer", "steps": 1}
-        pack = _pack_fields(extraction.to_pack_kwargs())
+        for key, val in extraction.to_pack_kwargs().items():
+            if val and hasattr(pack, key):
+                setattr(pack, key, val)
+        assessment = _assess(pack)
+        text, who = ai.compose(assessment, message)
     else:
-        pack = _pack_from_text(message)
-    assessment = _assess(pack)
-    text, who = ai.compose(assessment, message)
+        assessment = _assess(pack)
+        said = _converse(pack, fresh, message, assessment)
+        if said is not None:
+            text, who = said, "vouch-composer"
+        elif (fresh.get("nafdac_number")
+                or (_CHECK_IT.search(message or "")
+                    and (pack.nafdac_number or pack.barcode
+                         or pack.batch))
+                or (not has_history and fresh.get("barcode"))):
+            text, who = ai.compose(assessment, message)
+        else:
+            ack = _fragment_ack(pack, fresh, assessment)
+            if ack is not None:
+                text, who = ack, "vouch-composer"
+            elif _have_line(pack):
+                text, who = (_have_line(pack) + "What would you like to "
+                             "know — why a check came out as it did, what "
+                             "to do next, or who to report to?",
+                             "vouch-composer")
+            else:
+                text, who = ("I didn't catch a pack detail in that. Send "
+                             "the NAFDAC number, barcode, batch or a "
+                             "photo — or say 'help' and I'll walk you "
+                             "through it.", "vouch-composer")
     proposal = None
     if (assessment.band == "high_risk"
             and (pack.nafdac_number or pack.barcode)
@@ -329,7 +592,7 @@ def chat(message: str, history=None, image_bytes: bytes | None = None,
                          image_bytes, image_type)
         except Exception as exc:
             audit.log("agent_fallback", "", str(exc)[:200])
-    return _pipeline(message or "", image_bytes, image_type)
+    return _pipeline(message or "", image_bytes, image_type, history)
 
 
 def execute_confirmed(action: dict, username: str) -> dict:
