@@ -31,6 +31,7 @@ import actions
 import agent
 import audit
 import auth
+import backup
 import ai
 import barcode as B
 import cases
@@ -561,6 +562,61 @@ def audit_log(limit: int = 50,
               user: dict = Depends(auth.require_admin)) -> dict:
     """Recent audit events. Admins only."""
     return {"events": audit.recent(max(1, min(limit, 500)))}
+
+
+class BackupRestoreBody(BaseModel):
+    run: str = ""
+
+
+def _backup_root() -> str:
+    return (os.environ.get("VOUCH_BACKUP_DIR")
+            or os.path.join(HERE, "backups"))
+
+
+@app.get("/api/backups")
+def list_backups(user: dict = Depends(auth.require_admin)) -> dict:
+    """Backup runs on this server, newest first. Admins only."""
+    root = _backup_root()
+    runs = []
+    try:
+        names = sorted(os.listdir(root), reverse=True)
+    except OSError:
+        names = []
+    for name in names:
+        d = os.path.join(root, name)
+        if not os.path.isdir(d):
+            continue
+        files = sorted(
+            r.replace(os.sep, "/")
+            for r in backup.rel_paths(backup.SOURCES)
+            if os.path.exists(os.path.join(d, r)))
+        runs.append({"name": name, "files": files})
+    return {"runs": runs}
+
+
+@app.post("/api/backup/restore")
+def restore_backup(body: BackupRestoreBody,
+                   user: dict = Depends(auth.require_admin)) -> dict:
+    """Restore a backup run over the live data. Admins only.
+
+    Takes a pre-restore snapshot first. Restore during low traffic and
+    restart the server afterwards.
+    """
+    name = (body.run or "").strip()
+    if not name or name in (".", "..") or "/" in name or "\\" in name:
+        raise HTTPException(400, "Unknown backup run.")
+    run_dir = os.path.join(_backup_root(), name)
+    if not os.path.isdir(run_dir):
+        raise HTTPException(404, f"No backup run '{name}'.")
+    try:
+        out = backup.restore_tree(run_dir)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    except OSError as exc:
+        raise HTTPException(500, f"Restore failed: {exc}")
+    audit.log("backup_restore", user.get("username", ""), name)
+    return {"restored": out["restored"], "snapshot": out["snapshot"],
+            "restart_required": True}
 
 
 def _owned_case(case_id: str, user: dict) -> dict:

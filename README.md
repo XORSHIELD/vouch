@@ -155,17 +155,21 @@ and gallery uploads; stop the server when done.
 **Accounts.** Checks never need sign-in; cases do. The first account
 registered is the admin. For scripted deploys, set `VOUCH_ADMIN_PASSWORD`
 before the first start instead. Sessions last 7 days; sign in from
-**Settings → Session** with your username or email.
+**Settings → Session** with your username or email. Admins can grant the
+inspector role there; inspectors read every case, consumers only their own.
 
 **Backups.** Cases, reports, accounts and the mirror live in `.data/`,
 `data/` and `.cache/`. Back them up:
 
 ```powershell
 python backup.py                 # timestamped copy in backups/, keeps 7
+python backup.py --restore backups/<stamp>   # verify, snapshot, restore (restart after)
 ```
 
 Schedule it (Task Scheduler on Windows, cron elsewhere) before real users
-depend on the server.
+depend on the server. Admins can also list runs at GET /api/backups
+and restore one with POST /api/backup/restore — restart the server
+afterwards either way.
 
 **Fresh data.** Set `VOUCH_AUTO_SYNC=1` and the server refreshes the
 Greenbook mirror daily by itself. Without it, sync from Settings or
@@ -235,7 +239,7 @@ vouch/
   auth.py          accounts, sessions, roles
   audit.py         append-only security log
   ratelimit.py     per-IP rate limiting middleware
-  backup.py        timestamped database backups
+  backup.py        timestamped backups + verified restore
   manufacturer.py  maker serial-check seam
   mas.py           scratch-PIN verification seam
   sms.py           SMS/USSD inbound seam

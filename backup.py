@@ -7,6 +7,7 @@ backup taken while the server runs is still consistent.
 
 Run:  python backup.py
       python backup.py --keep 14 --dest D:\\vouch-backups
+      python backup.py --restore backups/20261101-120000
 """
 
 from __future__ import annotations
@@ -117,9 +118,13 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Back up the Vouch databases")
     ap.add_argument("--dest", default=os.path.join(HERE, "backups"))
     ap.add_argument("--keep", type=int, default=7)
+    ap.add_argument("--restore", metavar="RUN", default="",
+                    help="restore RUN (a backups/<stamp> folder) over the live data")
     a = ap.parse_args(argv)
     os.makedirs(a.dest, exist_ok=True)
     try:
+        if a.restore:
+            return _restore_cli(a.restore)
         out = backup_tree(SOURCES, a.dest, a.keep)
     except Exception as exc:
         print(f"backup failed: {exc}", file=sys.stderr)
@@ -129,6 +134,127 @@ def main(argv: list[str]) -> int:
         print(f"  kept {name}")
     for name in out["missing"]:
         print(f"  skip {name} (not present)")
+    return 0
+
+
+def rel_paths(sources: list[str]) -> list[str]:
+    """Backup-relative path for each source (mirrors backup_tree)."""
+    return [os.path.relpath(s, HERE) if s.startswith(HERE) else
+            os.path.basename(s.rstrip(os.sep)) for s in sources]
+
+
+def _check_sqlite(path: str) -> None:
+    con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=10)
+    try:
+        try:
+            rows = con.execute("PRAGMA integrity_check").fetchall()
+        except sqlite3.DatabaseError as exc:
+            raise ValueError(
+                f"backup file is not a readable database: {path}") from exc
+    finally:
+        con.close()
+    if len(rows) != 1 or str(rows[0][0]).lower() != "ok":
+        raise ValueError(f"backup file failed its integrity check: {path}")
+
+
+def _clear_sidecars(path: str) -> None:
+    for suffix in ("-wal", "-shm", "-journal"):
+        side = path + suffix
+        if os.path.exists(side):
+            try:
+                os.remove(side)
+            except OSError as exc:
+                raise OSError(
+                    f"cannot clear {side} (is the server still running? "
+                    f"stop it first): {exc}") from exc
+
+
+def _copy_live(src: str, dst: str) -> None:
+    if os.path.isdir(src):
+        shutil.copytree(src, dst)
+    elif src.endswith(".sqlite"):
+        _copy_sqlite(src, dst)
+    else:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(src, dst)
+
+
+def restore_tree(run_dir: str, live_root: str | None = None,
+                 sources: list[str] | None = None,
+                 snap_root: str | None = None) -> dict:
+    """Restore a backup run over the live tree.
+
+    Every .sqlite in the run is integrity-checked BEFORE anything live is
+    touched. Current live files are snapshotted to a sibling
+    pre-restore-<stamp> folder first. Only recognized backup paths are
+    written, always under live_root. Stop the server before restoring a
+    live system; restart it after.
+    """
+    live = live_root or HERE
+    srcs = sources if sources is not None else SOURCES
+    if not os.path.isdir(run_dir):
+        raise FileNotFoundError(f"not a Vouch backup run: {run_dir}")
+    rels = rel_paths(srcs)
+    present = [r for r in rels if os.path.exists(os.path.join(run_dir, r))]
+    if not present:
+        raise ValueError(
+            f"not a Vouch backup run (no recognized files): {run_dir}")
+    for rel in present:
+        if rel.endswith(".sqlite"):
+            _check_sqlite(os.path.join(run_dir, rel))
+    stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
+    snap = _unique_dest(snap_root or os.path.dirname(os.path.abspath(run_dir)),
+                        f"pre-restore-{stamp}")
+    os.makedirs(snap, exist_ok=True)
+    snap_copied = []
+    for rel in present:
+        cur = os.path.join(live, rel)
+        if os.path.exists(cur) or os.path.islink(cur):
+            _copy_live(cur, os.path.join(snap, rel))
+            snap_copied.append(rel)
+    restored = []
+    for rel in present:
+        src = os.path.join(run_dir, rel)
+        dst = os.path.join(live, rel)
+        if os.path.isdir(src) and not os.path.islink(src):
+            tmp = dst + ".restoring"
+            if os.path.exists(tmp):
+                _rmtree_loud(tmp)
+            shutil.copytree(src, tmp, symlinks=True)
+            if os.path.isdir(dst) and not os.path.islink(dst):
+                shutil.rmtree(dst)
+            elif os.path.exists(dst) or os.path.islink(dst):
+                os.remove(dst)
+            os.rename(tmp, dst)
+        else:
+            tmp = dst + ".restoring"
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if src.endswith(".sqlite"):
+                if os.path.exists(tmp):
+                    _remove_with_retry(tmp)
+                _copy_sqlite(src, tmp)
+            else:
+                shutil.copy2(src, tmp)
+            if dst.endswith(".sqlite"):
+                _clear_sidecars(dst)
+            os.replace(tmp, dst)
+        restored.append(rel)
+    return {"restored": restored, "snapshot": snap,
+            "snapshotted": snap_copied,
+            "skipped": [r for r in rels if r not in present]}
+
+
+def _restore_cli(run: str) -> int:
+    try:
+        out = restore_tree(run)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        print(f"restore failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"restore <- {run}")
+    for name in out["restored"]:
+        print(f"  back {name}")
+    print(f"  snapshot {out['snapshot']} (pre-restore copy)")
+    print("  restart the server before use")
     return 0
 
 

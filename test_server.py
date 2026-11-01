@@ -9,6 +9,7 @@ Run:  python test_server.py
 from __future__ import annotations
 
 import os
+import sqlite3
 import tempfile
 import threading
 import time
@@ -82,6 +83,61 @@ _deps = [getattr(d, "call", None) for r in server.app.routes
          if getattr(r, "path", "") == "/api/audit"
          for d in getattr(r.dependant, "dependencies", [])]
 check("audit needs an admin", server.auth.require_admin in _deps)
+
+
+print("backup restore")
+_bdir = os.path.join(TMP, "backups")
+os.makedirs(_bdir, exist_ok=True)
+os.environ["VOUCH_BACKUP_DIR"] = _bdir
+_blive = os.path.join(TMP, "livesrv")
+_real_here, _real_sources = server.backup.HERE, server.backup.SOURCES
+server.backup.HERE = _blive
+server.backup.SOURCES = [os.path.join(_blive, ".data", "vouch.sqlite"),
+                         os.path.join(_blive, ".data", "audit.log"),
+                         os.path.join(_blive, "data", "vouch.sqlite"),
+                         os.path.join(_blive, "data", "alerts.json"),
+                         os.path.join(_blive, "data", "safety"),
+                         os.path.join(_blive, ".cache", "registry.sqlite")]
+try:
+    os.makedirs(os.path.join(_blive, ".data"), exist_ok=True)
+    _c = sqlite3.connect(os.path.join(_blive, ".data", "vouch.sqlite"))
+    _c.execute("CREATE TABLE t (v TEXT)")
+    _c.execute("INSERT INTO t VALUES ('srv-before')")
+    _c.commit()
+    _c.close()
+    with open(os.path.join(_blive, ".data", "audit.log"), "w") as _fh:
+        _fh.write("logline\n")
+    _run = server.backup.backup_tree(server.backup.SOURCES, _bdir)["dest"]
+    _c = sqlite3.connect(os.path.join(_blive, ".data", "vouch.sqlite"))
+    _c.execute("UPDATE t SET v='srv-after'")
+    _c.commit()
+    _c.close()
+    _name = os.path.basename(_run)
+    _runs = server.list_backups(server.auth.me(_toka))["runs"]
+    check("backups listed", any(r["name"] == _name for r in _runs),
+          str(_runs))
+    _out = server.restore_backup(server.BackupRestoreBody(run=_name),
+                                 server.auth.me(_toka))
+    _c = sqlite3.connect(os.path.join(_blive, ".data", "vouch.sqlite"))
+    _v = _c.execute("SELECT v FROM t").fetchone()[0]
+    _c.close()
+    check("endpoint restores content", _v == "srv-before", _v)
+    check("restart flagged", _out.get("restart_required") is True)
+    try:
+        server.restore_backup(server.BackupRestoreBody(run="../x"),
+                              server.auth.me(_toka))
+        check("path traversal refused", False)
+    except Exception as exc:
+        check("path traversal refused",
+              "400" in str(exc) or "Unknown" in str(exc), str(exc)[:120])
+    _bdeps = [getattr(d, "call", None) for r in server.app.routes
+              if getattr(r, "path", "") in ("/api/backups",
+                                            "/api/backup/restore")
+              for d in getattr(r.dependant, "dependencies", [])]
+    check("backup routes need an admin",
+          _bdeps.count(server.auth.require_admin) == 2, str(len(_bdeps)))
+finally:
+    server.backup.HERE, server.backup.SOURCES = _real_here, _real_sources
 
 
 print("security headers")
