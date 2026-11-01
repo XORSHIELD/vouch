@@ -244,6 +244,35 @@ REPORT_INTENT = r"\b(report|complain|fccpc|nafdac|where do i send|who do i)\b"
 EXPIRY_INTENT = r"\b(expire|expiry|expired|best before|shelf life|out of date)\b"
 
 
+def _small_talk(q: str) -> str | None:
+    """Greetings and mic checks, answered directly. Full-message matches
+    only, so a greeting in front of a real question never hijacks it."""
+    t = re.sub(r"\s+", " ", (q or "").strip().lower()).strip(" .!?,;:")
+    if t in ("hi", "hello", "hey", "yo", "good morning", "good afternoon",
+             "good evening", "good day", "how far", "howfa"):
+        return ("Hello! I check medicine packs against the NAFDAC register. "
+                "Type a NAFDAC number, or tap the mic and say it.")
+    if t in ("can you hear me", "are you hearing me", "are you there",
+             "do you hear me", "am i audible", "testing", "testing 1 2 3",
+             "test", "test mic", "mic test"):
+        return ("Yes — I hear you loud and clear. Ask about a pack: say or "
+                "type its NAFDAC number.")
+    if t in ("thanks", "thank you", "thank u", "many thanks", "thx"):
+        return ("You're welcome. If anything else about this pack is "
+                "unclear, ask away.")
+    if t in ("bye", "goodbye", "good night", "goodnight", "see you",
+             "see you later"):
+        return ("Goodbye — keep the pack and receipt until any follow-up "
+                "is done.")
+    if t in ("help", "help me", "what can you do", "what do you do",
+             "how does this work", "how do i use this"):
+        return ("I check NAFDAC numbers, barcodes, batches and dates "
+                "against the public register, then explain what the checks "
+                "found and what to do next. Try a NAFDAC number from one "
+                "of your packs.")
+    return None
+
+
 def answer(question: str, a) -> str:
     """Answer one question from the assessment. Never from imagination."""
     q = (question or "").strip().lower()
@@ -251,6 +280,9 @@ def answer(question: str, a) -> str:
     if not q:
         return explain(a)
 
+    small = _small_talk(q)
+    if small is not None:
+        return small
     if re.search(VERDICT_INTENT, q):
         return _no_verdict(a)
     if re.search(SAFETY_INTENT, q):

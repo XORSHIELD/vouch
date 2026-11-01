@@ -130,5 +130,24 @@ finally:
     urllib.request.urlopen = _real_urlopen
     ai.API_KEY, ai.API_BASE = "", _old_base
 
+print("small talk")
+_hear, _ = ai.compose(A, "are you hearing me?")
+check("hearing check answered",
+      "hear you" in _hear.lower() and "photograph" not in _hear.lower(),
+      _hear[:160])
+_hi, _ = ai.compose(A, "Hello!")
+check("greeting answered briefly",
+      len(_hi) < 300 and "nafdac" in _hi.lower(), _hi[:160])
+_thanks, _ = ai.compose(A, "thanks")
+check("thanks answered", "welcome" in _thanks.lower(), _thanks[:120])
+_help, _ = ai.compose(A, "what can you do?")
+check("help explains the job",
+      "barcode" in _help.lower() and "batch" in _help.lower(),
+      _help[:160])
+_mixed, _ = ai.compose(A, "hey, when does this expire?")
+check("greeting plus question still routes",
+      "Hello!" not in _mixed and "expir" in _mixed.lower(),
+      _mixed[:160])
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
