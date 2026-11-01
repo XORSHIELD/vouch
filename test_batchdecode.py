@@ -81,7 +81,7 @@ check("old 5-char format decodes",
 d = B.decode("Garnier", "38Q60OS", today=TODAY)
 check("skipped year letter refused", d.confidence == "unknown",
       repr(d))
-d = B.decode("Dudu Osun", "38S60OS", today=TODAY)
+d = B.decode("Avon", "38S60OS", today=TODAY)
 check("right shape, wrong brand refused",
       d.confidence == "unknown", repr(d))
 
@@ -99,12 +99,37 @@ d = B.decode("Dettol", "anything", today=TODAY)
 check("dettol guided", d.confidence == "guidance", repr(d))
 
 print("unknown brands")
-d = B.decode("Dudu Osun", "ABC123", today=TODAY)
+d = B.decode("Avon", "ABC123", today=TODAY)
 check("unverified brand honest",
       d.confidence == "unknown" and d.made is None
       and "Nivea" in d.note, repr(d))
 d = B.decode("", "81535542", today=TODAY)
 check("no brand, no decode", d.confidence == "unknown", repr(d))
+d = B.decode("Dudu Osun", "whatever", today=TODAY)
+check("dudu osun guided to printed dates",
+      d.confidence == "guidance" and "end of the box" in d.note,
+      repr(d))
+
+print("pao arithmetic")
+check("month-end clamps",
+      B.add_months(date(2026, 1, 31), 1) == date(2026, 2, 28))
+check("plain year roll",
+      B.add_months(date(2026, 6, 15), 12) == date(2027, 6, 15))
+s = B.pao_status(12, date(2026, 6, 10), TODAY)
+check("good until next year",
+      s["use_until"] == "2027-06-10" and s["state"] == "good"
+      and s["days_left"] == 221, repr(s))
+s = B.pao_status(6, date(2026, 3, 1), TODAY)
+check("passed flag", s["state"] == "passed" and s["days_left"] < 0,
+      repr(s))
+s = B.pao_status(12, date(2025, 11, 15), TODAY)
+check("almost flag",
+      s["state"] == "almost" and s["days_left"] == 14, repr(s))
+try:
+    B.pao_status(0, date(2026, 1, 1), TODAY)
+    check("pao range refused", False, "no error")
+except ValueError:
+    check("pao range refused", True)
 
 print("endpoints")
 import server

@@ -144,10 +144,28 @@ check("made-date answered with ambiguity",
 guided = convo("this is Dove soap", "batch 12661", "how old is it?")
 check("open-dated brand guided",
       "openly" in guided[2]["answer"], guided[2]["answer"][:200])
-unknown = convo("this is Dudu Osun", "batch ABC123", "how old is it?")
+unknown = convo("this is Avon", "batch X1Y2", "how old is it?")
 check("unverified brand honest",
       "No verified decoder" in unknown[2]["answer"],
       unknown[2]["answer"][:200])
+dudu = convo("this is Dudu Osun", "batch ABC123", "how old is it?")
+check("dudu osun guided to the box",
+      "end of the box" in dudu[2]["answer"], dudu[2]["answer"][:200])
+
+print("pao")
+pao = convo("the jar says 12M", "I opened it in June")
+check("pao months remembered, opening asked",
+      "12M" in pao[0]["answer"] and "open" in pao[0]["answer"].lower(),
+      pao[0]["answer"][:160])
+check("pao answer dated",
+      "Jun 2027" in pao[1]["answer"], pao[1]["answer"][:200])
+over = agent.chat("my cream is 6M, opened in March")
+check("passed pao honest",
+      "Sep 2026" in over["answer"] and "passed" in over["answer"],
+      over["answer"][:200])
+hijack = agent.chat("I ran 5M in June, feeling great")
+check("non-cosmetic 5M not hijacked",
+      "runs out" not in hijack["answer"], hijack["answer"][:200])
 
 print("single-turn checks unchanged")
 r = agent.chat("NAFDAC A99-9999, open a case")

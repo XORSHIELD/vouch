@@ -22,6 +22,7 @@ import os
 import re
 import urllib.request
 from dataclasses import asdict, fields
+from datetime import date
 
 import actions
 import ai
@@ -293,7 +294,7 @@ _BRAND_WORDS = re.compile(
     r"(?:is\s+)?([A-Za-z][\w&']*)", re.IGNORECASE)
 _BRAND_IS = re.compile(
     r"\b(?:it'?s|this is|that'?s|named)\s+(?:called\s+)?"
-    r"([A-Z][A-Za-z&']*)")
+    r"([A-Z][A-Za-z&']*(?:\s+[A-Z][A-Za-z&']*)?)")
 _BRAND_STOP = {"NAFDAC", "REG", "NUMBER", "BATCH", "BARCODE", "SCAN",
                "HELP", "PLEASE", "HELLO", "DETAILS", "DETAIL", "PACK",
                "OK", "YES", "NO", "FINE", "THANKS"}
@@ -305,6 +306,21 @@ _MADE_IT = re.compile(
     re.IGNORECASE)
 _SHELF_LINE = ("Most sealed cosmetics keep about 3 years; the open-jar "
                "symbol (like 12M) counts from first opening.")
+_PAO_M = re.compile(r"\b(\d{1,2})\s*M\b", re.IGNORECASE)
+_PAO_WORDS = re.compile(r"\b(\d{1,2})\s*months?\b", re.IGNORECASE)
+_PAO_CUE = re.compile(r"\bpao\b|open.jar|after opening|\bsymbol\b"
+                      r"|\bjar\b|\bopened?\b|\bopening\b", re.IGNORECASE)
+_MONTHS = {"january": 1, "jan": 1, "february": 2, "feb": 2, "march": 3,
+           "mar": 3, "april": 4, "apr": 4, "may": 5, "june": 6, "jun": 6,
+           "july": 7, "jul": 7, "august": 8, "aug": 8,
+           "september": 9, "sep": 9, "sept": 9, "october": 10,
+           "oct": 10, "november": 11, "nov": 11, "december": 12,
+           "dec": 12}
+_OPENED = re.compile(
+    r"(january|february|march|april|may|june|july|august|september|"
+    r"october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|"
+    r"sept|oct|nov|dec)\s*(\d{4})?", re.IGNORECASE)
+_LAST_MONTH = re.compile(r"\blast month\b", re.IGNORECASE)
 
 
 def _extract_fields(text: str) -> dict:
@@ -361,12 +377,24 @@ def _extract_fields(text: str) -> dict:
                     if 4 <= len(digits) <= 20:
                         out["batch"] = digits
                         break
-            elif codes_only:
-                code = re.sub(r"\s+", " ", up).strip(" .,;:#")
-                if (re.search(r"[A-Z]", code) and re.search(r"\d", code)
-                        and len(code) >= 4
-                        and not re.search(r"\d{8,}", code)):
-                    out["batch"] = code
+            if not out["batch"]:
+                for tok in re.findall(r"\S+", msg):
+                    clean = tok.strip(" .,;:#")
+                    if (len(clean) >= 4
+                            and re.search(r"[A-Za-z]", clean)
+                            and re.search(r"\d", clean)
+                            and re.fullmatch(r"[A-Za-z0-9:/#.,-]+",
+                                             clean)):
+                        out["batch"] = clean.upper()
+                        break
+            if not out["batch"] and codes_only:
+                pure_words = re.findall(r"[A-Z]+", up)
+                if not any(len(t) >= 3 for t in pure_words):
+                    code = re.sub(r"\s+", " ", up).strip(" .,;:#")
+                    if (re.search(r"[A-Z]", code) and re.search(r"\d", code)
+                            and len(code) >= 4
+                            and not re.search(r"\d{8,}", code)):
+                        out["batch"] = code
     for pat in _CORRECTION:
         m = pat.search(msg)
         if not m:
@@ -399,9 +427,11 @@ def _extract_fields(text: str) -> dict:
             brand = m.group(1).capitalize()
     if not brand:
         m = _BRAND_IS.search(msg)
-        if (m and m.group(1).upper() not in _BRAND_STOP
-                and m.group(1).lower() not in _KIND_WORDS):
-            brand = m.group(1).capitalize()
+        if m:
+            words = m.group(1).split()
+            if (m.group(1).upper() not in _BRAND_STOP
+                    and all(w.lower() not in _KIND_WORDS for w in words)):
+                brand = " ".join(w.capitalize() for w in words)
     if brand:
         kind = out["kind_word"]
         out["product_name"] = f"{brand} {kind}" if kind else brand
@@ -514,6 +544,15 @@ def _converse(pack: PackInput, fresh: dict, message: str,
         return f"{ack} {_tail(pack, assessment, history)}"
     if _MADE_IT.search(message or "") and pack.batch:
         return _made_answer(pack)
+    if not CASE_WORDS.search(message or ""):
+        months, opened, cued = _pao_context(history, message)
+        if cued and months and opened:
+            return _pao_answer(months, opened)
+        if cued and months and not opened:
+            return (f"{months}M — got it. What month did you open it?")
+        if cued and opened and not months:
+            return ("Got the opening month. What does the open-jar symbol "
+                    "say — 6M, 12M, 24M?")
     if _is_question(message) and (pack.nafdac_number or pack.barcode
                                   or pack.batch or pack.product_name):
         return ai.answer(message, assessment)
@@ -555,6 +594,92 @@ def _proposal(pack: PackInput, assessment: Assessment) -> dict:
             "detail": (f"{assessment.band}: {assessment.headline} "
                        f"Pack {pack.nafdac_number or pack.barcode}."),
             "pack": asdict(pack)}
+
+
+def _parse_pao(text: str) -> tuple[int | None, date | None]:
+    """PAO months and opening month from one message, if stated."""
+    msg = text or ""
+    months: int | None = None
+    m = _PAO_M.search(msg)
+    if m:
+        months = int(m.group(1))
+    elif _PAO_WORDS.search(msg) and _PAO_CUE.search(msg):
+        months = int(_PAO_WORDS.search(msg).group(1))  # type: ignore[union-attr]
+    if months is not None and not 1 <= months <= 60:
+        months = None
+    opened: date | None = None
+    today = date.today()
+    if _LAST_MONTH.search(msg):
+        first = date(today.year, today.month, 1)
+        opened = date.fromordinal(first.toordinal() - 1).replace(day=1)
+    else:
+        m = _OPENED.search(msg)
+        if m and ("open" in msg.lower() or months is not None):
+            month = _MONTHS[m.group(1).lower()]
+            year = int(m.group(2)) if m.group(2) else today.year
+            if not m.group(2) and month > today.month:
+                year -= 1
+            opened = date(year, month, 1)
+    return months, opened
+
+
+def _bare_month(text: str, today: date) -> date | None:
+    m = _OPENED.search(text or "")
+    if not m:
+        return None
+    month = _MONTHS[m.group(1).lower()]
+    year = int(m.group(2)) if m.group(2) else today.year
+    if not m.group(2) and month > today.month:
+        year -= 1
+    try:
+        return date(year, month, 1)
+    except ValueError:
+        return None
+
+
+def _pao_context(history, message: str
+                 ) -> tuple[int | None, date | None, bool]:
+    """PAO facts across turns, plus whether PAO was ever cued.
+
+    A bare month ("June") only counts as an opening month when the
+    jar symbol is already on the table — otherwise "I ran 5M in June"
+    would read as cosmetics.
+    """
+    texts: list[str] = []
+    if not _RESET.search(message or ""):
+        texts = [h.get("content", "") for h in _clean_history(history)
+                 if h.get("role") == "user"]
+    texts.append(message or "")
+    months: int | None = None
+    opened: date | None = None
+    for text in texts:
+        pm, po = _parse_pao(text)
+        months = pm if pm is not None else months
+        opened = po if po is not None else opened
+    cue = any(_PAO_CUE.search(t) for t in texts)
+    if months is not None and opened is None:
+        today = date.today()
+        for text in reversed(texts):
+            bare = _bare_month(text, today)
+            if bare is not None:
+                opened = bare
+                break
+    return months, opened, cue
+
+
+def _pao_answer(months: int, opened: date) -> str:
+    s = BD.pao_status(months, opened)
+    base = (f"Counted from {opened.strftime('%b %Y')}, {months}M runs "
+            f"out in {s['use_until_label']}. ")
+    if s["state"] == "passed":
+        return base + (f"That date has passed ({-s['days_left']} days "
+                       "ago), so the maker no longer stands behind this "
+                       "pack. If it looks, smells or feels off, stop "
+                       "using it and ask a pharmacist.")
+    if s["state"] == "almost":
+        return base + (f"About {s['days_left']} days left — plan the "
+                       "replacement.")
+    return base + "Still within the symbol."
 
 
 def _made_answer(pack: PackInput) -> str:

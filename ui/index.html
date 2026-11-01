@@ -1358,6 +1358,20 @@
         </div>
       </details>
       <details class="guide-item">
+        <summary>How long after opening (12M symbols)</summary>
+        <div class="g-body">
+          <p>The open-jar symbol says how many months a product stays good <i>after you open it</i> — 12M means twelve months from opening, not from manufacture.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <label class="f" style="flex:1;min-width:120px;margin:0"><span>Symbol (months)</span>
+              <input id="paoMonths" type="number" min="1" max="60" placeholder="12" inputmode="numeric" /></label>
+            <label class="f" style="flex:1;min-width:140px;margin:0"><span>Opened</span>
+              <input id="paoOpened" type="month" /></label>
+            <button class="btn sm" id="paoBtn" type="button">Check</button>
+          </div>
+          <div id="paoResult" style="margin-top:10px;font-size:13.5px;line-height:1.6"></div>
+        </div>
+      </details>
+      <details class="guide-item">
         <summary>Common packaging irregularities</summary>
         <div class="g-body">
           <p>Watch for: a sticker over printed text; expiry printed over a different date; a seal or tamper band already broken; a missing hologram where the brand normally has one; blurred or uneven print; spelling errors in the brand or manufacturer name; loose or damaged tablets.</p>
@@ -2238,6 +2252,31 @@ $('#batchCode').addEventListener('keydown', e => {
   if (e.key === 'Enter'){ e.preventDefault(); runBatchDecode(); }
 });
 loadBatchBrands();
+
+/* ---------- pao calculator (client-side date math) ---------- */
+$('#paoBtn').onclick = () => {
+  const box = $('#paoResult');
+  const m = parseInt($('#paoMonths').value, 10);
+  const o = $('#paoOpened').value || '';
+  if (!m || m < 1 || m > 60 || !/^\d{4}-\d{2}$/.test(o)){
+    box.textContent = '';
+    toast('Enter 1-60 months and the opening month.');
+    return;
+  }
+  const parts = o.split('-').map(Number);
+  const until = new Date(parts[0], parts[1] - 1 + m, 1);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((until.getTime() - today.getTime()) / 86400000);
+  const label = until.toLocaleDateString(undefined, {month:'short', year:'numeric'});
+  if (days < 0){
+    box.textContent = 'Ran out in ' + label + ' (' + (-days) + ' days ago). The maker no longer stands behind this pack.';
+  } else if (days <= 30){
+    box.textContent = 'Good until ' + label + '. About ' + days + ' days left.';
+  } else {
+    box.textContent = 'Good until ' + label + '. Still within the symbol.';
+  }
+};
 
 async function runBarcodeDemo(key, btn){
   if (btn) btn.disabled = true;

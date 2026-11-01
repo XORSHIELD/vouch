@@ -82,6 +82,7 @@ _ALIASES = {
                  "rexona", "axe", "lifebuoy", "pepsodent"],
     "colgate": ["colgate", "palmolive"],
     "reckitt": ["dettol"],
+    "printed": ["dudu osun", "duduosun", "tropical naturals"],
 }
 
 _LABELS = {
@@ -91,6 +92,7 @@ _LABELS = {
     "unilever": "Unilever",
     "colgate": "Colgate",
     "reckitt": "Reckitt",
+    "printed": "Printed dates",
 }
 
 # L'Oreal year letters: A=2004, running forward, skipping I, O, Q and V
@@ -119,6 +121,9 @@ _GUIDANCE = {
     "reckitt": ("Dettol prints the manufacture and expiry dates openly "
                 "on the pack — read those. There is no verified public "
                 "decoder for Reckitt batch codes."),
+    "printed": ("Dudu Osun prints the expiry date on the end of the box — "
+                "read that, plus any scratch panel, which is the maker's "
+                "own check. There is no batch decoder for this brand."),
 }
 
 _UNKNOWN_NOTE = ("No verified decoder for this brand yet. Vouch decodes "
@@ -313,6 +318,36 @@ def note_hint() -> str:
             "bases and pump shoulders.")
 
 
+def add_months(day: date, months: int) -> date:
+    """Calendar-month addition. Jan 31 + 1 month = Feb 28, not Mar 3."""
+    total = day.year * 12 + (day.month - 1) + months
+    year, month = divmod(total, 12)
+    month += 1
+    leap = year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+    last = [31, 29 if leap else 28, 31, 30, 31, 30,
+            31, 31, 30, 31, 30, 31][month - 1]
+    return date(year, month, min(day.day, last))
+
+
+def pao_status(pao_months: int, opened: date,
+               today: date | None = None) -> dict:
+    """After-opening arithmetic: good until when, and where today falls.
+
+    Pure date math on user-supplied inputs — no brand tables involved,
+    so there is nothing here to get wrong except the inputs.
+    """
+    today = today or date.today()
+    if not 1 <= int(pao_months) <= 60:
+        raise ValueError("PAO must be 1-60 months.")
+    use_until = add_months(opened, int(pao_months))
+    days_left = (use_until - today).days
+    state = "passed" if days_left < 0 else (
+        "almost" if days_left <= 30 else "good")
+    return {"use_until": use_until.isoformat(),
+            "use_until_label": use_until.strftime("%b %Y"),
+            "days_left": days_left, "state": state}
+
+
 def supported() -> list[dict]:
     """Brand groups for pickers. Mode is decode or guidance, never both."""
     return [
@@ -334,4 +369,6 @@ def supported() -> list[dict]:
          "brands": ["Colgate", "Palmolive"], "mode": "guidance"},
         {"id": "reckitt", "label": "Dettol",
          "brands": ["Dettol"], "mode": "guidance"},
+        {"id": "printed", "label": "Printed dates",
+         "brands": ["Dudu Osun"], "mode": "guidance"},
     ]
