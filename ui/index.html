@@ -1372,6 +1372,14 @@
         </div>
       </details>
       <details class="guide-item">
+        <summary>Browse all brands (<span id="brandCount">…</span>)</summary>
+        <div class="g-body">
+          <p>Every brand in the reference directory, with what Vouch can do for each — decode the batch here, printed-date guidance, or an honest link out.</p>
+          <input id="brandFilter" placeholder="Filter brands…" autocomplete="off" />
+          <div id="brandList" style="margin-top:6px"></div>
+        </div>
+      </details>
+      <details class="guide-item">
         <summary>Common packaging irregularities</summary>
         <div class="g-body">
           <p>Watch for: a sticker over printed text; expiry printed over a different date; a seal or tamper band already broken; a missing hologram where the brand normally has one; blurred or uneven print; spelling errors in the brand or manufacturer name; loose or damaged tablets.</p>
@@ -2277,6 +2285,80 @@ $('#paoBtn').onclick = () => {
     box.textContent = 'Good until ' + label + '. Still within the symbol.';
   }
 };
+
+/* ---------- brand directory ---------- */
+let brandDir = [];
+async function loadBrandDir(){
+  try {
+    const r = await api('/api/batch/directory');
+    brandDir = r.brands || [];
+    $('#brandCount').textContent = brandDir.length;
+    renderBrandDir('');
+  } catch(e){
+    $('#brandList').innerHTML = '<span class="hint">Directory unavailable.</span>';
+  }
+}
+function renderBrandDir(q){
+  const box = $('#brandList');
+  box.innerHTML = '';
+  const query = (q || '').trim().toLowerCase();
+  const rows = brandDir.filter(b => !query || b.name.toLowerCase().includes(query));
+  rows.slice(0, 80).forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'reg-row';
+    const main = document.createElement('div');
+    main.className = 'reg-main';
+    const nm = document.createElement('b');
+    nm.className = 'reg-name';
+    nm.textContent = b.name;
+    main.appendChild(nm);
+    if ((b.categories || []).length){
+      const meta = document.createElement('span');
+      meta.className = 'reg-meta';
+      meta.textContent = b.categories.join(' · ');
+      main.appendChild(meta);
+    }
+    row.appendChild(main);
+    if (b.status === 'decode' || b.status === 'guidance'){
+      const btn = document.createElement('button');
+      btn.className = 'btn ghost sm';
+      btn.type = 'button';
+      btn.textContent = b.status === 'decode' ? 'Decode here' : 'Guidance';
+      btn.onclick = () => {
+        const bb = $('#batchBrand');
+        if (bb) bb.value = b.name;
+        const det = bb ? bb.closest('details') : null;
+        if (det) det.open = true;
+        const bc = $('#batchCode');
+        if (bc){
+          try { bc.scrollIntoView({behavior:'smooth', block:'center'}); bc.focus({preventScroll:true}); } catch {}
+        }
+      };
+      row.appendChild(btn);
+    } else {
+      const a = document.createElement('a');
+      a.className = 'btn ghost sm';
+      a.href = b.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'Check there →';
+      row.appendChild(a);
+    }
+    box.appendChild(row);
+  });
+  const tail = document.createElement('p');
+  tail.className = 'hint';
+  tail.style.margin = '8px 0 0';
+  if (!rows.length){
+    tail.textContent = 'No brands match that filter.';
+    box.appendChild(tail);
+  } else if (rows.length > 80){
+    tail.textContent = 'Showing 80 of ' + rows.length + ' — filter to narrow.';
+    box.appendChild(tail);
+  }
+}
+$('#brandFilter').addEventListener('input', e => renderBrandDir(e.target.value));
+loadBrandDir();
 
 async function runBarcodeDemo(key, btn){
   if (btn) btn.disabled = true;

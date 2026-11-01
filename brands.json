@@ -1,0 +1,1812 @@
+{
+ "source": "batchcode.org brand directory, fetched Nov 2026",
+ "brands": [
+  {
+   "slug": "3ce",
+   "name": "3CE",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "4711-acqua-colonia",
+   "name": "4711 Acqua Colonia",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "50megumi",
+   "name": "50Megumi",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "abercrombie-fitch",
+   "name": "Abercrombie & Fitch",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "about",
+   "name": "About",
+   "categories": [
+    "skincare",
+    "haircare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "acnefree",
+   "name": "AcneFree",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "acqua-di-parma",
+   "name": "Acqua di Parma",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "adidas",
+   "name": "Adidas",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "adolfo-dominguez",
+   "name": "Adolfo Domínguez",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "aerin",
+   "name": "Aerin",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "aesop",
+   "name": "Aesop",
+   "categories": [
+    "skincare",
+    "haircare"
+   ]
+  },
+  {
+   "slug": "alba-botanica",
+   "name": "Alba Botanica",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "alfred-sung",
+   "name": "Alfred Sung",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "amouage",
+   "name": "Amouage",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "anastasia-beverly-hills",
+   "name": "Anastasia Beverly Hills",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "anessa",
+   "name": "Anessa",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "anna-sui",
+   "name": "Anna Sui",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "ap-beauty",
+   "name": "AP Beauty",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "aquaphor",
+   "name": "Aquaphor",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "armaf",
+   "name": "Armaf",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "atelier-cologne",
+   "name": "Atelier Cologne",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "aussie",
+   "name": "Aussie",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "aveeno",
+   "name": "Aveeno",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "avon",
+   "name": "Avon",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "avene",
+   "name": "Avène",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "axe",
+   "name": "AXE",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "azzaro",
+   "name": "Azzaro",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "balenciaga",
+   "name": "Balenciaga",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "bareminerals",
+   "name": "bareMinerals",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "bath-body-works",
+   "name": "Bath & Body Works",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "beauty-of-joseon",
+   "name": "Beauty of Joseon",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "becca",
+   "name": "Becca",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "benefit-cosmetics",
+   "name": "Benefit Cosmetics",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "betty-barclay",
+   "name": "Betty Barclay",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "bio-oil",
+   "name": "Bio-Oil",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "bioderma",
+   "name": "Bioderma",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "biolage",
+   "name": "Biolage",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "biore",
+   "name": "Bioré",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "biosilk",
+   "name": "Biosilk",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "biossance",
+   "name": "Biossance",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "bobbi-brown",
+   "name": "Bobbi Brown",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "bottega-veneta",
+   "name": "Bottega Veneta",
+   "categories": [
+    "skincare",
+    "haircare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "briogeo",
+   "name": "Briogeo",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "burberry",
+   "name": "Burberry",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "burts-bees",
+   "name": "Burt’s Bees",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "bvlgari",
+   "name": "Bvlgari",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "byredo",
+   "name": "Byredo",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "cacharel",
+   "name": "Cacharel",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "calvin-klein",
+   "name": "Calvin Klein",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "carolina-herrera",
+   "name": "Carolina Herrera",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "caudalie",
+   "name": "Caudalie",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "cerave",
+   "name": "CeraVe",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "cetaphil",
+   "name": "Cetaphil",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "chanel",
+   "name": "CHANEL",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "chantecaille",
+   "name": "Chantecaille",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "charlotte-tilbury",
+   "name": "Charlotte Tilbury",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "chi",
+   "name": "CHI",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "chloe",
+   "name": "Chloe",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "christian-dior",
+   "name": "Christian Dior",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "christian-louboutin",
+   "name": "Christian Louboutin",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "clairol",
+   "name": "Clairol",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "clarins",
+   "name": "Clarins",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "clean-and-clear",
+   "name": "Clean & Clear",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "clinique",
+   "name": "Clinique",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "cle-de-peau",
+   "name": "Clé de Peau",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "coach",
+   "name": "Coach",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "colgate",
+   "name": "Colgate",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "colourpop",
+   "name": "ColourPop",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "comme-des-garcons",
+   "name": "Comme des Garçons",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "coty",
+   "name": "Coty",
+   "categories": [
+    "skincare",
+    "haircare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "covergirl",
+   "name": "CoverGirl",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "creed",
+   "name": "Creed",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "crest",
+   "name": "Crest",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "decorte",
+   "name": "Decorté",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "dermalogica",
+   "name": "Dermalogica",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "diadermine",
+   "name": "Diadermine",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "diesel",
+   "name": "Diesel",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "diptyque",
+   "name": "Diptyque",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "dolce-gabbana",
+   "name": "Dolce&Gabbana",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "dove",
+   "name": "Dove",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "dr-barbara-sturm",
+   "name": "Dr. Barbara Sturm",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "drunk-elephant",
+   "name": "Drunk Elephant",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "e-l-f",
+   "name": "E.L.F.",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "elemis",
+   "name": "Elemis",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "elizabeth-arden",
+   "name": "Elizabeth Arden",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "elmex",
+   "name": "Elmex",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "erborian",
+   "name": "Erborian",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "essie",
+   "name": "Essie",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "estee-lauder",
+   "name": "Estée Lauder",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "etude-house",
+   "name": "Etude House",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "eucerin",
+   "name": "Eucerin",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "first-aid-beauty",
+   "name": "FAB First Aid Beauty",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "fenty-beauty",
+   "name": "Fenty Beauty by Rihanna",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "filorga",
+   "name": "Filorga",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "frederic-malle",
+   "name": "Frederic Malle",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "garnier",
+   "name": "Garnier",
+   "categories": [
+    "skincare",
+    "haircare"
+   ]
+  },
+  {
+   "slug": "giorgio-armani",
+   "name": "Giorgio Armani",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "givenchy",
+   "name": "Givenchy",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "glossier",
+   "name": "Glossier",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "gucci",
+   "name": "Gucci",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "guerlain",
+   "name": "Guerlain",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "guess",
+   "name": "Guess",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "hada-labo",
+   "name": "Hada Labo",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "hansaplast",
+   "name": "Hansaplast",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "head-and-shoulders",
+   "name": "Head & Shoulders",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "helena-rubinstein",
+   "name": "Helena Rubinstein",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "herbal-essences",
+   "name": "Herbal Essences",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "hourglass",
+   "name": "Hourglass",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "huda-beauty",
+   "name": "Huda Beauty",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "hugo-boss",
+   "name": "Hugo Boss",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "innisfree",
+   "name": "Innisfree",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "institut-esthederm",
+   "name": "Institut Esthederm",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "institut-esthederma",
+   "name": "Institut Esthederma",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "gatineau",
+   "name": "Institut Jeanne Gatineau",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "isdin",
+   "name": "ISDIN",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "issey-miyake",
+   "name": "Issey Miyake",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "it-cosmetics",
+   "name": "IT Cosmetics",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "jean-paul-gaultier",
+   "name": "Jean Paul Gaultier",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "jimmy-choo",
+   "name": "Jimmy Choo",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "jo-malone",
+   "name": "Jo Malone",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "john-varvatos",
+   "name": "John Varvatos",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "johnson-and-johnson",
+   "name": "Johnson & Johnson",
+   "categories": [
+    "skincare",
+    "haircare"
+   ]
+  },
+  {
+   "slug": "johnsons-baby",
+   "name": "Johnson’s Baby",
+   "categories": [
+    "skincare",
+    "haircare"
+   ]
+  },
+  {
+   "slug": "joico",
+   "name": "Joico",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "joop",
+   "name": "Joop!",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "juicy-couture",
+   "name": "Juicy Couture",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "kate-somerville",
+   "name": "Kate Somerville",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "kate-spade",
+   "name": "Kate Spade",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "kenzo",
+   "name": "Kenzo",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "kiehls",
+   "name": "Kiehl’s",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "kiko-milano",
+   "name": "Kiko Milano",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "kilian",
+   "name": "Kilian",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "kose",
+   "name": "KOSÉ",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "kvd-vegan-beauty",
+   "name": "KVD Vegan Beauty",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "kerastase",
+   "name": "Kérastase",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "la-mer",
+   "name": "La Mer",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "la-prairie",
+   "name": "La Prairie",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "la-roche-posay",
+   "name": "La Roche-Posay",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "lacoste",
+   "name": "Lacoste",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "lancome",
+   "name": "Lancôme",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "laneige",
+   "name": "Laneige",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "laura-mercier",
+   "name": "Laura Mercier",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "le-labo",
+   "name": "Le Labo",
+   "categories": [
+    "skincare",
+    "haircare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "listerine",
+   "name": "Listerine",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "loewe",
+   "name": "Loewe",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "lorac",
+   "name": "Lorac",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "louis-vuitton",
+   "name": "Louis Vuitton",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "lubriderm",
+   "name": "Lubriderm",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "lumene",
+   "name": "Lumene",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "loccitane",
+   "name": "L’Occitane en Provence",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "loreal",
+   "name": "L’Oréal",
+   "categories": [
+    "skincare",
+    "haircare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "mac",
+   "name": "MAC",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "maison-francis-kurkdjian",
+   "name": "Maison Francid Kurkdjian",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "maison-margiela",
+   "name": "Maison Margiela",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "mancera",
+   "name": "Mancera",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "marc-jacobs",
+   "name": "Marc Jacobs",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "matrix",
+   "name": "Matrix",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "max-factor",
+   "name": "Max Factor",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "maybelline",
+   "name": "Maybelline",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "miu-miu",
+   "name": "Miu Miu",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "mixa",
+   "name": "Mixa",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "moncler",
+   "name": "Moncler",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "montblanc",
+   "name": "Montblanc",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "moroccanoil",
+   "name": "Moroccanoil",
+   "categories": [
+    "skincare",
+    "haircare"
+   ]
+  },
+  {
+   "slug": "morphe",
+   "name": "Morphe",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "murad",
+   "name": "Murad",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "narciso-rodriguez",
+   "name": "Narciso Rodriguez",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "nars",
+   "name": "NARS",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "neutrogena",
+   "name": "Neutrogena",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "nioxin",
+   "name": "Nioxin",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "nivea",
+   "name": "NIVEA",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "nyx",
+   "name": "NYX",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "obagi-medical",
+   "name": "Obagi Medical",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "obagi-rohto",
+   "name": "Obagi Rohto",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "olaplex",
+   "name": "Olaplex",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "olay",
+   "name": "Olay",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "opi",
+   "name": "OPI",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "origins",
+   "name": "Origins",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "paco-rabanne",
+   "name": "Paco Rabanne",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "palmolive",
+   "name": "Palmolive",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "parfums-de-marly",
+   "name": "Parfums de Marly",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "paulas-choice",
+   "name": "Paula’s Choice",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "penhaligons",
+   "name": "Penhaligon’s",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "perricone-md",
+   "name": "Perricone MD",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "philosophy",
+   "name": "Philosophy",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "ponds",
+   "name": "Pond’s",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "prada",
+   "name": "Prada",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "privacy-policy",
+   "name": "Privacy Policy",
+   "categories": [
+    "skincare",
+    "haircare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "pureology",
+   "name": "Pureology",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "ralph-lauren",
+   "name": "Ralph Lauren",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "rare-beauty",
+   "name": "Rare Beauty",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "redken",
+   "name": "Redken",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "revlon",
+   "name": "Revlon",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "rexona",
+   "name": "Rexona",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "roberto-cavalli",
+   "name": "Roberto Cavalli",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "roc",
+   "name": "RoC",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "rogaine",
+   "name": "Rogaine",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "st-dupont",
+   "name": "S.T. Dupont",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "sally-hansen",
+   "name": "Sally Hansen",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "schwarzkopf",
+   "name": "Schwarzkopf",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "sebamed",
+   "name": "Sebamed",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "selena-gomez",
+   "name": "Selena Gomez",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "sephora",
+   "name": "Sephora",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "serge-lutens",
+   "name": "Serge Lutens",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "shiseido",
+   "name": "Shiseido",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "shu-uemura",
+   "name": "Shu Uemura",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "simple",
+   "name": "Simple",
+   "categories": [
+    "skincare",
+    "haircare"
+   ]
+  },
+  {
+   "slug": "sitemap.xml",
+   "name": "Sitemap",
+   "categories": [
+    "skincare",
+    "haircare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "sk-ii",
+   "name": "SK-II",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "skinbetter",
+   "name": "Skinbetter Science",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "skinceuticals",
+   "name": "Skinceuticals",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "softsoap",
+   "name": "Softsoap",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "sol-de-janeiro",
+   "name": "Sol de Janeiro",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "speed-stick",
+   "name": "Speed Stick",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "st-ives",
+   "name": "St. Ives",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "stila",
+   "name": "Stila",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "sulwhasoo",
+   "name": "Sulwhasoo",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "sunday-riley",
+   "name": "Sunday Riley",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "tarte",
+   "name": "Tarte",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "tatcha",
+   "name": "Tatcha",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "the-body-shop",
+   "name": "The Body Shop",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "the-inkey-list",
+   "name": "The Inkey List",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "the-ordinary",
+   "name": "The Ordinary",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "thierry-mugler",
+   "name": "Thierry Mugler",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "tom-ford",
+   "name": "Tom Ford",
+   "categories": [
+    "skincare",
+    "makeup",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "tommy-hilfiger",
+   "name": "Tommy Hilfiger",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "toms-of-maine",
+   "name": "Tom’s of Maine",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "too-faced",
+   "name": "Too Faced",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "tresemme",
+   "name": "TRESemmé",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "unilever",
+   "name": "Unilever",
+   "categories": [
+    "skincare",
+    "haircare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "urban-decay",
+   "name": "Urban Decay",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "valentino",
+   "name": "Valentino",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "vaseline",
+   "name": "Vaseline",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "versace",
+   "name": "Versace",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "vichy",
+   "name": "Vichy",
+   "categories": [
+    "skincare",
+    "makeup"
+   ]
+  },
+  {
+   "slug": "victorias-secret",
+   "name": "Victoria’s Secret",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "viktor-rolf",
+   "name": "Viktor & Rolf",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "wella",
+   "name": "Wella",
+   "categories": [
+    "haircare"
+   ]
+  },
+  {
+   "slug": "wet-n-wild",
+   "name": "Wet n Wild",
+   "categories": [
+    "makeup"
+   ]
+  },
+  {
+   "slug": "xerjoff",
+   "name": "Xerjoff",
+   "categories": [
+    "perfume"
+   ]
+  },
+  {
+   "slug": "youth-to-the-people",
+   "name": "Youth to the People",
+   "categories": [
+    "skincare"
+   ]
+  },
+  {
+   "slug": "ysl",
+   "name": "Yves Saint Laurent",
+   "categories": [
+    "skincare",
+    "perfume"
+   ]
+  },
+  {
+   "slug": "zara",
+   "name": "Zara",
+   "categories": [
+    "makeup",
+    "perfume"
+   ]
+  }
+ ]
+}

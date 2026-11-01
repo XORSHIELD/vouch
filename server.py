@@ -992,6 +992,16 @@ def batch_brands() -> dict:
     return {"groups": batchdecode.supported()}
 
 
+@app.get("/api/batch/directory")
+def batch_directory() -> dict:
+    """Every directory brand with Vouch's status for each.
+
+    Statuses are computed from the decoder table, so "decode" is only
+    ever claimed where a verified decoder exists. Read-only."""
+    brands = batchdecode.directory()
+    return {"count": len(brands), "brands": brands}
+
+
 @app.get("/api/registry/lookup/{number}")
 def registry_lookup(number: str) -> dict:
     """Full evidence for one printed number, including the variants tried."""

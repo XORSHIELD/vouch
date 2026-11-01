@@ -144,5 +144,26 @@ check("brand groups listed",
       and any(x["id"] == "unilever" and x["mode"] == "guidance"
               for x in g["groups"]), str(g)[:200])
 
+print("directory")
+d = server.batch_directory()
+brands = d["brands"]
+check("directory holds 200+ brands", len(brands) >= 240,
+      str(len(brands)))
+check("slugs unique",
+      len({b["slug"] for b in brands}) == len(brands))
+check("entries shaped",
+      all(b.get("slug") and b.get("name") and b.get("url", "").startswith(
+          "https://batchcode.org/") for b in brands))
+by_slug = {b["slug"]: b for b in brands}
+check("decoded brands marked decode",
+      by_slug.get("nivea", {}).get("status") == "decode"
+      and by_slug.get("garnier", {}).get("status") == "decode"
+      and by_slug.get("olay", {}).get("status") == "decode")
+check("guided brands marked guidance",
+      by_slug.get("dove", {}).get("status") == "guidance")
+check("unverified brands honest",
+      by_slug.get("avon", {}).get("status") == "unknown"
+      and by_slug.get("chanel", {}).get("status") == "unknown")
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

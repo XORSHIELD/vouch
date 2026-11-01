@@ -26,7 +26,10 @@ top date.
 
 from __future__ import annotations
 
+import json
+import os
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
@@ -67,7 +70,9 @@ class Decode:
 
 
 def _norm(text: str) -> str:
-    inner = re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
+    ascii_text = unicodedata.normalize("NFKD", text or "").encode(
+        "ascii", "ignore").decode()
+    inner = re.sub(r"[^a-z0-9]+", " ", ascii_text.lower()).strip()
     return f" {re.sub(r'\\s+', ' ', inner)} "
 
 
@@ -346,6 +351,40 @@ def pao_status(pao_months: int, opened: date,
     return {"use_until": use_until.isoformat(),
             "use_until_label": use_until.strftime("%b %Y"),
             "days_left": days_left, "state": state}
+
+
+_BRANDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "brands.json")
+_dir_cache: list[dict] | None = None
+
+
+def directory() -> list[dict]:
+    """Every directory brand, each with Vouch's honest status.
+
+    Status is computed live from the decoder table, so it can never
+    drift: a brand reads "decode" only while a verified decoder
+    matches it.
+    """
+    global _dir_cache
+    if _dir_cache is None:
+        with open(_BRANDS_FILE, encoding="utf-8") as fh:
+            raw = json.load(fh).get("brands", [])
+        out = []
+        for e in raw:
+            group = match_group(e.get("name", ""))
+            if group in _DECODERS:
+                status = "decode"
+            elif group in _GUIDANCE:
+                status = "guidance"
+            else:
+                status, group = "unknown", ""
+            out.append({"slug": e.get("slug", ""),
+                        "name": e.get("name", ""),
+                        "categories": list(e.get("categories", [])),
+                        "status": status, "group": group,
+                        "url": f"https://batchcode.org/{e.get('slug')}/"})
+        _dir_cache = sorted(out, key=lambda x: x["name"].lower())
+    return [dict(x) for x in _dir_cache]
 
 
 def supported() -> list[dict]:
