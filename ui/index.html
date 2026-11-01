@@ -1528,6 +1528,13 @@
         </div>
       </div>
     </div>
+    <div class="card hidden" id="analyticsCard" style="margin-bottom:18px">
+      <div class="hd">
+        <h2>Inspector analytics</h2>
+        <span class="who" id="analyticsWindow" style="margin-left:auto"></span>
+      </div>
+      <div class="bd"><div id="analyticsBody"></div></div>
+    </div>
     <div class="card hidden" id="reviewCard" style="margin-bottom:18px">
       <div class="hd">
         <h2>Review queue</h2>
@@ -1875,7 +1882,7 @@ function goTab(name){
   TABS.forEach(t => { const sec = $('#tab-' + t); if (sec) sec.classList.toggle('hidden', t !== name); });
   const shown = $('#tab-' + name);
   if (shown){ shown.classList.remove('anim-in'); void shown.offsetWidth; shown.classList.add('anim-in'); }
-  if (name === 'cases'){ loadCases(); loadSafety(); loadReview(); }
+  if (name === 'cases'){ loadCases(); loadSafety(); loadReview(); loadAnalytics(); }
   if (name === 'history') renderHistory();
   if (name === 'settings'){ loadSettings(); loadSyncStatus(); renderSession(); }
   document.querySelectorAll('.hero,.flow-card').forEach(el => el.classList.toggle('hidden', name !== 'check'));
@@ -4908,6 +4915,44 @@ function safetyPatternHtml(p){
   </div>`;
 }
 
+async function loadAnalytics(){
+  const card = $('#analyticsCard'), body = $('#analyticsBody');
+  if (!card || !body) return;
+  let me = null;
+  try { me = await currentUser(); } catch { me = null; }
+  if (!me || (me.role !== 'admin' && me.role !== 'inspector')){
+    card.classList.add('hidden');
+    return;
+  }
+  try {
+    const a = await api('/api/analytics?days=30');
+    card.classList.remove('hidden');
+    const c = a.cases || {}, s = a.safety || {}, au = (a.audit || {}).events || {};
+    $('#analyticsWindow').textContent = 'last 30 days';
+    const bar = (label, n, max) => `
+      <div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+        <span style="width:110px;font-size:12.5px;color:var(--ink-2)">${esc(label)}</span>
+        <div style="flex:1;background:var(--line);border-radius:6px;height:10px"><div style="width:${max ? Math.round(100*n/max) : 0}%;background:var(--green);border-radius:6px;height:10px"></div></div>
+        <b style="width:36px;text-align:right">${n}</b>
+      </div>`;
+    const bands = c.by_band || {};
+    const bmax = Math.max(1, ...Object.values(bands));
+    const days = Object.entries(c.per_day || {}).sort();
+    const peak = days.reduce((m, d) => d[1] > m[1] ? d : m, ['', 0]);
+    const closed = Object.values(c.outcomes || {}).reduce((x, y) => x + y, 0);
+    body.innerHTML = `
+      <div class="lbl2" style="margin-bottom:6px">Cases by verdict</div>
+      ${['clear','review','high_risk','incomplete'].map(b => bar(bandLabel(b), bands[b] || 0, bmax)).join('')}
+      <div class="lbl2" style="margin:12px 0 6px">Flow</div>
+      <p class="scan-note" style="margin:0 0 4px">Open ${(c.by_status || {}).open || 0} · closed ${closed} · busiest day ${esc(peak[0] || '—')} (${peak[1]}).</p>
+      <div class="lbl2" style="margin:12px 0 6px">Moderation</div>
+      <p class="scan-note" style="margin:0 0 4px">Pending ${s.pending || 0} · approved ${s.approved || 0} · dismissed ${s.dismissed || 0} · published alerts ${s.published_alerts || 0} · patterns ${(s.patterns || []).length}.</p>
+      <div class="lbl2" style="margin:12px 0 6px">Top batches</div>
+      ${(c.top_batches || []).slice(0, 5).map(t => `<p class="scan-note" style="margin:0 0 2px">${esc(t.nafdac || '—')} · ${esc(t.batch)} — ${t.reports} report${t.reports === 1 ? '' : 's'}</p>`).join('') || '<p class="scan-note" style="margin:0">None yet.</p>'}
+      <div class="lbl2" style="margin:12px 0 6px">Recent activity</div>
+      <p class="scan-note" style="margin:0">${Object.entries(au).sort((x, y) => y[1] - x[1]).slice(0, 6).map(([k, v]) => esc(k) + ' ×' + v).join(' · ') || 'No events yet.'}</p>`;
+  } catch(e){ card.classList.add('hidden'); }
+}
 async function loadReview(){
   const card = $('#reviewCard'), list = $('#reviewList');
   if (!card || !list) return;

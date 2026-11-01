@@ -502,6 +502,47 @@ def stats() -> dict:
             "documents": docs, "overdue": overdue, "due_today": due_today}
 
 
+def analytics(days: int = 30) -> dict:
+    """Inspector overview. Staff-only at the API layer; this just counts."""
+    init()
+    days = max(1, min(365, int(days)))
+    since = (date.today() - timedelta(days=days - 1)).isoformat()
+    con = _connect()
+    try:
+        by_band = {r["band"]: r["c"] for r in con.execute(
+            "SELECT band, COUNT(*) c FROM cases GROUP BY band")}
+        by_status = {r["status"]: r["c"] for r in con.execute(
+            "SELECT status, COUNT(*) c FROM cases GROUP BY status")}
+        outcomes = {r["outcome"]: r["c"] for r in con.execute(
+            "SELECT outcome, COUNT(*) c FROM cases "
+            "WHERE status != 'open' AND outcome IS NOT NULL "
+            "AND outcome != '' GROUP BY outcome")}
+        per_day = {r["d"]: r["c"] for r in con.execute(
+            "SELECT substr(created_at, 1, 10) d, COUNT(*) c FROM cases "
+            "WHERE substr(created_at, 1, 10) >= ? GROUP BY d ORDER BY d",
+            (since,))}
+        top_batches = [
+            {"nafdac": r["nafdac"], "batch": r["batch"], "reports": r["c"]}
+            for r in con.execute(
+                "SELECT nafdac, batch, COUNT(*) c FROM cases "
+                "WHERE batch != '' GROUP BY nafdac, batch "
+                "ORDER BY c DESC LIMIT 10")]
+        top_sellers = [
+            {"seller": r["seller"], "reports": r["c"]}
+            for r in con.execute(
+                "SELECT seller, COUNT(*) c FROM cases "
+                "WHERE seller != '' GROUP BY seller "
+                "ORDER BY c DESC LIMIT 10")]
+        by_reporter = {r["username"]: r["c"] for r in con.execute(
+            "SELECT username, COUNT(*) c FROM cases GROUP BY username")}
+    finally:
+        con.close()
+    return {"by_band": by_band, "by_status": by_status,
+            "outcomes": outcomes, "per_day": per_day, "since": since,
+            "top_batches": top_batches, "top_sellers": top_sellers,
+            "by_reporter": by_reporter}
+
+
 def reset() -> None:
     """Demo helper: clear everything."""
     if os.path.exists(DB_PATH):

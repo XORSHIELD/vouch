@@ -46,3 +46,23 @@ def recent(limit: int = 50) -> list[dict]:
         except Exception:
             continue
     return out[::-1]
+
+
+def summary(limit: int = 2000) -> dict:
+    """Event counts over the recent log. Empty when nothing was logged."""
+    counts: dict[str, int] = {}
+    try:
+        with open(LOG_PATH, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except Exception:
+        return {"events": {}, "scanned": 0}
+    scanned = 0
+    for line in lines[-max(1, limit):]:
+        try:
+            ev = json.loads(line).get("event", "")
+        except Exception:
+            continue
+        if ev:
+            counts[ev] = counts.get(ev, 0) + 1
+            scanned += 1
+    return {"events": counts, "scanned": scanned}

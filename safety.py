@@ -672,6 +672,23 @@ def published_alerts(query: str = "", nafdac: str = "",
             "note": base.get("note", "") + " Community-reviewed alerts are marked."}
 
 
+def analytics() -> dict:
+    """Moderation overview for inspectors."""
+    init()
+    con = _connect()
+    try:
+        by_flag = {r["reviewed"]: r["c"] for r in con.execute(
+            "SELECT reviewed, COUNT(*) c FROM safety_reports "
+            "GROUP BY reviewed")}
+        alerts_n = con.execute(
+            "SELECT COUNT(*) c FROM public_alerts").fetchone()["c"]
+    finally:
+        con.close()
+    return {"pending": by_flag.get(0, 0), "approved": by_flag.get(1, 0),
+            "dismissed": by_flag.get(-1, 0),
+            "published_alerts": alerts_n, "patterns": patterns()}
+
+
 def reset() -> None:
     init()
     con = _connect()

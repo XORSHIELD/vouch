@@ -219,6 +219,21 @@ _pub_deps = [d for r in server.app.routes
 check("public alerts need no sign-in", _pub_deps == [], str(_pub_deps))
 
 
+print("inspector analytics")
+_an = server.analytics(30, server.auth.me(_tok2))
+check("analytics bundles all three",
+      "by_band" in _an["cases"] and "pending" in _an["safety"]
+      and "events" in _an["audit"], str(sorted(_an.keys())))
+check("audit events counted",
+      _an["audit"]["events"].get("probe-event", 0) >= 1,
+      str(_an["audit"]["events"])[:200])
+_deps = [getattr(d, "call", None) for r in server.app.routes
+         if getattr(r, "path", "") == "/api/analytics"
+         for d in getattr(r.dependant, "dependencies", [])]
+check("analytics needs an inspector",
+      _deps == [server.auth.require_inspector], str(len(_deps)))
+
+
 print("security headers")
 client = TestClient(server.app, raise_server_exceptions=False)
 r = client.get("/api/health")

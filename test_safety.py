@@ -130,6 +130,14 @@ check("batch watch matches community alert",
       _bw["status"] == "alert_match"
       and any(m.get("local") for m in _bw["alerts"]), _bw["status"])
 
+print("analytics")
+_sa = safety.analytics()
+check("moderation counts",
+      _sa["pending"] >= 1 and _sa["approved"] >= 1
+      and _sa["dismissed"] >= 1, str(_sa))
+check("published counted", _sa["published_alerts"] >= 1,
+      str(_sa["published_alerts"]))
+
 shutil.rmtree(TMP, ignore_errors=True)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")

@@ -1116,6 +1116,15 @@ def publish_alert(body: AlertBody,
         raise HTTPException(422, str(exc))
 
 
+@app.get("/api/analytics")
+def analytics(days: int = 30,
+              user: dict = Depends(auth.require_inspector)) -> dict:
+    """Inspector overview: cases, moderation, activity. Staff only."""
+    return {"cases": cases.analytics(days=days),
+            "safety": safety.analytics(),
+            "audit": audit.summary()}
+
+
 # --------------------------------------------------------------------------
 # Static UI
 # --------------------------------------------------------------------------

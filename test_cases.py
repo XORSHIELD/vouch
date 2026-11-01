@@ -169,5 +169,26 @@ check("staff export sees everything",
 check("export rows carry owner + outcome",
       all("username" in r and "outcome" in r for r in _all))
 
+print("analytics")
+_an = cases.analytics()
+check("every case counted once",
+      sum(_an["by_band"].values()) == 3, str(_an["by_band"]))
+check("status split sane",
+      _an["by_status"].get("open", 0) == 3, str(_an["by_status"]))
+check("reporters listed",
+      _an["by_reporter"].get("alice") == 1
+      and _an["by_reporter"].get("") == 1,
+      str(_an["by_reporter"]))
+check("days counted", sum(_an["per_day"].values()) == 3,
+      str(_an["per_day"]))
+_lg_batch = cases.get_case(legacy["id"])["batch"]
+check("top batches ranked",
+      any(t["batch"] == _lg_batch for t in _an["top_batches"]),
+      str(_an["top_batches"]))
+cases.close_case(alice["id"], "fixed")
+_an2 = cases.analytics()
+check("outcomes counted",
+      _an2["outcomes"].get("fixed") == 1, str(_an2["outcomes"]))
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
