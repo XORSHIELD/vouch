@@ -5306,6 +5306,11 @@ let voiceHardStop = null;
 let voiceTesting = false;
 let voiceTestTimer = null;
 let voiceManualStop = false;
+let voiceHandsFree = false;
+let voiceVadCut = false;
+let voiceLastVoice = 0;
+let voiceHeardLevel = false;
+let voiceRetries = 0;
 
 try {
   const saved = JSON.parse(localStorage.getItem(VKEY) || '{}');
@@ -5391,6 +5396,13 @@ function stopVoiceSpeech(){
   if (voiceOpen) voiceSetStatus(voiceMuted ? 'Muted' : 'Ready', voiceListening ? 'listening' : '');
 }
 
+function voiceAutoListen(){
+  if (!voiceHandsFree || !voiceOpen || voiceListening || voiceStarting || voiceSpeaking || voiceBusy || voiceTesting) return;
+  setTimeout(() => {
+    if (!voiceHandsFree || !voiceOpen || voiceListening || voiceStarting || voiceSpeaking || voiceBusy || voiceTesting) return;
+    voiceStartRec();
+  }, 350);
+}
 function voiceSpeak(text){
   const clean = voiceClean(text);
   if (!clean) return;
@@ -5435,12 +5447,14 @@ function voiceSpeak(text){
         voiceSpeaking = false;
         if (voiceStopBtn) voiceStopBtn.disabled = true;
         if (voiceOpen) voiceSetStatus(voiceListening ? 'Listening…' : 'Ready', voiceListening ? 'listening' : '');
+        if (voiceHandsFree) voiceAutoListen();
       };
       u.onerror = () => {
         if (seq !== voiceSeq) return;
         voiceSpeaking = false;
         if (voiceStopBtn) voiceStopBtn.disabled = true;
         if (voiceOpen) voiceSetStatus('Ready');
+        if (voiceHandsFree) voiceAutoListen();
       };
     }
     try { speechSynthesis.speak(u); }
@@ -5565,6 +5579,7 @@ async function voiceAsk(text){
     voiceSpeak(box.textContent);
   } finally {
     voiceBusy = false;
+    if (voiceMuted) voiceAutoListen();
   }
 }
 
@@ -5643,6 +5658,18 @@ async function voiceStartMeter(){
       }
       const rms = Math.sqrt(sum / buf.length);
       voicePeak = Math.max(voicePeak, peak);
+      const _now = Date.now();
+      if (peak > 0.03){
+        voiceLastVoice = _now;
+        if (voiceListening && !voiceHeardLevel){
+          voiceHeardLevel = true;
+          voiceSetStatus('Hearing you…', 'listening');
+        }
+      }
+      if (voiceListening && voiceRec && !voiceVadCut && voiceHeard && voiceLastVoice > 0 && _now - voiceLastVoice > 1500){
+        voiceVadCut = true;
+        try { voiceRec.stop(); } catch {}
+      }
       const pct = Math.min(100, Math.round(rms * 620));
       const {box, bar, num} = voiceMeterParts();
       if (bar) bar.style.width = Math.max(2, pct) + '%';
@@ -5730,6 +5757,7 @@ async function voiceStartRec(){
   if (voiceStarting) return;
   if (voiceListening && voiceRec){
     voiceManualStop = true;
+    voiceHandsFree = false;
     voiceSetStatus('Stopping…');
     try { voiceRec.stop(); } catch {}
     return;
@@ -5777,6 +5805,10 @@ async function voiceStartRec(){
     voiceInputError = false;
     voiceListening = true;
     voiceMicState();
+    voiceHandsFree = true;
+    voiceVadCut = false;
+    voiceLastVoice = 0;
+    voiceHeardLevel = false;
     voiceSetStatus('Listening…', 'listening');
     voiceHint.innerHTML = 'Listening. Ask about this pack, or say <b>“open a case”</b>.';
     voiceStartMeter();
@@ -5854,10 +5886,19 @@ async function voiceStartRec(){
       return;
     }
     if (voiceGotFinal){
+      voiceRetries = 0;
       if (voiceOpen && !voiceSpeaking) voiceSetStatus('Ready');
       return;
     }
     if (!voiceInputError && voiceOpen){
+      if (voiceHandsFree && !voiceVadCut && voiceRetries < 2){
+        voiceRetries++;
+        voiceSetStatus('Listening…', 'listening');
+        setTimeout(() => { if (voiceOpen && voiceHandsFree && !voiceListening && !voiceStarting && !voiceSpeaking) voiceStartRec(); }, 400);
+        if (voiceStopBtn) voiceStopBtn.disabled = !voiceSpeaking;
+        return;
+      }
+      voiceHandsFree = false;
       voiceInputError = true;
       voiceHint.innerHTML = (voiceHeard
         ? 'I heard sound but no complete words. Try again a little closer to the mic.'
@@ -5923,6 +5964,7 @@ function closeVoice(keepSpeech){
   voicePanel.classList.add('hidden');
   voiceFab.setAttribute('aria-expanded', 'false');
   voiceOpen = false;
+  voiceHandsFree = false;
   if (!keepSpeech) stopVoiceSpeech();
 }
 

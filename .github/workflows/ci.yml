@@ -31,6 +31,7 @@ jobs:
           python test_agent.py
           python test_tour.py
           python test_i18n.py
+          python test_voice.py
       - run: python eval.py
       - run: |
           python server.py & echo $! > server.pid
