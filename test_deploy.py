@@ -82,6 +82,7 @@ check("CI installs requirements.txt",
 check("old inline pip line gone",
       "pip install fastapi uvicorn httpx pillow" not in _ci)
 check("CI runs the tour test", "python test_tour.py" in _ci)
+check("CI runs the i18n test", "python test_i18n.py" in _ci)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

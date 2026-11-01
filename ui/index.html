@@ -1043,12 +1043,12 @@
   <div class="side-backdrop" id="sideBackdrop"></div>
   <aside class="side" aria-label="Sections">
     <nav class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="agent">Agent</button>
-      <button role="tab" aria-selected="false" data-tab="check">Verify</button>
-      <button role="tab" aria-selected="false" data-tab="history">History</button>
-      <button role="tab" aria-selected="false" data-tab="guide">Product guide</button>
-      <button role="tab" aria-selected="false" data-tab="cases">Reports <span id="caseCount"></span></button>
-      <button role="tab" aria-selected="false" data-tab="settings">Settings</button>
+      <button role="tab" aria-selected="true" data-tab="agent" data-i18n="nav.agent">Agent</button>
+      <button role="tab" aria-selected="false" data-tab="check" data-i18n="nav.verify">Verify</button>
+      <button role="tab" aria-selected="false" data-tab="history" data-i18n="nav.history">History</button>
+      <button role="tab" aria-selected="false" data-tab="guide" data-i18n="nav.guide">Product guide</button>
+      <button role="tab" aria-selected="false" data-tab="cases"><span data-i18n="nav.reports">Reports</span> <span id="caseCount"></span></button>
+      <button role="tab" aria-selected="false" data-tab="settings" data-i18n="nav.settings">Settings</button>
     </nav>
     <div class="side-foot">
       <button class="btn ghost sm" id="btnNewChat" type="button" style="width:100%">New chat</button>
@@ -1142,11 +1142,11 @@
             <div class="hd-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
             </div>
-            <h2>Try a Demo Scenario</h2>
+            <h2 data-i18n="check.demos">Try a Demo Scenario</h2>
           </div>
           <div class="bd">
             <div class="demos" id="demos"></div>
-            <p class="hint" style="margin:14px 0 0">See Vouch catch copied numbers, expired stock and lapsed registrations.</p>
+            <p class="hint" style="margin:14px 0 0" data-i18n="check.demos_hint">See Vouch catch copied numbers, expired stock and lapsed registrations.</p>
             <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
               <div class="lbl2">Food, drink &amp; everyday products — checked by barcode</div>
               <div class="demos" id="foodDemos">
@@ -1162,27 +1162,27 @@
             <div class="hd-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
             </div>
-            <h2>Enter Pack Details</h2>
+            <h2 data-i18n="check.details">Enter Pack Details</h2>
           </div>
           <div class="bd">
             <div class="row2">
-              <button class="btn ghost sm" id="btnPhoto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload photo</button>
-              <button class="btn ghost sm" id="btnPaste"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Paste label text</button>
+              <button class="btn ghost sm" id="btnPhoto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span data-i18n="check.upload">Upload photo</span></button>
+              <button class="btn ghost sm" id="btnPaste"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg><span data-i18n="check.paste">Paste label text</span></button>
             </div>
             <div style="margin-top:12px">
-              <div class="lbl2">No pack on the table? Try a sample photo</div>
+              <div class="lbl2" data-i18n="check.sample_title">No pack on the table? Try a sample photo</div>
               <div class="demos" id="samples">
-                <button class="chip" data-sample="sample-genuine.png">Registered pack</button>
-                <button class="chip" data-sample="sample-expired.png">Expired pack</button>
-                <button class="chip" data-sample="sample-copied.png">Copied number</button>
+                <button class="chip" data-sample="sample-genuine.png" data-i18n="sample.registered">Registered pack</button>
+                <button class="chip" data-sample="sample-expired.png" data-i18n="sample.expired">Expired pack</button>
+                <button class="chip" data-sample="sample-copied.png" data-i18n="sample.copied">Copied number</button>
               </div>
               <p class="hint" style="margin:7px 0 0">Rendered labels, read by the same OCR path as a camera photo.</p>
             </div>
             <input type="file" id="fileInput" accept="image/*" class="hidden" />
             <div id="photoNotes" class="hidden" style="margin-top:10px;font-size:12px;color:var(--amber);background:var(--amber-bg);border:1px solid #e8d4a6;border-radius:9px;padding:9px 11px"></div>
-            <textarea id="pasteBox" class="hidden" rows="7" placeholder="Paste the text printed on the pack…" style="margin-top:12px"></textarea>
+            <textarea id="pasteBox" class="hidden" rows="7" data-i18n-ph="paste.paste_ph" placeholder="Paste the text printed on the pack…" style="margin-top:12px"></textarea>
             <div id="pasteActions" class="hidden" style="margin-top:9px">
-              <button class="btn sm" id="btnExtract">Extract fields</button>
+              <button class="btn sm" id="btnExtract" data-i18n="check.extract">Extract fields</button>
             </div>
 
             <hr style="border:0;border-top:1px solid var(--line);margin:18px 0" />
@@ -1190,30 +1190,30 @@
             <form id="form">
               <input type="hidden" name="strength" />
               <input type="hidden" name="pack_size" />
-              <label class="f"><span>NAFDAC Registration Number *</span>
+              <label class="f"><span data-i18n="form.nafdac">NAFDAC Registration Number *</span>
                 <input name="nafdac_number" placeholder="e.g. A11-0551 or 04-0271" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
-              <label class="f"><span>Barcode <em style="font-style:normal;color:var(--ink-3);text-transform:none;letter-spacing:0">— food, drink, cosmetics &amp; household</em></span>
+              <label class="f"><span><span data-i18n="form.barcode">Barcode</span> <em style="font-style:normal;color:var(--ink-3);text-transform:none;letter-spacing:0" data-i18n="form.barcode_hint">— food, drink, cosmetics &amp; household</em></span>
                 <input name="barcode" placeholder="e.g. 5010162000164" inputmode="numeric" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
               <div class="row2">
-                <label class="f"><span>Product Name on Pack</span>
+                <label class="f"><span data-i18n="form.product">Product Name on Pack</span>
                   <input name="product_name" placeholder="e.g. AC-Drex Tablet" /></label>
-                <label class="f"><span>Manufacturer on Pack</span>
+                <label class="f"><span data-i18n="form.manufacturer">Manufacturer on Pack</span>
                   <input name="manufacturer" placeholder="As printed on the pack" /></label>
               </div>
               <div class="row2">
-                <label class="f"><span>Batch / lot</span><input name="batch" placeholder="e.g. ACD2401" /></label>
-                <label class="f"><span>Expiry</span><input name="exp_date" placeholder="e.g. EXP 06/2028" /></label>
+                <label class="f"><span data-i18n="form.batch">Batch / lot</span><input name="batch" placeholder="e.g. ACD2401" /></label>
+                <label class="f"><span data-i18n="form.expiry">Expiry</span><input name="exp_date" placeholder="e.g. EXP 06/2028" /></label>
               </div>
-              <label class="f"><span>Serial (scratch panel)</span>
+              <label class="f"><span data-i18n="form.serial">Serial (scratch panel)</span>
                 <input name="serial" placeholder="As printed, if the pack has one" /></label>
               <span class="hint" style="display:block;margin:-6px 0 12px">Only used when a manufacturer service is connected.</span>
               <div class="row2">
-                <label class="f"><span>Manufactured</span><input name="mfg_date" placeholder="optional" /></label>
-                <label class="f"><span>Price paid</span><input name="price" placeholder="optional" /></label>
+                <label class="f"><span data-i18n="form.mfg">Manufactured</span><input name="mfg_date" placeholder="optional" /></label>
+                <label class="f"><span data-i18n="form.price">Price paid</span><input name="price" placeholder="optional" /></label>
               </div>
               <div class="row2">
-                <label class="f"><span>Seller</span><input name="seller" placeholder="optional" /></label>
-                <label class="f"><span>Location</span><input name="location" placeholder="optional" /></label>
+                <label class="f"><span data-i18n="form.seller">Seller</span><input name="seller" placeholder="optional" /></label>
+                <label class="f"><span data-i18n="form.location">Location</span><input name="location" placeholder="optional" /></label>
               </div>
 
               <details style="margin:2px 0 14px">
@@ -1223,7 +1223,7 @@
 
               <button class="btn wide accent" id="btnCheck" type="submit">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                Verify This Pack
+                <span data-i18n="check.verify_btn">Verify This Pack</span>
               </button>
             </form>
           </div>
@@ -1237,10 +1237,10 @@
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
             </div>
             <p style="font-size:16px;color:var(--ink-2);max-width:50ch;margin:0 auto;line-height:1.7">
-              <strong>Check it. Chase it.</strong><br/>
-              Vouch checks your medicine against the live NAFDAC Greenbook — dates, batches and red flags — then helps you act if something's wrong.
+              <strong data-i18n="result.tagline">Check it. Chase it.</strong><br/>
+              <span data-i18n="result.intro">Vouch checks your medicine against the live NAFDAC Greenbook — dates, batches and red flags — then helps you act if something's wrong.</span>
             </p>
-            <p style="margin-top:16px;color:var(--ink-3);font-size:14px">Pick a demo, or enter a real pack's details.</p>
+            <p style="margin-top:16px;color:var(--ink-3);font-size:14px" data-i18n="result.hint">Pick a demo, or enter a real pack's details.</p>
           </div>
         </div>
       </div>
@@ -1380,13 +1380,13 @@
             <input type="checkbox" id="setSummary" />
             <span>Show a summary of unresolved cases on the dashboard</span>
           </label>
-          <label class="f"><span>Language</span>
+          <label class="f"><span data-i18n="settings.language">Language</span>
             <select id="setLang">
               <option value="en">English</option>
-              <option value="pcm">Nigerian Pidgin (planned)</option>
-              <option value="ha">Hausa (planned)</option>
-              <option value="ig">Igbo (planned)</option>
-              <option value="yo">Yorùbá (planned)</option>
+              <option value="pcm">Nigerian Pidgin</option>
+              <option value="ha">Hausa</option>
+              <option value="ig">Igbo</option>
+              <option value="yo">Yorùbá</option>
             </select></label>
           <button class="btn" id="btnSavePrefs" type="button">Save preferences</button>
         </div>
@@ -4006,7 +4006,7 @@ $('#btnSavePrefs').onclick = () => {
     lang: $('#setLang').value
   });
   const lang = $('#setLang').value;
-  toast(lang === 'en' ? 'Preferences saved' : 'Preferences saved — that language is not translated yet');
+  loadLang(lang).then(() => { applyLang(); toast('Preferences saved'); });
 };
 $('#btnExport').onclick = () => {
   const payload = {exported_at: new Date().toISOString(), scans: readHistory()};
@@ -4300,7 +4300,7 @@ function renderHistory(){
         <td><b>${esc(e.product || e.headline || 'Unnamed product')}</b></td>
         <td class="hide-sm" style="font-family:var(--mono);font-size:12px;color:var(--ink-3)">${esc(e.nafdac || e.barcode || '—')}</td>
         <td class="hide-sm" style="color:var(--ink-3)">${esc(when(e.at))}</td>
-        <td><span class="hpill ${esc(e.band)}">${esc((BAND[e.band]||{}).label || e.band)}</span></td>
+        <td><span class="hpill ${esc(e.band)}">${esc(bandLabel(e.band))}</span></td>
         <td style="white-space:nowrap;text-align:right">
           <button class="btn ghost sm" data-hist-open="${idx}" type="button">Open</button>
           <button class="btn ghost sm" data-hist-del="${idx}" type="button" aria-label="Delete scan">Delete</button>
@@ -4335,6 +4335,43 @@ async function reopenScan(idx){
 }
 
 /* ---------- settings ---------- */
+/* ---------- i18n ---------- */
+let EN_STR = {}, LANG_STR = {}, LANG_CODE = 'en';
+function currentLang(){
+  try {
+    const p = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+    return p.lang || 'en';
+  } catch { return 'en'; }
+}
+async function loadLang(code){
+  LANG_CODE = code || 'en';
+  try {
+    if (!Object.keys(EN_STR).length) EN_STR = await (await fetch('ui/i18n/en.json')).json();
+  } catch { EN_STR = {}; }
+  if (LANG_CODE === 'en' || !Object.keys(EN_STR).length){ LANG_STR = EN_STR; return; }
+  try {
+    LANG_STR = Object.assign({}, EN_STR, await (await fetch('ui/i18n/' + LANG_CODE + '.json')).json());
+  } catch { LANG_STR = EN_STR; }
+}
+function t(key, fb){
+  if (LANG_STR && LANG_STR[key] != null) return LANG_STR[key];
+  if (EN_STR && EN_STR[key] != null) return EN_STR[key];
+  return fb != null ? fb : key;
+}
+function bandLabel(code){ return t('band.' + code, code); }
+function bandTag(code){ return t('bandtag.' + code, ''); }
+function bandInfo(code){ return {label: bandLabel(code), tag: bandTag(code)}; }
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n'));
+    if (typeof v === 'string') el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n-ph'));
+    if (typeof v === 'string') el.setAttribute('placeholder', v);
+  });
+  try { document.documentElement.lang = LANG_CODE; } catch {}
+}
 const PREF_KEY = 'vouch.prefs.v1';
 function loadSettings(){
   const p = (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch { return {}; } })();
@@ -4565,7 +4602,7 @@ async function loadLayerSafety(a){
 }
 
 function renderAssessment(a, packMeta){
-  const band = BAND[a.band] || BAND.incomplete;
+  const band = bandInfo(a.band);
   const scratch = packMeta && packMeta.scratch;
   const isSample = !!(packMeta && (packMeta.sample || packMeta.title || packMeta.chip));
   const samplePill = '<span class="sample-pill">Sample</span>';
@@ -4780,7 +4817,7 @@ async function loadQueue(){
     const row = q => `
       <div class="qitem ${q.overdue ? 'over' : q.due_today ? 'today' : ''}">
         <div class="qmain">
-          <span class="pill ${esc(q.band)}">${esc((BAND[q.band]||{}).label||q.band)}</span>
+          <span class="pill ${esc(q.band)}">${esc(bandLabel(q.band))}</span>
           ${q.overdue ? '<span class="pill overdue">overdue</span>'
             : q.due_today ? '<span class="pill open">due today</span>' : ''}
           <b>${esc(q.product || 'Unnamed product')}</b>
@@ -5069,7 +5106,7 @@ async function loadCases(openId){
       <div class="caseitem" data-case="${esc(c.id)}">
         <div class="top">
           <span class="id">${esc(c.id)}</span>
-          <span class="pill ${esc(c.band)}">${esc((BAND[c.band]||{}).label||c.band)}</span>
+          <span class="pill ${esc(c.band)}">${esc(bandLabel(c.band))}</span>
           <span class="pill ${c.status==='open'?'open':'clear'}">${esc(c.status)}</span>
           ${c.overdue?'<span class="pill overdue">overdue</span>':''}
         </div>
@@ -5111,7 +5148,7 @@ async function showCase(id){
           <button class="btn ghost sm" style="margin-left:auto" id="btnBack">Back to list</button></div>
         <div class="bd">
           <div class="band ${esc(c.band)}" style="margin-bottom:16px">
-            <span class="tag">${esc((BAND[c.band]||{}).tag||'')}</span>
+            <span class="tag">${esc(bandTag(c.band))}</span>
             <h1 style="font-size:18px">${esc(c.headline||'')}</h1>
           </div>
 
@@ -5372,7 +5409,7 @@ function voiceSpeak(text){
 function voiceResultText(){
   const a = state.assessment;
   if (!a) return 'There is no result on screen yet. Check a pack first, then ask me to read it.';
-  const band = (BAND[a.band] || {}).label || a.band;
+  const band = bandLabel(a.band);
   const checks = (a.checks || []).slice(0, 3)
     .map(c => `${c.label}: ${String(c.state || '').replace(/_/g, ' ')}`).join('. ');
   const next = (a.actions || [])[0];
@@ -5469,7 +5506,7 @@ async function voiceAsk(text){
     box.textContent = out.answer || 'I could not produce an explanation for that.';
     const meta = document.createElement('small');
     const who = out.provider === 'vouch-composer' ? 'on-device composer' : (out.provider || 'Vouch agent');
-    const band = out.band ? ' · ' + ((BAND[out.band] || {}).label || out.band) : '';
+    const band = out.band ? ' · ' + (bandLabel(out.band)) : '';
     meta.textContent = 'Vouch agent · ' + who + band;
     box.appendChild(meta);
     voiceScroll();
@@ -5965,7 +6002,7 @@ async function tourSample(){
     const out = await api('/api/demo/run', {method:'POST', body:JSON.stringify({key:TOUR_SAMPLE})});
     const a = out.assessment || {};
     const band = a.band || 'incomplete';
-    const label = (BAND[band] || {}).label || band;
+    const label = bandLabel(band);
     const n = (a.checks || []).length;
     tourStep(2, `<p style="margin:0 0 12px"><span class="pill ${esc(band)}">${esc(label)}</span></p>
       <p style="margin:0 0 8px;font-size:15px;line-height:1.55"><b>${esc(a.headline || 'Sample check complete')}</b></p>
@@ -6021,6 +6058,8 @@ document.addEventListener('keydown', (e) => {
 (async () => {
   await loadDemos();
   maybeStartTour();
+  await loadLang(currentLang());
+  applyLang();
   try {
     const q = new URLSearchParams(location.search);
     const want = q.get('voice') === '1' ? 'voice' : (q.get('scan') === '1' ? 'scan' : '');
