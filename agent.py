@@ -200,6 +200,25 @@ def _system_prompt() -> str:
     return SYSTEM + "\n\n" + KNOWLEDGE
 
 
+def _parse_action(raw: str):
+    """Planner action JSON, tolerant of fenced replies.
+
+    Returns the action dict, or None when the output is unusable
+    (prose, empty, or broken JSON) so the caller falls back.
+    """
+    text = (raw or "").strip()
+    if text.startswith("```"):
+        lines = text.splitlines()[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+    try:
+        act = json.loads(text)
+    except Exception:
+        return None
+    return act if isinstance(act, dict) else None
+
+
 def _plan(message: str, history: list[dict],
           image_bytes: bytes | None, image_type: str) -> dict:
     ctx: dict = {"pack": None, "assessment": None, "extraction": None}
@@ -222,10 +241,17 @@ def _plan(message: str, history: list[dict],
     steps = 0
     for _ in range(MAX_STEPS):
         steps += 1
+        raw = ""
         try:
-            act = json.loads(_chat(messages))
+            raw = _chat(messages)
+            act = _parse_action(raw)
+            if act is None:
+                raise ValueError("planner output was not action JSON")
         except Exception as exc:
-            audit.log("agent_step_failed", "", str(exc)[:200])
+            masked = re.sub(r"\d", "#", (raw or "")[:80])
+            audit.log("agent_step_failed", "",
+                      f"{str(exc)[:120]} | len={len(raw or '')} "
+                      f"head={masked}")
             break
         if act.get("answer"):
             return _final(str(act["answer"]), ctx, steps,
@@ -245,7 +271,8 @@ def _plan(message: str, history: list[dict],
                          "content": json.dumps(act)[:2000]})
         messages.append({"role": "user",
                          "content": "tool:" + json.dumps(result)[:4000]})
-    return _final("", ctx, steps, f"meta:{MODEL}", message)
+    return _final("", ctx, steps, f"meta:{MODEL}", message,
+                      history=history)
 
 
 def _pack_from_text(message: str) -> PackInput:
@@ -345,6 +372,8 @@ _ASK_PIN = ("To check a scratch panel I need the PIN itself — scratch it "
             "beside it. I'll tell you exactly what to text and help you "
             "read the reply. I still can't declare any pack genuine from "
             "here either way; the SMS check asks the maker's own service.")
+
+_PIN_ACK = "Got it — I'll use that PIN for the scratch check."
 
 
 def _mask_runs(msg: str, values) -> str:
@@ -821,7 +850,8 @@ def _converse(pack: PackInput, fresh: dict, message: str,
 
 
 def _final(answer: str, ctx: dict, steps: int, provider: str,
-           message: str, confirmed_pack: PackInput | None = None) -> dict:
+           message: str, confirmed_pack: PackInput | None = None,
+           history=None) -> dict:
     if ctx.get("assessment") is None:
         ctx["pack"] = _pack_from_text(message)
         ctx["assessment"] = _assess(ctx["pack"])
@@ -829,6 +859,10 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
         _ex0 = ctx.get("extraction")
         _mf = _extract_fields(message or "")
         _pin = (_ex0.pin if _ex0 else "") or _mf.get("pin", "")
+        _hpin, _hsc = _history_pin(history) if history else ("", "")
+        if not _pin and (_SCRATCH.search(message or "")
+                         or _mf.get("shortcode")):
+            _pin = _hpin
         if _SCRATCH.search(message or "") and not _pin:
             answer, provider = _ASK_PIN, "vouch-composer"
         else:
@@ -840,13 +874,23 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
             elif _reply == "unclear":
                 answer, provider = _REPLY_UNCLEAR_TEXT, "vouch-composer"
             else:
-                answer, provider = ai.compose(ctx["assessment"], message)
-                if _ex0 is not None and _extraction_empty(_ex0):
-                    answer = _PHOTO_UNREADABLE + answer
                 _sc = (_ex0.shortcode if _ex0 else "") or _mf.get(
                     "shortcode", "")
-                answer += _mas_note(
-                    _pin, _sc, _ex0.verify_text if _ex0 else "")
+                if not _sc and (_pin or _SCRATCH.search(message or "")):
+                    _sc = _hsc
+                _pack0 = ctx.get("pack")
+                if (_pin and ctx["assessment"].band == "incomplete"
+                        and _pack0 is not None
+                        and not (_pack0.nafdac_number or _pack0.barcode)):
+                    answer = _PIN_ACK + _mas_note(
+                        _pin, _sc, _ex0.verify_text if _ex0 else "")
+                    provider = "vouch-composer"
+                else:
+                    answer, provider = ai.compose(ctx["assessment"], message)
+                    if _ex0 is not None and _extraction_empty(_ex0):
+                        answer = _PHOTO_UNREADABLE + answer
+                    answer += _mas_note(
+                        _pin, _sc, _ex0.verify_text if _ex0 else "")
     pack = confirmed_pack or ctx["pack"]
     proposal = None
     if pack is not None and (pack.nafdac_number or pack.barcode):

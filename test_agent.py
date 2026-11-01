@@ -374,6 +374,51 @@ try:
 finally:
     _vision.extract_from_image = _real_extract4
 
+print("planner fallback")
+_real_chat = agent._chat
+_real_log = agent.audit.log
+agent.audit.log = lambda *a, **k: None
+try:
+    agent._chat = lambda msgs: '```json\n{"answer": "Fenced ok"}\n```'
+    r = agent._plan("hello", [], None, "image/jpeg")
+    check("fenced planner JSON accepted",
+          r["answer"] == "Fenced ok", repr(r["answer"])[:120])
+    check("fenced answer keeps model attribution",
+          str(r["provider"]).startswith("meta:"), str(r["provider"]))
+    agent._chat = lambda msgs: "Sure, let me think about that pack."
+    r = agent._plan("hello", [], None, "image/jpeg")
+    check("prose still falls back cleanly",
+          r["provider"] == "vouch-composer" and bool(r["answer"]),
+          repr((r["provider"], r["answer"][:80])))
+finally:
+    agent._chat = _real_chat
+    agent.audit.log = _real_log
+
+_pack1 = agent.PackInput(product_name="Tadalis Plus")
+_ctx1 = {"pack": _pack1, "assessment": agent._assess(_pack1),
+         "extraction": None}
+_hist3 = [{"role": "assistant",
+           "text": ("To check it yourself via the usual Sproxil route: "
+                    "scratch the panel fully, then text the PIN to 34488, "
+                    "or dial *34488*1*PIN#.")}]
+r = agent._final("", _ctx1, 1, "meta:test",
+                 "here is the pin: 2062775840753", history=_hist3)
+check("pin turn skips the verdict dump",
+      "not enough to go on" not in r["answer"], r["answer"][:200])
+check("pin turn reuses the shortcode from history",
+      "Text 2062775840753 to 34488" in r["answer"], r["answer"][:300])
+r = agent._final("", _ctx1, 1, "meta:test",
+                 "here is the pin: 2062775840753")
+check("pin turn without history stays generic but short",
+      "not enough to go on" not in r["answer"]
+      and "printed beside the panel" in r["answer"],
+      r["answer"][:300])
+r = agent._final("", _ctx1, 1, "meta:test", "the shortcode is 34488",
+                 history=[{"role": "user",
+                           "text": "my pin is 2062775840753"}])
+check("shortcode turn reuses the pin from history",
+      "Text 2062775840753 to 34488" in r["answer"], r["answer"][:300])
+
 print("vision tamper")
 _real_extract5 = _vision.extract_from_image
 try:
