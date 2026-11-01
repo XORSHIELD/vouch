@@ -6034,7 +6034,7 @@ function voiceMicError(err){
     return 'The microphone is busy in another app. Close the app using it, then press the mic again — or type below.';
   }
   if (name === 'NotSupportedError'){
-    return 'This browser cannot open a microphone here. Type below, or open Vouch in Chrome or Edge.';
+    return 'The mic needs a secure page: use localhost or HTTPS. Type below instead.';
   }
   return 'The microphone could not start. Check Windows privacy settings and the selected input device, or type below.';
 }
