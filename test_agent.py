@@ -299,7 +299,8 @@ fail = convo("my pin is 2062775840753",
              "reply: sorry, PIN already used")[1]["answer"]
 check("fail reply read",
       "reads as a fail" in fail
-      and "Text 2062775840753" not in fail, fail[:300])
+      and "Text 2062775840753" not in fail
+      and "every digit" in fail, fail[:400])
 vague = convo("my pin is 2062775840753",
               "it says error, try later")[1]["answer"]
 check("unclear reply asks for the full text",
@@ -333,6 +334,45 @@ check("confirm-request is not a pass",
       "No. The checks" in confirm
       and "Text 2062775840753 to 34488" in confirm
       and "reads as a pass" not in confirm, confirm[:400])
+
+print("SMS cross-check")
+PANEL = "Dial *34488*1*PIN# or SMS PIN to 34488 for free"
+sc, qual = agent._resolve_shortcode("38353", PANEL)
+check("panel instructions overrule a misread shortcode",
+      sc == "34488" and "I also read 38353" in qual,
+      repr((sc, qual)))
+sc, qual = agent._resolve_shortcode("34488", PANEL)
+check("agreement needs no qualifier", sc == "34488" and qual == "",
+      repr((sc, qual)))
+sc, qual = agent._resolve_shortcode("", PANEL)
+check("consistent panel fills a missing shortcode",
+      sc == "34488" and qual == "", repr((sc, qual)))
+sc, qual = agent._resolve_shortcode("", "Text PIN to 55667")
+check("single mention fills with caution",
+      sc == "55667" and "I only caught" in qual, repr((sc, qual)))
+sc, qual = agent._resolve_shortcode("11111", "SMS 22222 then *33333*9# ok")
+check("messy panel keeps the field with doubt",
+      sc == "11111" and "I also read" in qual, repr((sc, qual)))
+sc, qual = agent._resolve_shortcode("34488", "SMS 2062775840753")
+check("long runs never become shortcodes",
+      sc == "34488" and qual == "", repr((sc, qual)))
+sc, qual = agent._resolve_shortcode("34488", "")
+check("no instructions, no doubt", sc == "34488" and qual == "",
+      repr((sc, qual)))
+
+_real_extract4 = _vision.extract_from_image
+try:
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction(
+        product_name="TadalisPlus", pin="2062775840753",
+        shortcode="38353",
+        verify_text="Dial *34488*1*PIN# or SMS PIN to 34488 for free")
+    r = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    check("photo SMS uses the panel shortcode, flags the misread",
+          "Text 2062775840753 to 34488" in r["answer"]
+          and "I also read 38353" in r["answer"],
+          r["answer"][-400:])
+finally:
+    _vision.extract_from_image = _real_extract4
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

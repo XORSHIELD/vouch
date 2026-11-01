@@ -21,6 +21,7 @@ import json
 import os
 import re
 import urllib.request
+from collections import Counter
 from dataclasses import asdict, fields
 from datetime import date
 
@@ -409,22 +410,65 @@ def _history_pin(history) -> tuple[str, str]:
     return pin, shortcode
 
 
-def _mas_note(pin: str, shortcode: str) -> str:
+_VT_USSD = re.compile(r"\*(\d{3,6})\*")
+_VT_SMS = re.compile(r"\b(?:SMS|TEXT|SEND)\b[^0-9]{0,20}(\d{3,6})(?![\d])",
+                     re.IGNORECASE)
+
+
+def _resolve_shortcode(field_sc: str, verify_text: str):
+    """Which shortcode to text: the panel's own instructions win ties.
+
+    Returns (shortcode, qualifier). The qualifier is empty when the
+    field and the instructions agree — otherwise it names the doubt so
+    the user confirms the digits before anything is sent.
+    """
+    cands = []
+    if verify_text:
+        cands = (_VT_USSD.findall(verify_text)
+                 + _VT_SMS.findall(verify_text))
+    field_sc = field_sc or ""
+    if field_sc and field_sc in cands:
+        return field_sc, ""
+    if field_sc and not cands:
+        return field_sc, ""
+    if not cands:
+        return "", ""
+    top, count = Counter(cands).most_common(1)[0]
+    if count >= 2:
+        if not field_sc:
+            return top, ""
+        return top, (f" (I also read {field_sc} on the same label — "
+                     f"confirm {top} matches the shortcode printed "
+                     "beside the panel.)")
+    if not field_sc:
+        return top, (f" (I only caught {top} once on the label — "
+                     "confirm it against the shortcode printed beside "
+                     "the panel.)")
+    return field_sc, (f" (I also read {top} on the same label — "
+                      f"confirm {field_sc} matches the shortcode "
+                      "printed beside the panel.)")
+
+
+def _mas_note(pin: str, shortcode: str, verify_text: str = "") -> str:
     """Deterministic scratch-PIN guidance. Empty when there is no PIN."""
     if not pin:
         return ""
-    res = mas.verify(pin, shortcode or "")
+    shortcode, qualifier = _resolve_shortcode(shortcode or "",
+                                              verify_text or "")
+    res = mas.verify(pin, shortcode)
     if res.get("connected") and res.get("verdict") == "suspicious":
         return ("\n\nThe maker's verification service"
                 f" ({res.get('provider') or 'unknown provider'}) flags "
                 f"this PIN: {res.get('detail') or 'suspicious'}. That is "
                 "the service's statement about the PIN, not this app's. "
-                "Keep the pack, the PIN and that reply together.")
+                "Keep the pack, the PIN and that reply together."
+                + qualifier)
     if res.get("connected") and res.get("verdict") == "authentic":
         return (f"\n\n{res.get('provider') or 'The verification service'} "
                 f"replies: {res.get('detail') or 'the PIN checks out'}. "
                 "That is the service's statement about the PIN — it speaks "
-                "for the code, not for what is inside the pack.")
+                "for the code, not for what is inside the pack."
+                + qualifier)
     if shortcode:
         base = (f"\n\nThat scratch panel is verifiable. Text {pin} to "
                 f"{shortcode} (free) — the maker's service replies about "
@@ -437,7 +481,7 @@ def _mas_note(pin: str, shortcode: str) -> str:
                 "I'll help you read it.")
     if res.get("connected") and res.get("detail"):
         base += f" (The connected service says: {res.get('detail')})"
-    return base
+    return base + qualifier
 
 
 _REPLY_CUE = re.compile(
@@ -476,7 +520,10 @@ _REPLY_PASS_TEXT = ("That reply reads as a pass from the maker's service — "
                     "the pack, the receipt and that reply together.")
 _REPLY_FAIL_TEXT = ("That reply reads as a fail from the maker's service. "
                     "Don't buy or use that pack — keep the pack, the PIN "
-                    "and the exact reply together as evidence.")
+                    "and the exact reply together as evidence. First "
+                    "double-check you texted every digit exactly as "
+                    "printed — one wrong digit fails the same way a bad "
+                    "PIN does.")
 _REPLY_UNCLEAR_TEXT = ("I can't tell from that whether the service passed "
                        "or failed the PIN — paste the service's full exact "
                        "reply. I'm looking for words like valid, invalid, "
@@ -792,7 +839,8 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
                     answer = _PHOTO_UNREADABLE + answer
                 _sc = (_ex0.shortcode if _ex0 else "") or _mf.get(
                     "shortcode", "")
-                answer += _mas_note(_pin, _sc)
+                answer += _mas_note(
+                    _pin, _sc, _ex0.verify_text if _ex0 else "")
     pack = confirmed_pack or ctx["pack"]
     proposal = None
     if pack is not None and (pack.nafdac_number or pack.barcode):
@@ -988,7 +1036,7 @@ def _pipeline(message: str, image_bytes: bytes | None,
         _sc = extraction.shortcode or fresh.get("shortcode") or ""
         if _pin and not _sc:
             _, _sc = _history_pin(history)
-        text += _mas_note(_pin, _sc)
+        text += _mas_note(_pin, _sc, extraction.verify_text or "")
     else:
         assessment = _assess(pack)
         said = _converse(pack, fresh, message, assessment, history)

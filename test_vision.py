@@ -72,6 +72,7 @@ try:
             "batch": "EMZ7781", "exp_date": "EXP 03/2027",
             "mfg_date": "MFG 04/2024", "best_before": "",
             "pin": "abcd 1234", "shortcode": "1393 ext",
+            "verify_text": "Dial *34488*1*PIN# or SMS PIN to 34488",
             "strength": "500 mg", "pack_size": "1 x 100",
             "legible": True, "notes": ""}
     _FakeResp.next = _canned(json.dumps(body))
@@ -84,6 +85,9 @@ try:
     check("maker prefix stripped", ex.manufacturer == "A.C. Drugs Ltd",
           ex.manufacturer)
     check("shortcode digits only", ex.shortcode == "1393", ex.shortcode)
+    check("verify instructions transcribed",
+          "SMS PIN to 34488" in ex.verify_text, ex.verify_text)
+    check("prompt asks for verify text", "verify_text" in vision.PROMPT)
     check("provider names the model",
           ex.provider == "meta:" + vision.MODEL, ex.provider)
     check("confident when legible", ex.confidence == 0.85,

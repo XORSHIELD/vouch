@@ -49,6 +49,7 @@ class Extraction:
     best_before: str = ""
     pin: str = ""
     shortcode: str = ""
+    verify_text: str = ""
     strength: str = ""
     pack_size: str = ""
     raw_text: str = ""
@@ -244,6 +245,7 @@ Return strict JSON with exactly these keys:
   "best_before": "best-before or use-by date exactly as printed, or empty",
   "pin": "scratch-panel PIN exactly as printed, no spaces, or empty",
   "shortcode": "the number to text the PIN to, digits only, or empty",
+  "verify_text": "the scratch-panel SMS and dial instructions exactly as printed, word for word, or empty",
   "strength": "strength as printed, e.g. 500 mg",
   "pack_size": "pack size as printed, e.g. 10 x 10's",
   "legible": true,
@@ -376,6 +378,7 @@ def _extract_meta(
         best_before=_s(body.get("best_before")),
         pin=re.sub(r"\s+", "", _s(body.get("pin"))).upper(),
         shortcode=re.sub(r"\D", "", _s(body.get("shortcode"))),
+        verify_text=_s(body.get("verify_text")),
         strength=_s(body.get("strength")),
         pack_size=_s(body.get("pack_size")),
         raw_text=json.dumps(body, ensure_ascii=False),
