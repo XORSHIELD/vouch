@@ -508,8 +508,11 @@ def mirror_ready() -> bool:
         try:
             row = con.execute(
                 "SELECT status FROM sync_state WHERE id = 1").fetchone()
-            if not row or row[0] != "complete":
+            if not row or row[0] not in ("complete", "running"):
                 return False
+            # Old rows are only deleted when a pass completes, so a
+            # mid-refresh mirror is still a full mirror. An empty one
+            # (first sync) correctly reports not ready.
             return con.execute(
                 "SELECT COUNT(*) FROM mirror").fetchone()[0] > 0
         finally:
@@ -624,7 +627,9 @@ def sync_run(page_size: int = 200, max_pages: int | None = None,
     if sync_running():
         return {**sync_status(), "started": False,
                 "note": "A sync is already running."}
-    resume = st["status"] in ("error", "paused") and st["pass"] > 0
+    # A fresh "running" returned above, so "running" here means a killed
+    # run: resume it rather than restarting the pass from zero.
+    resume = st["status"] in ("error", "paused", "running") and st["pass"] > 0
     pass_no = st["pass"] if resume else st["pass"] + 1
     # Back up one page on resume: the listing can shift under us.
     start = max(0, st["fetched"] - page_size) if resume else 0

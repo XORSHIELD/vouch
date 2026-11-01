@@ -85,6 +85,29 @@ check("totals count the mirror", payload["recordsTotal"] == 2,
 check("rows are verbatim records",
       (payload["data"] or [{}])[0].get("NAFDAC") == "A11-0551")
 
+print("killed sync recovery")
+R._sync_put(status="running", started_at=time.time() - 3600, total=2,
+            fetched=2, pass_no=1, error="")
+check("stale run not reported running", R.sync_running() is False)
+check("mirror stays ready mid-refresh", R.mirror_ready() is True)
+_real_fetch = R._fetch
+
+
+def _fake_fetch(q, length, start):
+    if start >= 2:
+        return {"recordsTotal": 2, "data": []}
+    return {"recordsTotal": 2, "data": [ROWS[0]]}
+
+
+R._fetch = _fake_fetch
+try:
+    R.sync_run(page_size=25)
+finally:
+    R._fetch = _real_fetch
+_st = R._sync_get()
+check("stale run resumes the same pass",
+      _st["status"] == "complete" and _st["pass"] == 1, str(_st))
+
 print("sync status")
 st = R.sync_status()
 check("status shape",
