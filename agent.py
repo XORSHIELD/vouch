@@ -408,16 +408,20 @@ def _merge(pack: PackInput, f: dict) -> bool:
     return changed
 
 
-def _working_pack(history, message: str) -> tuple[PackInput, dict]:
-    """The pack across turns: history first, this message last."""
+def _working_pack(history, message: str) -> tuple[PackInput, dict, bool]:
+    """The pack across turns: history first, this message last.
+
+    Also reports whether this message added anything new, so a repeated
+    detail gets noticed instead of re-acknowledged.
+    """
     pack = PackInput()
     if not _RESET.search(message or ""):
         for h in _clean_history(history):
             if h.get("role") == "user":
                 _merge(pack, _extract_fields(h.get("content", "")))
     fresh = _extract_fields(message or "")
-    _merge(pack, fresh)
-    return pack, fresh
+    changed = _merge(pack, fresh)
+    return pack, fresh, changed
 
 
 def _have_line(pack: PackInput) -> str:
@@ -435,11 +439,33 @@ def _have_line(pack: PackInput) -> str:
     return "So far I have " + ", ".join(bits) + ". "
 
 
-def _next_line(assessment: Assessment) -> str:
-    if assessment.actions:
-        first = assessment.actions[0]
-        return f"Next: {first.label} — {first.why}"
-    return assessment.headline
+def _next_line(assessment: Assessment, history=None) -> str:
+    """The next step, rotating past suggestions already given.
+
+    Without the rotation every fragment turn ends on the same sentence,
+    which reads as the agent talking in a loop.
+    """
+    acts = assessment.actions or []
+    if not acts:
+        return assessment.headline
+    said = ""
+    for h in reversed(_clean_history(history)):
+        if h.get("role") == "assistant" and h.get("content"):
+            said = h["content"]
+            break
+    for act in acts:
+        if act.label not in said:
+            return f"Next: {act.label} — {act.why}"
+    return ""
+
+
+def _tail(pack: PackInput, assessment: Assessment, history=None) -> str:
+    have = _have_line(pack)
+    nxt = _next_line(assessment, history)
+    if nxt:
+        return f"{have}{nxt}"
+    return (f"{have}That's everything until more of the pack arrives — "
+            "send the NAFDAC number, dates or a photo.")
 
 
 def _is_question(message: str) -> bool:
@@ -449,7 +475,7 @@ def _is_question(message: str) -> bool:
 
 
 def _converse(pack: PackInput, fresh: dict, message: str,
-              assessment: Assessment) -> str | None:
+              assessment: Assessment, history=None) -> str | None:
     """A conversational reply, or None when a full check is wanted."""
     small = ai._small_talk(message or "")
     if small is not None:
@@ -465,7 +491,7 @@ def _converse(pack: PackInput, fresh: dict, message: str,
         denied = fresh.get("denied") or ""
         ack = (f"Got it — {name}, not {denied}. I've updated that."
                if denied else f"Got it — {name}. I've updated that.")
-        return f"{ack} {_have_line(pack)}{_next_line(assessment)}"
+        return f"{ack} {_tail(pack, assessment, history)}"
     if _is_question(message) and (pack.nafdac_number or pack.barcode
                                   or pack.batch or pack.product_name):
         return ai.answer(message, assessment)
@@ -510,7 +536,7 @@ def _proposal(pack: PackInput, assessment: Assessment) -> dict:
 
 
 def _fragment_ack(pack: PackInput, fresh: dict,
-                  assessment: Assessment) -> str | None:
+                  assessment: Assessment, history=None) -> str | None:
     """Acknowledge newly arrived details without a verdict dump."""
     bits = []
     if fresh.get("barcode"):
@@ -526,12 +552,12 @@ def _fragment_ack(pack: PackInput, fresh: dict,
         bits.append(f"Noted — {pack.product_name}.")
     if not bits:
         return None
-    return " ".join(bits) + f" {_have_line(pack)}{_next_line(assessment)}"
+    return " ".join(bits) + f" {_tail(pack, assessment, history)}"
 
 
 def _pipeline(message: str, image_bytes: bytes | None,
               image_type: str, history=None) -> dict:
-    pack, fresh = _working_pack(history, message)
+    pack, fresh, changed = _working_pack(history, message)
     has_history = bool(_clean_history(history))
     extraction = None
     if image_bytes:
@@ -550,9 +576,16 @@ def _pipeline(message: str, image_bytes: bytes | None,
         text, who = ai.compose(assessment, message)
     else:
         assessment = _assess(pack)
-        said = _converse(pack, fresh, message, assessment)
+        said = _converse(pack, fresh, message, assessment, history)
+        repeated = (not changed and any(
+            fresh.get(k) for k in ("nafdac_number", "barcode", "batch",
+                                   "product_name")))
         if said is not None:
             text, who = said, "vouch-composer"
+        elif repeated:
+            text, who = ("Already have that. "
+                         f"{_tail(pack, assessment, history)}",
+                         "vouch-composer")
         elif (fresh.get("nafdac_number")
                 or (_CHECK_IT.search(message or "")
                     and (pack.nafdac_number or pack.barcode
@@ -560,7 +593,7 @@ def _pipeline(message: str, image_bytes: bytes | None,
                 or (not has_history and fresh.get("barcode"))):
             text, who = ai.compose(assessment, message)
         else:
-            ack = _fragment_ack(pack, fresh, assessment)
+            ack = _fragment_ack(pack, fresh, assessment, history)
             if ack is not None:
                 text, who = ack, "vouch-composer"
             elif _have_line(pack):

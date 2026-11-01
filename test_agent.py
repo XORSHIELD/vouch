@@ -105,6 +105,34 @@ check("barcode remembered across turns",
       == "6034000005424",
       repr(replies[5]["assessment"].get("input"))[:200])
 
+print("no loops")
+import re as _re
+from engine import Action, Assessment
+
+
+def _next_sent(text: str) -> str:
+    m = _re.search(r"Next: .*?(?:\.|$)", text)
+    return m.group(0) if m else ""
+
+
+replies = convo("6034000005424", "BB 290927AJ57", "300926C 10:16")
+n2, n3 = _next_sent(replies[1]["answer"]), _next_sent(replies[2]["answer"])
+check("next step not parroted across turns",
+      n2 != n3 or not n3, f"{n2!r} vs {n3!r}")
+made = Assessment(band="incomplete", headline="Not enough yet",
+                  checks=[], score=0.0, registry=None, input={},
+                  actions=[Action("a", "Do the first thing", "why-1", 0),
+                           Action("b", "Do the second thing", "why-2", 0)])
+rotated = agent._next_line(
+    made, [{"role": "user", "text": "hi"},
+           {"role": "assistant",
+            "text": "Hello. Next: Do the first thing — why-1"}])
+check("suggestions rotate instead of repeating",
+      "second thing" in rotated, rotated)
+repeat_reply = convo("6034000005424", "6034000005424")[1]["answer"]
+check("repeated detail noticed, not re-acked",
+      "already" in repeat_reply.lower(), repeat_reply[:160])
+
 print("single-turn checks unchanged")
 r = agent.chat("NAFDAC A99-9999, open a case")
 check("explicit check still proposes",
