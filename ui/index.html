@@ -954,6 +954,7 @@
   [data-theme="dark"] input:focus,[data-theme="dark"] select:focus,[data-theme="dark"] textarea:focus{border-color:var(--green);background-color:#202E26;box-shadow:0 0 0 4px rgba(61,165,104,.22)}
   [data-theme="dark"] input::placeholder,[data-theme="dark"] textarea::placeholder{color:#82968C}
   [data-theme="dark"] input[type=checkbox],[data-theme="dark"] input[type=radio]{background:none;border:0;box-shadow:none}
+  [data-theme="dark"] label.f span{color:var(--ink-3)}
   /* badges, pills, queues */
   [data-theme="dark"] .badge{background:#1B2620;color:#9DB5AA;border-color:#33443A}
   [data-theme="dark"] .badge.rail{background:#16222C;color:#8FB4D6;border-color:#274052}
@@ -4007,7 +4008,7 @@ async function renderSession(){
     if (token) user = (await api('/api/auth/me')).user;
   } catch { user = null; }
   if (user){
-    box.innerHTML = `<p style="margin:0 0 12px;font-size:14px">Signed in as <b>${esc(user.username)}</b> <span class="hpill ${esc(user.role === 'admin' ? 'review' : 'clear')}">${esc(user.role)}</span></p>
+    box.innerHTML = `<p style="margin:0 0 12px;font-size:14px">Signed in as <b>${esc(user.username)}</b>${user.email ? ' <span style="color:var(--ink-2)">· ' + esc(user.email) + '</span>' : ''} <span class="hpill ${esc(user.role === 'admin' ? 'review' : 'clear')}">${esc(user.role)}</span></p>
       <div class="docbtns" style="margin-top:0">
         <button class="btn ghost sm" id="btnLogout" type="button">Sign out</button>
         <button class="btn ghost sm" id="btnWebsite" type="button">Return to website</button>
@@ -4021,14 +4022,15 @@ async function renderSession(){
     return;
   }
   try { localStorage.removeItem('vouch.token'); } catch {}
-  box.innerHTML = `<p style="margin:0 0 12px;font-size:13.5px;color:var(--ink-2)">Cases need an account. The first account on a server is the admin. Checks never need sign-in.</p>
+  box.innerHTML = `<p style="margin:0 0 12px;font-size:13.5px;color:var(--ink-2)">Cases need an account. The first account on a server is the admin. Checks never need sign-in. Sign in with your username or your email.</p>
     <label class="f"><span>Username</span><input id="authUser" autocomplete="username" placeholder="e.g. joseph" /></label>
     <label class="f"><span>Password</span><input id="authPass" type="password" autocomplete="current-password" placeholder="8+ characters" /></label>
+    <label class="f"><span>Email (optional, for registering)</span><input id="authEmail" autocomplete="email" placeholder="e.g. joseph@example.com" /></label>
     <div class="docbtns" style="margin-top:0">
       <button class="btn sm" id="btnLogin" type="button">Sign in</button>
       <button class="btn ghost sm" id="btnRegister" type="button">Register</button>
     </div>`;
-  const creds = () => ({username:$('#authUser').value.trim(), password:$('#authPass').value});
+  const creds = () => ({username:$('#authUser').value.trim(), password:$('#authPass').value, email:$('#authEmail').value.trim()});
   $('#btnLogin').onclick = async () => {
     try {
       const out = await api('/api/auth/login', {method:'POST', body:JSON.stringify(creds())});

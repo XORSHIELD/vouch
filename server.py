@@ -496,13 +496,14 @@ def ask(body: ExplainBody) -> dict:
 class AuthBody(BaseModel):
     username: str = ""
     password: str = ""
+    email: str = ""
 
 
 @app.post("/api/auth/register")
 def auth_register(body: AuthBody) -> dict:
-    """Create a consumer account."""
+    """Create a consumer account, with an optional email for sign-in."""
     try:
-        user = auth.register(body.username, body.password)
+        user = auth.register(body.username, body.password, email=body.email)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     return {"user": user}
@@ -510,7 +511,7 @@ def auth_register(body: AuthBody) -> dict:
 
 @app.post("/api/auth/login")
 def auth_login(body: AuthBody) -> dict:
-    """Trade credentials for a session token."""
+    """Trade a username-or-email plus password for a session token."""
     token = auth.login(body.username, body.password)
     if not token:
         raise HTTPException(401, "Wrong username or password.")

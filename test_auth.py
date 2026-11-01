@@ -9,6 +9,7 @@ Run:  python test_auth.py
 from __future__ import annotations
 
 import os
+import sqlite3
 import tempfile
 
 TMP = tempfile.mkdtemp(prefix="vouch-auth-")
@@ -60,6 +61,71 @@ check("token resolves", (who or {}).get("username") == "owner", str(who))
 check("bogus token fails", auth.me("bogus") is None)
 auth.logout(token or "")
 check("logout kills the token", auth.me(token or "") is None)
+
+print("email sign-in")
+bob = auth.register("bob", "bob-bob-bob-1", email="Bob@Example.com")
+check("register accepts an email", bob.get("email") == "bob@example.com",
+      str(bob))
+tok = auth.login("bob@example.com", "bob-bob-bob-1")
+check("login works with the email", bool(tok))
+check("email login is case-insensitive",
+      bool(auth.login("BOB@EXAMPLE.COM", "bob-bob-bob-1")))
+who2 = auth.me(tok or "")
+check("email login resolves the username",
+      (who2 or {}).get("username") == "bob", str(who2))
+check("username login still works",
+      bool(auth.login("bob", "bob-bob-bob-1")))
+check("unknown email fails",
+      auth.login("nobody@example.com", "bob-bob-bob-1") is None)
+try:
+    auth.register("bobby", "bobby-bobby-1", email="bob@example.com")
+    check("duplicate email refused", False)
+except ValueError:
+    check("duplicate email refused", True)
+try:
+    auth.register("bobby", "bobby-bobby-1", email="BOB@example.com")
+    check("duplicate email refused regardless of case", False)
+except ValueError:
+    check("duplicate email refused regardless of case", True)
+for i, bad in enumerate(("not-an-email", "a@b", "@example.com",
+                         "bob@", "bob@exa mple.com")):
+    try:
+        auth.register(f"ebad{i}", "ebad-ebad-1", email=bad)
+        check(f"bad email refused ({bad!r})", False)
+    except ValueError:
+        check(f"bad email refused ({bad!r})", True)
+auth.register("noemail", "noemail-no-1")
+check("register still works without an email",
+      bool(auth.login("noemail", "noemail-no-1")))
+
+print("email migration")
+old_db = os.path.join(TMP, "legacy.sqlite")
+_legacy = sqlite3.connect(old_db)
+_legacy.executescript(
+    "CREATE TABLE users (username TEXT PRIMARY KEY,"
+    " passhash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'consumer',"
+    " created_at REAL NOT NULL);"
+    "CREATE TABLE sessions (token_sha TEXT PRIMARY KEY,"
+    " username TEXT NOT NULL, expires_at REAL NOT NULL);"
+    "INSERT INTO users (username, passhash, role, created_at)"
+    " VALUES ('oldtimer', '" + auth._hash("oldtimer-old-1") + "',"
+    " 'consumer', 0);")
+_legacy.commit()
+_legacy.close()
+_real_db = auth.DB_PATH
+auth.DB_PATH = old_db
+try:
+    check("pre-migration user can log in",
+          bool(auth.login("oldtimer", "oldtimer-old-1")))
+    _cols = [r[1] for r in sqlite3.connect(old_db).execute(
+        "PRAGMA table_info(users)").fetchall()]
+    check("email column added", "email" in _cols, str(_cols))
+    check("register works on a migrated database",
+          auth.register("newbie", "newbie-new-1",
+                        email="newbie@example.com")["email"]
+          == "newbie@example.com")
+finally:
+    auth.DB_PATH = _real_db
 
 print("roles")
 check("set_role works", auth.set_role("clerk", "inspector") is True)

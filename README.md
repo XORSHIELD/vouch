@@ -142,7 +142,7 @@ panels name the source; sample and demo runs are labelled separately.
 **Accounts.** Checks never need sign-in; cases do. The first account
 registered is the admin. For scripted deploys, set `VOUCH_ADMIN_PASSWORD`
 before the first start instead. Sessions last 7 days; sign in from
-**Settings → Session**.
+**Settings → Session** with your username or email.
 
 **Backups.** Cases, reports, accounts and the mirror live in `.data/`,
 `data/` and `.cache/`. Back them up:

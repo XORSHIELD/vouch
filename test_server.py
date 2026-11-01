@@ -9,10 +9,17 @@ Run:  python test_server.py
 from __future__ import annotations
 
 import os
+import tempfile
 import threading
 import time
 
 os.environ.pop("VOUCH_AUTO_SYNC", None)
+
+TMP = tempfile.mkdtemp(prefix="vouch-server-")
+os.environ["VOUCH_DATA_DIR"] = TMP
+os.environ["VOUCH_AUTH_DB"] = os.path.join(TMP, "auth.sqlite")
+os.environ["VOUCH_AUDIT_LOG"] = os.path.join(TMP, "audit.log")
+os.environ["VOUCH_CACHE_DIR"] = os.path.join(TMP, "cache")
 
 from starlette.testclient import TestClient
 
@@ -86,6 +93,31 @@ try:
           str(r.status_code))
 finally:
     agent_mod.API_KEY, ai_mod.API_KEY = _old_keys
+
+print("auth over HTTP")
+r = client.post("/api/auth/register",
+                json={"username": "httpuser", "password": "httpuser-h1",
+                      "email": "http@example.com"})
+check("register with email",
+      r.status_code == 200
+      and r.json()["user"]["email"] == "http@example.com"
+      and r.json()["user"]["role"] == "admin",
+      f"{r.status_code} {r.text[:200]}")
+r = client.post("/api/auth/login",
+                json={"username": "http@example.com",
+                      "password": "httpuser-h1"})
+tok = (r.json() if r.status_code == 200 else {}).get("token", "")
+check("login with the email", bool(tok),
+      f"{r.status_code} {r.text[:200]}")
+r = client.get("/api/auth/me", headers={"Authorization": "Bearer " + tok})
+check("me resolves the username",
+      r.json().get("user", {}).get("username") == "httpuser",
+      r.text[:200])
+r = client.post("/api/auth/register",
+                json={"username": "httpuser2", "password": "httpuser-h2",
+                      "email": "http@example.com"})
+check("duplicate email refused", r.status_code == 400,
+      f"{r.status_code} {r.text[:200]}")
 
 print("auto-sync wiring")
 os.environ["VOUCH_AUTO_SYNC"] = "1"

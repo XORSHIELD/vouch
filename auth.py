@@ -1,7 +1,7 @@
 """
 Vouch — accounts and sessions.
 
-Username + password, stdlib only: PBKDF2-SHA256 for passwords, opaque bearer
+Username-or-email + password, stdlib only: PBKDF2-SHA256 for passwords, opaque bearer
 tokens for sessions. Roles are consumer < inspector < admin.
 
   * consumers run checks and own cases
@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT PRIMARY KEY,
   passhash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'consumer',
+  email TEXT NOT NULL DEFAULT '',
   created_at REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS sessions (
@@ -54,6 +55,13 @@ def _db() -> sqlite3.Connection:
     con = sqlite3.connect(DB_PATH, timeout=10)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
+    cols = [r[1] for r in con.execute("PRAGMA table_info(users)")]
+    if "email" not in cols:
+        con.execute(
+            "ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''")
+    con.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email"
+                " ON users(email) WHERE email <> ''")
+    con.commit()
     return con
 
 
@@ -79,11 +87,21 @@ def _valid_username(username: str) -> bool:
     return bool(re.fullmatch(r"[a-z0-9][a-z0-9._-]{2,31}", username or ""))
 
 
-def register(username: str, password: str) -> dict:
-    """Create an account. The first account is the admin. ValueError if bad."""
+def _valid_email(email: str) -> bool:
+    return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email or ""))
+
+
+def register(username: str, password: str, email: str = "") -> dict:
+    """Create an account. The first account is the admin. ValueError if bad.
+
+    The email is optional; when given it becomes a second way to sign in.
+    """
     username = (username or "").strip().lower()
+    email = (email or "").strip().lower()
     if not _valid_username(username):
         raise ValueError("Username: 3-32 chars, letters, digits, . _ -")
+    if email and not _valid_email(email):
+        raise ValueError("That email address does not look right.")
     if len(password or "") < 8:
         raise ValueError("Password needs at least 8 characters.")
     con = _db()
@@ -91,17 +109,20 @@ def register(username: str, password: str) -> dict:
         if con.execute("SELECT 1 FROM users WHERE username = ?",
                        (username,)).fetchone():
             raise ValueError("That username is taken.")
+        if email and con.execute("SELECT 1 FROM users WHERE email = ?",
+                                 (email,)).fetchone():
+            raise ValueError("That email is already registered.")
         users = con.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         role = "admin" if users == 0 else "consumer"
         con.execute(
-            "INSERT INTO users (username, passhash, role, created_at)"
-            " VALUES (?, ?, ?, ?)",
-            (username, _hash(password), role, time.time()))
+            "INSERT INTO users (username, passhash, role, email, created_at)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (username, _hash(password), role, email, time.time()))
         con.commit()
     finally:
         con.close()
     audit.log("user_registered", username, role)
-    return {"username": username, "role": role}
+    return {"username": username, "role": role, "email": email}
 
 
 def ensure_admin() -> None:
@@ -136,15 +157,24 @@ def ensure_admin() -> None:
     print("auth: admin account created.")
 
 
-def login(username: str, password: str) -> str | None:
-    """A session token, or None when the credentials are wrong."""
-    username = (username or "").strip().lower()
+def login(identifier: str, password: str) -> str | None:
+    """A session token, or None when the credentials are wrong.
+
+    The identifier is the username or the email; both match
+    case-insensitively and resolve to the same account.
+    """
+    identifier = (identifier or "").strip().lower()
+    if not identifier:
+        return None
     con = _db()
     try:
-        row = con.execute("SELECT passhash FROM users WHERE username = ?",
-                          (username,)).fetchone()
+        row = con.execute(
+            "SELECT username, passhash FROM users"
+            " WHERE username = ? OR (email = ? AND email <> '')",
+            (identifier, identifier)).fetchone()
         if not row or not _check(password or "", row["passhash"]):
             return None
+        username = row["username"]
         token = secrets.token_urlsafe(32)
         digest = hashlib.sha256(token.encode()).hexdigest()
         con.execute("DELETE FROM sessions WHERE expires_at < ?",
@@ -181,7 +211,7 @@ def me(token: str) -> dict | None:
     con = _db()
     try:
         row = con.execute(
-            "SELECT u.username, u.role, s.expires_at FROM sessions s"
+            "SELECT u.username, u.role, u.email, s.expires_at FROM sessions s"
             " JOIN users u ON u.username = s.username"
             " WHERE s.token_sha = ?", (digest,)).fetchone()
         if not row:
@@ -191,7 +221,8 @@ def me(token: str) -> dict | None:
                         (digest,))
             con.commit()
             return None
-        return {"username": row["username"], "role": row["role"]}
+        return {"username": row["username"], "role": row["role"],
+                "email": row["email"] or ""}
     finally:
         con.close()
 
