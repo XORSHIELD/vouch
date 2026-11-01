@@ -32,14 +32,15 @@ FastAPI/Uvicorn.
 
 ```powershell
 $env:MODEL_API_KEY = "your-key"
-$env:MODEL_BASE_URL = "https://api.meta.ai/v1"   # optional
-$env:MODEL_NAME = "muse-spark-1.3"               # optional
+$env:META_BASE = "https://api.meta.ai/v1"   # optional
+$env:VOUCH_MODEL = "muse-spark-1.3"         # optional
 python server.py
 ```
 
-Without a key, explanations are written by the deterministic `vouch-composer`
-with the same evidence and the same guardrails. The app labels which provider
-was used on every answer.
+The key is also accepted as `META_API_KEY`, and the vision model can be
+overridden separately with `META_VISION_MODEL`. Without a key, explanations
+are written by the deterministic `vouch-composer` with the same evidence and
+the same guardrails. The app labels which provider was used on every answer.
 
 ## The two rails
 
