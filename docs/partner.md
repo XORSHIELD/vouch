@@ -54,6 +54,25 @@ POST /api/sms/inbound
 Vouch answers `{"reply": "Vouch: ..."}`. A wrong or missing secret
 gets 403. Delivery stays with you; Vouch only writes the reply text.
 
+## WhatsApp check-by-message
+
+Connect a Meta WhatsApp Cloud API app:
+
+1. Set `VOUCH_WA_VERIFY` to a random string and give the same string to
+   Meta as the webhook verify token. `GET /api/whatsapp/webhook`
+   answers the handshake.
+2. Set `VOUCH_WA_APP_SECRET` to the Meta app secret. Every
+   `POST /api/whatsapp/webhook` must carry a valid
+   `X-Hub-Signature-256`; anything else gets 403.
+3. Set `VOUCH_WA_TOKEN` (API token) and `VOUCH_WA_PHONE_ID` (sender
+   number id) so Vouch can reply. Without both, messages are read and
+   answered nowhere — the endpoint reports `sent: false`.
+
+Send `NAFDAC <number>` or `V <barcode>` as a message; the reply uses
+the same vocabulary as the SMS seam. Photos are answered with a
+please-send-text note. `VOUCH_WA_TOKEN=demo` rehearses the flow
+without dialing Meta.
+
 ## What Vouch never asks
 
 Vouch never asks a partner whether a pack is "genuine" or "fake", and

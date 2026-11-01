@@ -23,6 +23,7 @@ os.environ["VOUCH_AUDIT_LOG"] = os.path.join(TMP, "audit.log")
 os.environ["VOUCH_CACHE_DIR"] = os.path.join(TMP, "cache")
 
 from starlette.testclient import TestClient
+from starlette.requests import Request
 
 import registry as R
 import server
@@ -50,6 +51,12 @@ check("ask route runs ask()",
 check("agent route runs agent_chat()",
       _routes.get("/api/agent/chat") is server.agent_chat,
       repr(_routes.get("/api/agent/chat")))
+check("whatsapp post runs wa_inbound()",
+      _routes.get("/api/whatsapp/webhook") is server.wa_inbound,
+      repr(_routes.get("/api/whatsapp/webhook")))
+check("whatsapp verify wired",
+      any(getattr(r, "endpoint", None) is server.wa_verify
+          for r in server.app.routes))
 
 
 print("csv export + audit")
@@ -138,6 +145,28 @@ try:
           _bdeps.count(server.auth.require_admin) == 2, str(len(_bdeps)))
 finally:
     server.backup.HERE, server.backup.SOURCES = _real_here, _real_sources
+
+
+print("whatsapp webhook")
+os.environ["VOUCH_WA_VERIFY"] = "wa-verify"
+
+
+def _get(query: bytes):
+    return Request({"type": "http", "method": "GET",
+                    "path": "/api/whatsapp/webhook",
+                    "query_string": query, "headers": []})
+
+
+_resp = server.wa_verify(_get(
+    b"hub.mode=subscribe&hub.verify_token=wa-verify&hub.challenge=CH1"))
+check("verify echoes challenge", _resp.body == b"CH1",
+      repr(_resp.body))
+try:
+    server.wa_verify(_get(
+        b"hub.mode=subscribe&hub.verify_token=nope&hub.challenge=CH1"))
+    check("bad verify refused", False)
+except Exception as exc:
+    check("bad verify refused", "403" in str(exc), str(exc)[:80])
 
 
 print("security headers")

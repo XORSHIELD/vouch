@@ -44,6 +44,7 @@ import registry as R
 import safety
 import scan as S
 import vision
+import whatsapp
 from engine import PackInput
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -934,6 +935,29 @@ def sms_inbound(body: SmsBody) -> dict:
     if not sms.check_secret(body.secret):
         raise HTTPException(403, "Bad provider secret.")
     return {"reply": sms.handle_inbound(body.text, body.sender)}
+
+
+@app.get("/api/whatsapp/webhook")
+def wa_verify(request: Request):
+    """Meta verification handshake: echo the challenge on token match."""
+    q = request.query_params
+    hit = whatsapp.check_verify(q.get("hub.mode", ""),
+                                q.get("hub.verify_token", ""),
+                                q.get("hub.challenge", ""))
+    if not hit:
+        raise HTTPException(403, "Bad verify token.")
+    return PlainTextResponse(hit)
+
+
+@app.post("/api/whatsapp/webhook")
+async def wa_inbound(request: Request) -> dict:
+    """Meta message webhook: check-by-message over WhatsApp."""
+    raw = await request.body()
+    status, out = whatsapp.handle_post(
+        raw, request.headers.get("x-hub-signature-256", ""))
+    if status != 200:
+        raise HTTPException(status, out.get("detail", "Refused."))
+    return out
 
 
 @app.get("/api/registry/sync/status")

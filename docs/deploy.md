@@ -60,6 +60,10 @@ itself is at `http://127.0.0.1:8077/app`.
 | VOUCH_MAS_URL | (inactive) | Scratch-PIN verification endpoint. |
 | VOUCH_MAS_KEY | (unset) | Bearer key sent to the PIN endpoint. |
 | VOUCH_SMS_SECRET | (required for SMS) | Shared secret for POST /api/sms/inbound; wrong or missing means 403. |
+| VOUCH_WA_VERIFY | (unset) | Webhook verify token shared with Meta. |
+| VOUCH_WA_APP_SECRET | (unset) | Meta app secret; unsigned POSTs get 403. |
+| VOUCH_WA_TOKEN | (unset) | API token for replies. `demo` rehearses without sending. |
+| VOUCH_WA_PHONE_ID | (unset) | Sender number id replies come from. |
 
 Put deployment values in an env file the service loads — never in the repo.
 

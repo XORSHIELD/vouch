@@ -9,6 +9,7 @@ Run:  python test_seams.py
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import time
@@ -18,10 +19,15 @@ TMP = tempfile.mkdtemp(prefix="vouch-seams-")
 os.environ["VOUCH_CACHE_DIR"] = TMP
 os.environ.pop("VOUCH_MFR_URL", None)
 os.environ["VOUCH_SMS_SECRET"] = "test-secret"
+os.environ["VOUCH_WA_VERIFY"] = "wa-verify"
+os.environ["VOUCH_WA_APP_SECRET"] = "wa-secret"
+os.environ["VOUCH_WA_PHONE_ID"] = "12345"
+os.environ.pop("VOUCH_WA_TOKEN", None)
 
 import manufacturer as M
 import registry as R
 import sms
+import whatsapp
 
 fails = 0
 
@@ -122,6 +128,106 @@ texts = [sms.handle_inbound(t) for t in
 check("no binary language in replies",
       not any(w in " ".join(texts).lower() for w in banned),
       " | ".join(texts))
+
+print("whatsapp seam")
+check("verify echoes on token match",
+      whatsapp.check_verify("subscribe", "wa-verify", "CH9") == "CH9")
+check("verify refuses wrong token",
+      whatsapp.check_verify("subscribe", "nope", "CH9") == "")
+check("verify refuses wrong mode",
+      whatsapp.check_verify("unsubscribe", "wa-verify", "CH9") == "")
+_payload = {"entry": [{"changes": [
+    {"value": {"messaging_product": "whatsapp", "messages": [
+        {"from": "2348012345678", "type": "text",
+         "text": {"body": "NAFDAC A11-0551"}},
+        {"from": "2348012345678", "type": "image",
+         "image": {"id": "img1"}}]}},
+    {"value": {"messaging_product": "whatsapp",
+               "statuses": [{"id": "s1"}]}}]}]}
+_msgs = whatsapp.parse_webhook(_payload)
+check("text parsed, statuses skipped",
+      _msgs == [("2348012345678", "NAFDAC A11-0551"),
+                ("2348012345678", None)], str(_msgs))
+check("garbage parses to nothing",
+      whatsapp.parse_webhook({}) == []
+      and whatsapp.parse_webhook({"entry": [{"changes": []}]}) == [])
+reply = whatsapp.handle_inbound("NAFDAC A11-0551")
+check("registered number answered",
+      "registered" in reply.lower() and "A.C. Drugs" in reply, reply)
+check("photos get a text-only note",
+      "as text" in whatsapp.handle_inbound(None).lower())
+import hashlib as _hl
+import hmac as _hm
+_raw = b'{"x": 1}'
+_sig = "sha256=" + _hm.new(b"wa-secret", _raw, _hl.sha256).hexdigest()
+check("valid signature accepted",
+      whatsapp.check_signature(_raw, _sig) is True)
+check("forged signature refused",
+      whatsapp.check_signature(_raw, "sha256=" + "0" * 64) is False
+      and whatsapp.check_signature(_raw, "") is False)
+os.environ.pop("VOUCH_WA_APP_SECRET", None)
+check("missing secret refuses everything",
+      whatsapp.check_signature(_raw, _sig) is False)
+os.environ["VOUCH_WA_APP_SECRET"] = "wa-secret"
+check("send unconfigured says so",
+      whatsapp.send_text("2348012345678", "hi")["sent"] is False)
+os.environ["VOUCH_WA_TOKEN"] = "demo"
+_n = len(dialed)
+check("demo send dials nothing",
+      whatsapp.send_text("2348012345678", "hi").get("sent") is True
+      and len(dialed) == _n, str(dialed))
+os.environ["VOUCH_WA_TOKEN"] = "real-token"
+_sent: dict = {}
+
+
+def _fake_wa(req, timeout=None):
+    _sent["url"] = req.full_url
+    _sent["auth"] = req.get_header("Authorization")
+    _sent["body"] = json.loads(req.data.decode())
+    return _FakeResp(b'{"messages": [{"id": "wamid.1"}]}')
+
+
+urllib.request.urlopen = _fake_wa
+try:
+    out = whatsapp.send_text("2348012345678", "Vouch: hi")
+finally:
+    urllib.request.urlopen = _real_urlopen
+check("graph api reached with bearer",
+      out.get("sent") is True and out.get("id") == "wamid.1"
+      and _sent["url"] == "https://graph.facebook.com/v21.0/12345/messages"
+      and _sent["auth"] == "Bearer real-token", str(_sent))
+check("message body shaped for whatsapp",
+      _sent["body"].get("messaging_product") == "whatsapp"
+      and _sent["body"].get("to") == "2348012345678",
+      str(_sent["body"]))
+os.environ.pop("VOUCH_WA_TOKEN", None)
+
+print("whatsapp posts")
+os.environ["VOUCH_WA_TOKEN"] = "demo"
+_payload2 = {"entry": [{"changes": [{"value": {
+    "messaging_product": "whatsapp", "messages": [
+        {"from": "2348012345678", "type": "text",
+         "text": {"body": "NAFDAC A11-0551"}}]}}]}]}
+_raw2 = json.dumps(_payload2).encode()
+_sig2 = "sha256=" + _hm.new(b"wa-secret", _raw2, _hl.sha256).hexdigest()
+_st, _bd = whatsapp.handle_post(_raw2, _sig2)
+check("signed post answered",
+      _st == 200 and len(_bd["replies"]) == 1
+      and "registered" in _bd["replies"][0]["reply"].lower()
+      and _bd["replies"][0]["sent"] is True, str(_bd)[:200])
+check("unsigned post refused",
+      whatsapp.handle_post(_raw2, "")[0] == 403)
+check("bad json refused",
+      whatsapp.handle_post(b"nope{", _sig2)[0] in (400, 403))
+_statuses = json.dumps(
+    {"entry": [{"changes": [{"value": {
+        "messaging_product": "whatsapp",
+        "statuses": [{"id": "s1"}]}}]}]}).encode()
+_sig3 = "sha256=" + _hm.new(b"wa-secret", _statuses, _hl.sha256).hexdigest()
+_st3, _bd3 = whatsapp.handle_post(_statuses, _sig3)
+check("status-only post ok with no replies",
+      (_st3, _bd3) == (200, {"replies": []}), str((_st3, _bd3)))
+os.environ.pop("VOUCH_WA_TOKEN", None)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
