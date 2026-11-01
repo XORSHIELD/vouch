@@ -1282,6 +1282,7 @@
       <div class="bd">
         <h2 style="margin:0 0 6px;font-size:24px;letter-spacing:-.03em">Product guide</h2>
         <p style="margin:0;color:var(--ink-3);font-size:15px">Practical guidance for reading dates, spotting packaging problems, and knowing what a check can and cannot prove.</p>
+        <p style="margin:12px 0 0"><button class="btn ghost sm" id="btnReplayTour" type="button">Replay the first-run tour</button></p>
       </div>
     </div>
     <div class="guide-grid">
@@ -1534,6 +1535,20 @@
   </section>
 
 </main>
+  </div>
+</div>
+
+<!-- FIRST-RUN TOUR -->
+<div class="modal hidden" id="tourModal" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+  <div class="sheet">
+    <div class="sheet-hd">
+      <div>
+        <h2 id="tourTitle">Welcome to Vouch</h2>
+        <small id="tourStep">Step 1 of 3 · see it work</small>
+      </div>
+      <button class="iconbtn" id="tourClose" type="button" aria-label="Close tour">✕</button>
+    </div>
+    <div class="scan-body" id="tourBody"></div>
   </div>
 </div>
 
@@ -5855,9 +5870,94 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !voicePanel.classList.contains('hidden')) closeVoice();
 });
 
+/* ---------- first-run tour ---------- */
+const TOUR_KEY = 'vouch.tour.v1';
+const TOUR_SAMPLE = 'copied_number';
+
+function tourDone(){
+  try { localStorage.setItem(TOUR_KEY, '1'); } catch {}
+  const m = $('#tourModal');
+  if (m) m.classList.add('hidden');
+}
+function tourStep(n, html){
+  const names = {1: 'see it work', 2: 'the verdict', 3: 'your turn'};
+  $('#tourStep').textContent = 'Step ' + n + ' of 3 · ' + (names[n] || '');
+  $('#tourBody').innerHTML = html;
+  $('#tourModal').classList.remove('hidden');
+}
+function tourWelcome(){
+  tourStep(1, `<p style="margin:0 0 12px;font-size:14.5px;line-height:1.6">Vouch checks a pack's <b>NAFDAC number</b>, <b>barcode</b> and <b>dates</b> against each other — and tells you what the result can and cannot prove.</p>
+    <p class="scan-note" style="margin:0 0 14px">First, watch it work on a sample pack. Samples are clearly labelled and never touch your cases.</p>
+    <div class="docbtns" style="margin-top:0">
+      <button class="btn" id="btnTourSample" type="button">Run a sample check</button>
+      <button class="btn ghost" id="btnTourSkip" type="button">Skip tour</button>
+    </div>`);
+  $('#btnTourSample').onclick = tourSample;
+  $('#btnTourSkip').onclick = tourDone;
+}
+async function tourSample(){
+  const body = $('#tourBody');
+  body.innerHTML = '<p class="scan-note" style="margin-top:0">Running the sample check…</p>';
+  try {
+    const out = await api('/api/demo/run', {method:'POST', body:JSON.stringify({key:TOUR_SAMPLE})});
+    const a = out.assessment || {};
+    const band = a.band || 'incomplete';
+    const label = (BAND[band] || {}).label || band;
+    const n = (a.checks || []).length;
+    tourStep(2, `<p style="margin:0 0 12px"><span class="pill ${esc(band)}">${esc(label)}</span></p>
+      <p style="margin:0 0 8px;font-size:15px;line-height:1.55"><b>${esc(a.headline || 'Sample check complete')}</b></p>
+      <p class="scan-note" style="margin:0 0 14px">${esc((out.pack || {}).title || 'Sample pack')} · ${n} checks run.</p>
+      <div class="docbtns" style="margin-top:0">
+        <button class="btn" id="btnTourOpen" type="button">Open the full result</button>
+        <button class="btn ghost" id="btnTourNext" type="button">Next: your turn</button>
+      </div>`);
+    $('#btnTourOpen').onclick = () => {
+      state.assessment = a;
+      tourDone();
+      goTab('check');
+      renderAssessment(a, {sample:true, title:(out.pack || {}).title, chip:(out.pack || {}).chip});
+    };
+    $('#btnTourNext').onclick = tourYourTurn;
+  } catch(e){
+    body.innerHTML = `<p class="scan-note" style="margin-top:0">The sample check failed (${esc(e.message)}). The checker itself still works — this looks like a connection problem.</p>
+      <div class="docbtns" style="margin-top:0">
+        <button class="btn" id="btnTourRetry" type="button">Try again</button>
+        <button class="btn ghost" id="btnTourSkip2" type="button">Skip tour</button>
+      </div>`;
+    $('#btnTourRetry').onclick = tourSample;
+    $('#btnTourSkip2').onclick = tourDone;
+  }
+}
+function tourYourTurn(){
+  tourStep(3, `<p style="margin:0 0 12px;font-size:14.5px;line-height:1.6">Your turn: type a <b>NAFDAC number</b>, scan the <b>barcode</b>, or photograph the <b>label</b>. Vouch reconciles everything it finds and explains each finding in plain words.</p>
+    <div class="docbtns" style="margin-top:0">
+      <button class="btn" id="btnTourGo" type="button">Open the checker</button>
+      <button class="btn ghost" id="btnTourEnd" type="button">Finish</button>
+    </div>`);
+  $('#btnTourGo').onclick = () => { tourDone(); goTab('check'); };
+  $('#btnTourEnd').onclick = tourDone;
+}
+function maybeStartTour(){
+  try {
+    if (localStorage.getItem(TOUR_KEY)) return;
+    if (/[?&](scan|voice)=1/.test(location.search)) return;
+  } catch { return; }
+  tourWelcome();
+}
+$('#tourClose').onclick = tourDone;
+$('#tourModal').onclick = (e) => { if (e.target.id === 'tourModal') tourDone(); };
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#tourModal').classList.contains('hidden')) tourDone();
+});
+{
+  const _replay = $('#btnReplayTour');
+  if (_replay) _replay.onclick = () => { tourWelcome(); };
+}
+
 /* ---------- boot ---------- */
 (async () => {
   await loadDemos();
+  maybeStartTour();
   try {
     const q = new URLSearchParams(location.search);
     const want = q.get('voice') === '1' ? 'voice' : (q.get('scan') === '1' ? 'scan' : '');
