@@ -153,6 +153,19 @@
   .chip:active{transform:translateY(1px)}
   .chip .b{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:none}
 
+  /* demo scenario rows */
+  #demos,#foodDemos{flex-direction:column;align-items:stretch;gap:10px}
+  .chip.demo-row{border-radius:var(--radius-sm);padding:11px 14px;width:100%;text-align:left}
+  #demos .chip.demo-row:hover,#foodDemos .chip.demo-row:hover{border-color:var(--ink-3)}
+  .demo-row .b{flex:none}
+  .demo-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+  .demo-ti{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.35}
+  .demo-de{font-size:12.5px;font-weight:400;color:var(--ink-3);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .demo-out{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+  .demo-row svg{flex:none;width:16px;height:16px;color:var(--ink-3)}
+  .chip.demo-row:disabled{opacity:.55;cursor:wait}
+  @media (prefers-reduced-motion:reduce){.chip.demo-row{transition:none}}
+
   /* verdict */
   .band{border-radius:var(--radius);padding:22px 26px;border:1px solid;margin-bottom:22px;position:relative;overflow:hidden;background:var(--card)}
   .band::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%}
@@ -1181,6 +1194,7 @@
             <h2 data-i18n="check.demos">Try a Demo Scenario</h2>
           </div>
           <div class="bd">
+            <div class="lbl2">Medicines — checked against the NAFDAC register</div>
             <div class="demos" id="demos"></div>
             <p class="hint" style="margin:14px 0 0" data-i18n="check.demos_hint">See Vouch catch copied numbers, expired stock and lapsed registrations.</p>
             <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
@@ -2142,16 +2156,19 @@ $('#flags').innerHTML = Object.entries(FLAGS).map(([k,v]) =>
      <input type="checkbox" value="${k}" style="width:auto;margin-top:2px" /> ${esc(v)}</label>`).join('');
 
 /* ---------- demos ---------- */
+const DEMO_OUTCOME = {clear:['Clear','var(--ok)'],review:['Review','var(--amber)'],high:['High risk','var(--err)'],incomplete:['Incomplete','var(--ink-3)']};
+const FOOD_OUTCOME = {high_risk:['High risk','var(--err)'],review:['Review','var(--amber)']};
+const DEMO_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
 async function loadDemos(){
   try {
     const {packs} = await api('/api/demo/packs');
     state.packs = packs;
     $('#demos').innerHTML = packs.map(p => {
-      const col = p.scenario==='high' ? 'var(--err)'
-                : p.scenario==='review' ? 'var(--amber)'
-                : p.scenario==='clear' ? 'var(--ok)' : 'var(--ink-3)';
-      return `<button class="chip" data-pack="${esc(p.key)}" title="${esc(p.description)}">
-        <span class="b" style="background:${col}"></span>${esc(p.chip || p.title)}</button>`;
+      const [label, col] = DEMO_OUTCOME[p.scenario] || ['Demo','var(--ink-3)'];
+      return `<button class="chip demo-row" data-pack="${esc(p.key)}" title="${esc(p.description)}">`
+        + `<span class="b" style="background:${col}"></span>`
+        + `<span class="demo-tx"><span class="demo-ti">${esc(p.title)}</span><span class="demo-de">${esc(p.description)}</span></span>`
+        + `<span class="demo-out" style="color:${col}">${label}</span>${DEMO_CHEV}</button>`;
     }).join('');
     $$('#demos .chip').forEach(c => c.onclick = () => runDemo(c.dataset.pack));
   } catch(e){ toast('Could not load demo packs'); }
@@ -2162,10 +2179,11 @@ async function loadFoodDemos(){
   try {
     const {demos} = await api('/api/barcodes');
     $('#foodDemos').innerHTML = demos.map(d => {
-      const col = d.expect==='high_risk' ? 'var(--err)'
-                : d.expect==='review' ? 'var(--amber)' : 'var(--ok)';
-      return `<button class="chip" data-bdemo="${esc(d.key)}" title="${esc(d.note||'')}">
-        <span class="b" style="background:${col}"></span>${esc(d.chip)}</button>`;
+      const [label, col] = FOOD_OUTCOME[d.expect] || ['Clear','var(--ok)'];
+      return `<button class="chip demo-row" data-bdemo="${esc(d.key)}" title="${esc(d.note||'')}">`
+        + `<span class="b" style="background:${col}"></span>`
+        + `<span class="demo-tx"><span class="demo-ti">${esc(d.chip)}</span><span class="demo-de">${esc(d.note||'')}</span></span>`
+        + `<span class="demo-out" style="color:${col}">${label}</span>${DEMO_CHEV}</button>`;
     }).join('');
     $$('#foodDemos .chip').forEach(c => c.onclick = () => runBarcodeDemo(c.dataset.bdemo, c));
   } catch(e){ $('#foodDemos').innerHTML = '<span class="hint" style="margin:0">Barcode demos unavailable.</span>'; }
