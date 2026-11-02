@@ -54,7 +54,9 @@ the same guardrails. The app labels which provider was used on every answer.
 veterinary products. The printed registration number is resolved against the
 live public register, including punctuation variants and likely OCR confusions.
 The engine never crosses the alpha and numeric numbering series. An `inactive`
-registration is kept distinct from a falsified pack.
+registration is kept distinct from a falsified pack. Food, water and cosmetics
+live in a separate register (NAPAMS); vouch says so instead of calling the
+miss a finding, and points those packs at registration.nafdac.gov.ng.
 
 **Rail two — open product databases.** Food, drink, water, cosmetics and
 household products. Barcodes are check-digit validated first, then looked up in
@@ -97,6 +99,8 @@ authentic.
   asks before opening any case. With `MODEL_API_KEY` set it plans with
   the model, otherwise it answers deterministically — the engine owns
   every verdict either way, and case creation always needs sign-in.
+  Pass `case_id` and the chat remembers the case across visits; the
+  planner also loads a playbook (`playbooks/`) matching each message.
 - A product guide, privacy/terms pages, a report form and demo auth flows.
 - Register search: find any of the 8,966 mirrored Greenbook products by
   name, manufacturer or number, and fill the number into Verify in one tap.
@@ -107,6 +111,18 @@ authentic.
 - Staff tools: CSV case export with audit trail, backup/restore UI,
   moderated public alerts, inspector analytics, and a first-run tour.
 - A WhatsApp inbound webhook, so packs can be checked from a chat thread.
+- GS1 traceability codes: DataMatrix payloads decode to GTIN, batch,
+  expiry and serial (`gs1.py`), also readable over SMS with `G <code>`.
+- NAFDAC recalls and safety alerts, imported into the safety layer
+  (`alerts.py`) and matched automatically against every check.
+- Adverse-reaction notes for NAFDAC pharmacovigilance, with a Med Safety
+  App handoff; the chat routes symptom reports there on its own.
+- A forwarded-list checker (`POST /api/debunk`) that scores viral "fake
+  product" lists against the register and the warnings.
+- Anonymous scan tallies for inspectors (day, number, band — nothing
+  personal) inside `/api/analytics`.
+- SMS answers for NAFDAC numbers, barcodes and GS1 codes, with a warning
+  line when a number is named in a NAFDAC alert.
 
 ## Tests
 
@@ -129,6 +145,15 @@ python test_vision.py
 python test_server.py
 python test_server_unit.py
 python test_agent.py
+python test_smarts.py
+python test_gs1.py
+python test_alerts.py
+python test_sms.py
+python test_debunk.py
+python test_scanlog.py
+python test_ui_stop.py
+python test_napams.py
+python test_ui_tools.py
 python test_tour.py
 python test_i18n.py
 python test_voice.py
@@ -195,8 +220,8 @@ and restore one with POST /api/backup/restore — restart the server
 afterwards either way.
 
 **Fresh data.** Set `VOUCH_AUTO_SYNC=1` and the server refreshes the
-Greenbook mirror daily by itself. Without it, sync from Settings or
-`python registry.py --sync`.
+Greenbook mirror and the NAFDAC warnings daily by itself. Without it,
+sync from Settings or `python registry.py --sync`.
 
 **Locking down.** Set `VOUCH_ORIGINS=https://your-domain` so browsers only
 accept your site; without it, browsers block cross-origin API calls while

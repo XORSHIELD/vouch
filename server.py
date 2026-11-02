@@ -29,8 +29,11 @@ import json
 
 import actions
 import agent
+import alerts
 import audit
 import auth
+import debunk
+import gs1
 import backup
 import batchdecode
 import ai
@@ -206,7 +209,28 @@ def check(body: PackBody) -> dict:
     assessment = _assess(
         pack, seen_batches=cases.seen_batches_for(pack.nafdac_number)
     )
+    cases.log_scan(pack, assessment.band)
     return assessment.to_dict()
+
+
+class DebunkBody(BaseModel):
+    text: str = ""
+
+
+@app.post("/api/debunk")
+def debunk_list(body: DebunkBody) -> dict:
+    """Check a pasted list of products against the mirror and warnings."""
+    return debunk.check(body.text)
+
+
+class Gs1Body(BaseModel):
+    payload: str = ""
+
+
+@app.post("/api/gs1/decode")
+def gs1_decode(body: Gs1Body) -> dict:
+    """Decode a GS1 DataMatrix element string. Pure parsing."""
+    return gs1.parse(body.payload)
 
 
 @app.post("/api/extract/text")
@@ -456,6 +480,7 @@ class AgentBody(BaseModel):
     image_b64: str = ""
     image_type: str = "image/jpeg"
     confirmed_action: dict | None = None
+    case_id: str = ""
 
 
 @app.post("/api/agent/chat")
@@ -481,8 +506,22 @@ def agent_chat(body: AgentBody, request: Request) -> dict:
             image_bytes = agent.decode_image(body.image_b64)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
+    case_id = ""
+    if (body.case_id or "").strip():
+        user: dict = {"username": "", "role": ""}
+        try:
+            me = auth.me(auth.bearer_token(request))
+            if me:
+                user = me
+        except Exception:
+            pass
+        c = cases.get_case(body.case_id.strip())
+        if c and cases.can_access(c.get("username", ""),
+                                  user.get("username", ""),
+                                  user.get("role", "")):
+            case_id = c["id"]
     out = agent.chat(body.message, body.history, image_bytes,
-                     body.image_type or "image/jpeg")
+                     body.image_type or "image/jpeg", case_id=case_id)
     out["image_received"] = image_bytes is not None
     return out
 
@@ -700,6 +739,7 @@ def make_document(case_id: str, kind: str, user: dict = Depends(auth.require_use
         "nafdac_report": actions.nafdac_report,
         "fccpc_complaint": actions.fccpc_complaint,
         "seller_demand": actions.seller_demand,
+        "adr_note": actions.adr_note,
     }.get(kind)
     if builder is None:
         raise HTTPException(400, f"Unknown document kind '{kind}'.")
@@ -719,6 +759,7 @@ def download_document(case_id: str, kind: str, user: dict = Depends(auth.require
         "nafdac_report": actions.nafdac_report,
         "fccpc_complaint": actions.fccpc_complaint,
         "seller_demand": actions.seller_demand,
+        "adr_note": actions.adr_note,
     }.get(kind)
     if builder is None:
         raise HTTPException(400, f"Unknown document kind '{kind}'.")
@@ -1150,7 +1191,8 @@ def analytics(days: int = 30,
     """Inspector overview: cases, moderation, activity. Staff only."""
     return {"cases": cases.analytics(days=days),
             "safety": safety.analytics(),
-            "audit": audit.summary()}
+            "audit": audit.summary(),
+            "scans": cases.scan_stats(days=days)}
 
 
 # --------------------------------------------------------------------------
@@ -1226,12 +1268,24 @@ def _maybe_auto_sync() -> None:
             try:
                 if not R.mirror_ready():
                     R.sync_run()
+                _refresh_alerts()
                 _time.sleep(24 * 3600)
                 R.sync_run()
+                _refresh_alerts()
             except Exception:
                 _time.sleep(3600)
 
     threading.Thread(target=loop, daemon=True).start()
+
+
+def _refresh_alerts() -> dict:
+    """Refresh NAFDAC warnings when the copy is stale. Never raises."""
+    try:
+        if alerts.status().get("stale", True):
+            return alerts.refresh()
+        return alerts.status()
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
 
 
 if __name__ == "__main__":

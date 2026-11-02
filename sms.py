@@ -18,7 +18,9 @@ import re
 import secrets
 
 import barcode as B
+import gs1
 import registry as R
+import safety
 
 
 def check_secret(secret: str) -> bool:
@@ -34,10 +36,15 @@ def handle_inbound(text: str, sender: str = "") -> str:
         return ("Vouch: the register could not be reached. Try again later;"
                 " an outage is not a result.")
     except Exception:
-        return "Vouch: send NAFDAC <number> or V <barcode>."
+        return "Vouch: send NAFDAC <number>, V <barcode> or G <pack code>."
 
 
 def _answer(text: str) -> str:
+    stripped = text.strip()
+    if stripped[:2].upper() == "G " or gs1.is_gs1(stripped):
+        payload = stripped[2:].strip() if stripped[:2].upper() == "G " \
+            else stripped
+        return _gs1_reply(payload)
     m = re.search(r"([A-Z]{0,2}\s?\d{1,2}\s?-?\s?\d{3,7})",
                   text.upper().replace("NAFDAC", " "))
     digits = re.sub(r"\D", "", text)
@@ -46,27 +53,48 @@ def _answer(text: str) -> str:
         return _nafdac_reply(m.group(1))
     if digits and len(digits) in (8, 12, 13, 14):
         return _barcode_reply(digits)
-    return "Vouch: send NAFDAC <number> or V <barcode>."
+    return "Vouch: send NAFDAC <number>, V <barcode> or G <pack code>."
+
+
+def _alert_line(number: str) -> str:
+    """A NAFDAC warning naming this number, or ''. Exact matches only."""
+    try:
+        hits = safety.match_alerts(nafdac=number)
+    except Exception:
+        return ""
+    if not hits:
+        return ""
+    first = hits[0]
+    ref = first.get("id") or "notice"
+    when = f" ({first['published']})" if first.get("published") else ""
+    return f" Also: NAFDAC alert {ref}{when} names this number."
+
+
+def _gs1_reply(payload: str) -> str:
+    return "Vouch: " + gs1.summarize(gs1.parse(payload))
 
 
 def _nafdac_reply(number: str) -> str:
     res = R.lookup(number)
     name = (res.matched.product_name if res.matched else "") or "This number"
+    extra = _alert_line(number)
     if res.verdict == R.REGISTERED:
         return (f"Vouch: {name} is registered"
                 f"{' to ' + res.matched.manufacturer if res.matched else ''}."
-                " A record match is not proof of this pack.")
+                " A record match is not proof of this pack." + extra)
     if res.verdict == R.MISMATCH:
         return (f"Vouch: {number} belongs to another product."
-                " Do not use. Keep the pack and receipt.")
+                " Do not use. Keep the pack and receipt." + extra)
     if res.verdict == R.INACTIVE:
         return (f"Vouch: {number} is registered but inactive."
-                " Ask the seller to confirm it.")
+                " Ask the seller to confirm it." + extra)
     if res.verdict == R.NOT_FOUND:
-        return (f"Vouch: no record for {number}."
-                " Do not use. Keep the pack and receipt.")
+        return (f"Vouch: no record for {number} in the medicines register."
+                " Do not use. Keep the pack and receipt."
+                " Food, water or cosmetics? Verify at"
+                " registration.nafdac.gov.ng (NAPAMS)." + extra)
     return (f"Vouch: {number} could not be confirmed."
-            " Check the digits and retry.")
+            " Check the digits and retry." + extra)
 
 
 def _barcode_reply(code: str) -> str:

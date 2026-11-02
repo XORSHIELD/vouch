@@ -31,13 +31,17 @@ import audit
 import batchdecode as BD
 import cases
 import engine  # noqa: F401  (re-exported for Assessment/PackInput users)
+import gs1
 import manufacturer as M
 import mas
+import napams
+import playbooks
+import recall
 import registry as R
 import scan as S
 import vision
 from engine import Assessment, PackInput
-from knowledge import KNOWLEDGE
+from knowledge import KNOWLEDGE, retrieve
 
 API_KEY = os.environ.get("MODEL_API_KEY") or os.environ.get("META_API_KEY") or ""
 API_BASE = os.environ.get("META_BASE", "https://api.meta.ai/v1")
@@ -101,9 +105,56 @@ def _record_to_dict(res: R.Result) -> dict:
         "product": m.product_name if m else "",
         "manufacturer": m.manufacturer if m else "",
         "status": m.status if m else "",
+        "form": m.form if m else "",
+        "route": m.route if m else "",
+        "strength": m.strength if m else "",
+        "ingredients": m.ingredients if m else "",
+        "composition": m.composition if m else "",
+        "pack_size": m.pack_size if m else "",
+        "approval_date": m.approval_date if m else "",
+        "registration_expiry": m.registration_expiry if m else "",
+        "atc": m.atc if m else "",
         "tried": res.tried,
         "signals": res.signals,
     }
+
+
+def _profile_block(assessment: Assessment) -> str:
+    """The full register entry in words, for number-only questions.
+
+    Empty when no record is attached: the absence of a record must never
+    read as a thin answer. Every line quotes the register; nothing here
+    judges the pack in hand.
+    """
+    r = assessment.registry or {}
+    if not r.get("nafdac"):
+        return ""
+    name = (r.get("product_name") or "Unnamed product").strip()
+    head = f"{name} ({r['nafdac']})"
+    if r.get("manufacturer"):
+        head += f" by {r['manufacturer']}"
+    lines = [head + "."]
+    if r.get("status"):
+        lines.append(f"Status {r['status']}.")
+    form_bits = [b for b in (r.get("form"), r.get("route"),
+                             r.get("strength")) if b]
+    if form_bits:
+        lines.append("; ".join(form_bits) + ".")
+    ingredients = r.get("ingredients") or (r.get("composition") or "")[:160]
+    if ingredients:
+        lines.append(f"Contains: {ingredients}.")
+    if r.get("pack_size"):
+        lines.append(f"Pack: {r['pack_size']}.")
+    dates = " / ".join(d for d in
+                       (f"approved {r['approval_date']}" if r.get(
+                           "approval_date") else "",
+                        f"registration ends {r['registration_expiry']}"
+                        if r.get("registration_expiry") else "") if d)
+    if dates:
+        lines.append(dates + ".")
+    if r.get("atc"):
+        lines.append(f"ATC {r['atc']}.")
+    return "\n\nOn the register: " + " ".join(lines)
 
 
 # --------------------------------------------------------------------------
@@ -135,7 +186,8 @@ def _tool_serial(args: dict, ctx: dict) -> dict:
 def _tool_preview_doc(args: dict, ctx: dict) -> dict:
     builder = {"nafdac_report": actions.nafdac_report,
                "fccpc_complaint": actions.fccpc_complaint,
-               "seller_demand": actions.seller_demand}.get(args.get("kind"))
+               "seller_demand": actions.seller_demand,
+               "adr_note": actions.adr_note}.get(args.get("kind"))
     if builder is None or ctx.get("pack") is None:
         return {"error": "Run a check first, then name a document kind."}
     doc = builder(ctx["pack"], ctx["assessment"])
@@ -150,30 +202,65 @@ def _tool_ask(args: dict, ctx: dict) -> dict:
     return {"answer": text, "provider": who}
 
 
-TOOLS = {"check_pack": _tool_check, "lookup_number": _tool_lookup,
-         "verify_pin": _tool_pin, "verify_serial": _tool_serial,
-         "preview_document": _tool_preview_doc, "ask": _tool_ask}
+TOOLS = {
+    "check_pack": {
+        "run": _tool_check,
+        "why": "Run the full engine check on a pack.",
+        "args": '{"pack": {nafdac_number, barcode, manufacturer, '
+                'product_name, batch, serial, mfg_date, exp_date, '
+                'seller, location}}',
+    },
+    "lookup_number": {
+        "run": _tool_lookup,
+        "why": "Resolve one NAFDAC number against the register.",
+        "args": '{"number": str}',
+    },
+    "verify_pin": {
+        "run": _tool_pin,
+        "why": "Ask the maker's service about a scratch PIN.",
+        "args": '{"pin": str, "shortcode": str}',
+    },
+    "verify_serial": {
+        "run": _tool_serial,
+        "why": "Check a manufacturer serial.",
+        "args": '{"manufacturer": str, "serial": str}',
+    },
+    "preview_document": {
+        "run": _tool_preview_doc,
+        "why": "Draft a report or complaint from the checked pack.",
+        "args": '{"kind": '
+                '"nafdac_report | fccpc_complaint | seller_demand | '
+                'adr_note"}',
+    },
+    "ask": {
+        "run": _tool_ask,
+        "why": "Answer a question from the current assessment.",
+        "args": '{"question": str}',
+    },
+}
 
 
-SYSTEM = """You help verify medicines and goods. You have tools; the engine
+def _tool_docs() -> str:
+    """One planner example line per registered tool, in order."""
+    return "\n".join('{"thought": str, "tool": "%s", "args": %s}' % (
+        name, entry["args"]) for name, entry in TOOLS.items())
+
+
+_SYSTEM_HEAD = """You help verify medicines and goods. You have tools; the engine
 behind them owns every verdict. You transcribe, explain, and propose —
 you never declare a product real, fake, genuine, safe, or counterfeit
 in your own words. Quote the engine's band and checks instead.
 Reply with exactly one raw JSON object on every step — no code
 fences, no prose, no extra text.
 
-Tools (call one per step, strict JSON, no other keys):
-{"thought": str, "tool": "check_pack", "args": {"pack": {nafdac_number, barcode, manufacturer, product_name, batch, serial, mfg_date, exp_date, seller, location}}}
-{"thought": str, "tool": "lookup_number", "args": {"number": str}}
-{"thought": str, "tool": "verify_pin", "args": {"pin": str, "shortcode": str}}
-{"thought": str, "tool": "verify_serial", "args": {"manufacturer": str, "serial": str}}
-{"thought": str, "tool": "preview_document", "args": {"kind": "nafdac_report | fccpc_complaint | seller_demand"}}
-{"thought": str, "tool": "ask", "args": {"question": str}}
+Tools (call one per step, strict JSON, no other keys):"""
 
-Finish with {"answer": str} or, only to open a case the user asked
+_SYSTEM_TAIL = """Finish with {"answer": str} or, only to open a case the user asked
 about or a high-risk pack needs, {"proposal": {"action": "open_case",
 "pack": {...}}. The user confirms proposals; you never execute them.
 A photo already read for you appears as the first tool note."""
+
+SYSTEM = _SYSTEM_HEAD + "\n" + _tool_docs() + "\n\n" + _SYSTEM_TAIL
 
 
 def _chat(messages: list[dict]) -> str:
@@ -197,9 +284,23 @@ def _chat(messages: list[dict]) -> str:
     return json.loads(raw.decode())["choices"][0]["message"]["content"]
 
 
-def _system_prompt() -> str:
-    """The planner briefing: operating rules plus project knowledge."""
-    return SYSTEM + "\n\n" + KNOWLEDGE
+def _system_prompt(message: str = "") -> str:
+    """The planner briefing: rules plus knowledge, focused per message.
+
+    Without a message this is the full standing briefing. With one, the
+    matching playbook and retrieved notes join it; the core always stays,
+    so the rules and facts never depend on retrieval hitting.
+    """
+    base = SYSTEM + "\n\n" + KNOWLEDGE
+    if not (message or "").strip():
+        return base
+    notes = retrieve(message, include_core=False)
+    if notes:
+        base += "\n\nFocus notes:\n" + "\n\n".join(notes)
+    brief = playbooks.briefing(message)
+    if brief:
+        base += "\n\n" + brief
+    return base
 
 
 _JSON_NUDGE = ("Your last reply was not valid action JSON. Reply with "
@@ -228,7 +329,8 @@ def _parse_action(raw: str):
 def _plan(message: str, history: list[dict],
           image_bytes: bytes | None, image_type: str) -> dict:
     ctx: dict = {"pack": None, "assessment": None, "extraction": None}
-    messages = [{"role": "system", "content": _system_prompt()}] + history
+    messages = [{"role": "system",
+                 "content": _system_prompt(message or "")}] + history
     if image_bytes:
         ex = vision.extract_from_image(image_bytes, image_type)
         ctx["extraction"] = ex
@@ -270,11 +372,11 @@ def _plan(message: str, history: list[dict],
         if proposal.get("action") == "open_case" and proposal.get("pack"):
             return _final("", ctx, steps, f"meta:{MODEL}", message,
                           confirmed_pack=_pack_fields(proposal["pack"]))
-        tool = TOOLS.get(act.get("tool") or "")
-        if tool is None:
+        entry = TOOLS.get(act.get("tool") or "")
+        if entry is None:
             break
         try:
-            result = tool(act.get("args") or {}, ctx)
+            result = entry["run"](act.get("args") or {}, ctx)
         except Exception as exc:
             result = {"error": f"{exc}"[:300]}
         messages.append({"role": "assistant",
@@ -392,6 +494,21 @@ _PIN_NOT_SEEN = ("I looked at the photo but couldn't make out PIN digits "
                  "the frame with the panel. If the strip is still on, "
                  "scratch it off first — no photo can read through it.")
 
+_REACTION = re.compile(
+    r"\b(side effects?|adverse|reaction|rashes|\brash\b|hives"
+    r"|swell(ing|en)?|itch(y|ing)?|vomit(ed|ing)?|nausea"
+    r"|dizz(y|iness)|breathless|palpitat|bleed(ing)?)\b",
+    re.IGNORECASE)
+
+_ADR_TEXT = ("I'm sorry you're dealing with that. I can't give medical "
+            "advice — please speak to a pharmacist or clinician about "
+            "what happened, and seek care first if anyone is seriously "
+            "unwell. I can prepare an adverse-reaction note for NAFDAC "
+            "from this pack: open a case and choose the ADR note, or "
+            "report directly in the Med Safety App, by email to "
+            "pharmacovigilance@nafdac.gov.ng, or on 0800-1-NAFDAC "
+            "(0800-1-623322).")
+
 
 def _mask_runs(msg: str, values) -> str:
     """Blank runs already claimed as a PIN/shortcode, in place.
@@ -507,8 +624,16 @@ def _provider_hint() -> str:
             for name, sc in sorted(mas.SHORTCODE_HINTS.items())]
     if not bits:
         return ""
-    return (" " + "; ".join(bits) + " — if yours matches, that is the "
+    text = (" " + "; ".join(bits) + " — if yours matches, that is the "
             "one; otherwise go by what is printed beside your panel.")
+    reported = sorted((sc, name)
+                      for sc, name in mas.REPORTED_SHORTCODES.items()
+                      if sc not in mas.SHORTCODE_HINTS.values())
+    if reported:
+        text += (" Published (not yet photographed here): "
+                 + ", ".join(f"{sc} ({name})" for sc, name in reported)
+                 + ".")
+    return text
 
 
 def _mas_note(pin: str, shortcode: str, verify_text: str = "") -> str:
@@ -710,6 +835,13 @@ def _extract_fields(text: str) -> dict:
             out["correction"] = True
             out["product_name"] = raw[-1].capitalize()
             break
+    if not out["kind_word"]:
+        words = re.findall(r"[A-Za-z]+", msg.lower())
+        for i, word in enumerate(words):
+            if word in _KIND_WORDS and not (
+                    i and words[i - 1] in ("not", "no", "never")):
+                out["kind_word"] = _KIND_WORDS[word]
+                break
     brand = ""
     for tok in _BRAND.findall(msg):
         if not re.search(r"\d", tok) and tok not in _BRAND_STOP:
@@ -821,6 +953,9 @@ def _is_question(message: str) -> bool:
 def _converse(pack: PackInput, fresh: dict, message: str,
               assessment: Assessment, history=None) -> str | None:
     """A conversational reply, or None when a full check is wanted."""
+    gtext = re.sub(r"^[Gg]\s+", "", (message or "").strip())
+    if gs1.is_gs1(gtext):
+        return "Decoded pack code: " + gs1.summarize(gs1.parse(gtext))
     small = ai._small_talk(message or "")
     if small is not None:
         return small
@@ -847,6 +982,11 @@ def _converse(pack: PackInput, fresh: dict, message: str,
             return _REPLY_FAIL_TEXT
         if _reply == "unclear":
             return _REPLY_UNCLEAR_TEXT
+    _nap = _napams_answer(message, pack)
+    if _nap is not None:
+        return _nap
+    if _REACTION.search(message or ""):
+        return _ADR_TEXT
     if fresh.get("correction"):
         name = pack.product_name or "that"
         denied = fresh.get("denied") or ""
@@ -869,7 +1009,7 @@ def _converse(pack: PackInput, fresh: dict, message: str,
     if (_is_question(message) or _verdict_asked) and (
             pack.nafdac_number or pack.barcode or pack.batch
             or pack.product_name or fresh.get("pin") or _hpin):
-        return ai.answer(message, assessment)
+        return ai.answer(message, assessment) + _profile_block(assessment)
     if _CHECK_IT.search(message or "") and not (
             pack.nafdac_number or pack.barcode or pack.batch):
         return ("I don't have anything on this pack yet. Send the NAFDAC "
@@ -918,6 +1058,7 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
                     answer, provider = _ack, "vouch-composer"
                 else:
                     answer, provider = ai.compose(ctx["assessment"], message)
+                    answer += _profile_block(ctx["assessment"])
                     if _ex0 is not None and _extraction_empty(_ex0):
                         answer = _PHOTO_UNREADABLE + answer
                     answer += _mas_note(
@@ -1228,6 +1369,7 @@ def _pipeline(message: str, image_bytes: bytes | None,
                          or pack.batch))
                 or (not has_history and fresh.get("barcode"))):
             text, who = ai.compose(assessment, message)
+            text += _profile_block(assessment)
         else:
             ack = _fragment_ack(pack, fresh, assessment, history)
             if ack is not None:
@@ -1253,24 +1395,106 @@ def _pipeline(message: str, image_bytes: bytes | None,
             "assessment": assessment.to_dict(), "provider": who, "steps": 1}
 
 
+def _remember_turn(case_id: str, message: str,
+                   image_bytes: bytes | None, out: dict) -> None:
+    """File one exchange under its case. Silent when memory is off."""
+    if not case_id:
+        return
+    recall.remember(case_id, "user",
+                    message or ("(photo only)" if image_bytes else ""))
+    recall.remember(case_id, "assistant", (out or {}).get("answer", ""))
+
+
+def _napams_answer(message: str, pack: PackInput) -> str | None:
+    """Read a pasted NAPAMS portal reply. None when this isn't one."""
+    text = (message or "").strip()
+    low = text.lower()
+    if len(text) < 25:
+        return None
+    if "napams" not in low and "registration.nafdac" not in low \
+            and "certificate number" not in low:
+        return None
+    res = napams.read_reply(text, pack.nafdac_number or "")
+    if res["verdict"] == napams.UNCLEAR and not pack.nafdac_number \
+            and not res["about"]:
+        return None
+    num = res["about"] or pack.nafdac_number or "this number"
+    quote = f"\n\n“{res['quote']}”" if res["quote"] else ""
+    if res["verdict"] == napams.WRONG_NUMBER:
+        return (f"That reply is about {res['about']}, but we were "
+                f"checking {pack.nafdac_number}. Confirm which number "
+                f"you pasted.{quote}")
+    if res["verdict"] == napams.REGISTERED:
+        return (f"NAPAMS says {num} is registered. That is the portal's "
+                f"statement about the number — a record match is not "
+                f"proof of the pack in your hand.{quote}")
+    if res["verdict"] == napams.NOT_FOUND:
+        return (f"NAPAMS says it has no record of {num}. Do not use it. "
+                f"Keep the pack and receipt.{quote}")
+    return ("I couldn't tell from that paste whether NAPAMS confirmed "
+            "the number. Paste the portal's reply word-for-word — the "
+            "part naming the number and its status.")
+
+
+def _napams_note(assessment: dict) -> str:
+    """Point at NAPAMS when the medicines register drew a blank.
+
+    Only when the kind is food-like or entirely unknown: a medicine with
+    a name and maker behind it keeps its finding without the aside.
+    """
+    checks = (assessment or {}).get("checks", []) or []
+    if not any(c.get("id") == "registry"
+               and (c.get("evidence") or "").startswith("No registry record")
+               for c in checks):
+        return ""
+    kind = (assessment or {}).get("kind", "")
+    inp = (assessment or {}).get("input", {}) or {}
+    known = bool(inp.get("product_name") or inp.get("manufacturer")
+                 or inp.get("barcode"))
+    if kind in ("food", "beverage", "water", "cosmetic") or not known:
+        return ("\n\nIf this is food, water, a drink or cosmetics, check the "
+                "number on NAFDAC's NAPAMS portal "
+                "(registration.nafdac.gov.ng) — the medicines register I "
+                "searched does not list those products. Paste what the "
+                "portal says here and I'll read it for you.")
+    return ""
+
+
+def _noted(case_id: str, message: str,
+           image_bytes: bytes | None, out: dict) -> dict:
+    """Attach the NAPAMS pointer, file the exchange, return it."""
+    out["answer"] = (out.get("answer") or "") + _napams_note(
+        out.get("assessment"))
+    _remember_turn(case_id, message, image_bytes, out)
+    return out
+
+
 def chat(message: str, history=None, image_bytes: bytes | None = None,
-         image_type: str = "image/jpeg") -> dict:
+         image_type: str = "image/jpeg", case_id: str = "") -> dict:
     """One chat turn. Planned with a key, deterministic without.
 
     Simple turns answer instantly even with a key: anything the
-    deterministic layer settles never reaches the model.
+    deterministic layer settles never reaches the model. A case id
+    attaches cross-session memory: recalled turns join this session's
+    history, oldest first, and the exchange is filed back.
     """
+    mem_id = case_id if recall.attached(case_id) else ""
+    merged = list(history or [])
+    if mem_id:
+        merged = recall.context(mem_id) + merged
     if API_KEY and not image_bytes:
-        fast = _fast_answer(message or "", history)
+        fast = _fast_answer(message or "", merged)
         if fast is not None:
-            return fast
+            return _noted(mem_id, message or "", image_bytes, fast)
     if API_KEY:
         try:
-            return _plan(message or "", _clean_history(history),
-                         image_bytes, image_type)
+            out = _plan(message or "", _clean_history(merged),
+                        image_bytes, image_type)
+            return _noted(mem_id, message or "", image_bytes, out)
         except Exception as exc:
             audit.log("agent_fallback", "", str(exc)[:200])
-    return _pipeline(message or "", image_bytes, image_type, history)
+    return _noted(mem_id, message or "", image_bytes,
+                  _pipeline(message or "", image_bytes, image_type, merged))
 
 
 def execute_confirmed(action: dict, username: str) -> dict:

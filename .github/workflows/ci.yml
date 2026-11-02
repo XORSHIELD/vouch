@@ -29,6 +29,15 @@ jobs:
           python test_vision.py
           python test_server.py
           python test_agent.py
+          python test_smarts.py
+          python test_gs1.py
+          python test_alerts.py
+          python test_sms.py
+          python test_debunk.py
+          python test_scanlog.py
+          python test_ui_stop.py
+          python test_napams.py
+          python test_ui_tools.py
           python test_tour.py
           python test_i18n.py
           python test_voice.py

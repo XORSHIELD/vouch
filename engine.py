@@ -340,6 +340,11 @@ _REGISTRY_KIND = {
     "Disinfectants": "disinfectant",
 }
 
+# Kinds the Greenbook provably does not list (checked against its own
+# category list). A number missing there says nothing about these packs:
+# they live in NAFDAC's NAPAMS register instead.
+_NON_GREENBOOK_KINDS = ("food", "beverage", "water", "cosmetic")
+
 
 def _kind_of(pack: PackInput, reg: R.Result | None, bar: B.Result | None) -> str:
     """What kind of thing is this? It only chooses vocabulary — never a verdict."""
@@ -629,6 +634,18 @@ def assess(
                            "still be in circulation.",
             source="greenbook.nafdac.gov.ng",
         ))
+    elif reg.verdict == R.NOT_FOUND and kind in _NON_GREENBOOK_KINDS:
+        checks.append(Check(
+            id="registry", label="NAFDAC registration", state=ATTENTION,
+            severity=2.0,
+            evidence="No registry record here — and this kind of product is "
+                     "not listed in the medicines register at all.",
+            proves="Only that the Greenbook cannot confirm this number.",
+            does_not_prove="That the number is unregistered. Food, water and "
+                           "cosmetics live in NAPAMS, a separate register.",
+            source="greenbook.nafdac.gov.ng",
+            detail=reg.signals,
+        ))
     elif reg.verdict == R.NOT_FOUND:
         checks.append(Check(
             id="registry", label="NAFDAC registration", state=HIGH, severity=3.0,
@@ -917,9 +934,15 @@ def _actions_for(
         out.append(Action("recheck", "Re-read the number by eye",
                           "One misread digit produces the same result as an "
                           "unregistered product.", 0, "you"))
-        out.append(Action("nafdac_report", "Report to NAFDAC",
-                          "An unregistered number on a medicine is a reportable finding.",
-                          0, "regulator"))
+        if kind in _NON_GREENBOOK_KINDS:
+            out.append(Action("napams", "Verify on NAPAMS",
+                              "Food, water and cosmetics are listed on NAFDAC's "
+                              "NAPAMS portal (registration.nafdac.gov.ng), "
+                              "not in the medicines register.", 0, "you"))
+        else:
+            out.append(Action("nafdac_report", "Report to NAFDAC",
+                              "An unregistered number on a medicine is a reportable finding.",
+                              0, "regulator"))
     if "registry" in ids and reg is not None and reg.verdict == R.MISMATCH:
         out.append(Action("nafdac_report", "Report to NAFDAC",
                           "The number belongs to another company. That is the "
@@ -975,7 +998,7 @@ def _actions_for(
 ACTION_ORDER = [
     "preserve", "stop", "photograph", "recheck", "complete", "manual",
     "refund", "ask_pharmacist", "nafdac_report", "open_case",
-    "batch_watch", "keep_receipt",
+    "batch_watch", "keep_receipt", "napams",
 ]
 
 

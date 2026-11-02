@@ -79,6 +79,14 @@ def init() -> None:
             CREATE INDEX IF NOT EXISTS idx_cases_nafdac ON cases(nafdac);
             CREATE INDEX IF NOT EXISTS idx_docs_case ON documents(case_id);
             CREATE INDEX IF NOT EXISTS idx_events_case ON events(case_id);
+            CREATE TABLE IF NOT EXISTS scan_events (
+                day TEXT NOT NULL,
+                nafdac TEXT NOT NULL DEFAULT '',
+                product TEXT NOT NULL DEFAULT '',
+                band TEXT NOT NULL DEFAULT '',
+                n INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (day, nafdac, band)
+            );
             """
         )
         cols = [r[1] for r in con.execute("PRAGMA table_info(cases)")]
@@ -500,6 +508,60 @@ def stats() -> dict:
         con.close()
     return {"cases": total, "open": open_, "high_risk": high,
             "documents": docs, "overdue": overdue, "due_today": due_today}
+
+
+def log_scan(pack, band: str) -> None:
+    """Tally one anonymous check: day, number, product, band. Never raises.
+
+    Deliberately narrow: no seller, location, contact, or anything that
+    identifies who scanned. A barcode-only check tallies under nafdac "".
+    """
+    try:
+        init()
+        day = date.today().isoformat()
+        nafdac = (getattr(pack, "nafdac_number", "") or "").strip()[:40]
+        product = (getattr(pack, "product_name", "") or "").strip()[:120]
+        band = (band or "").strip()[:20]
+        con = _connect()
+        try:
+            con.execute(
+                "INSERT INTO scan_events (day, nafdac, product, band, n)"
+                " VALUES (?,?,?,?,1)"
+                " ON CONFLICT(day, nafdac, band) DO UPDATE SET n = n + 1",
+                (day, nafdac, product, band))
+            con.commit()
+        finally:
+            con.close()
+    except Exception:
+        pass
+
+
+def scan_stats(days: int = 30) -> dict:
+    """Inspector view over scan tallies. Counts only, nothing personal."""
+    init()
+    days = max(1, min(365, int(days)))
+    since = (date.today() - timedelta(days=days - 1)).isoformat()
+    con = _connect()
+    try:
+        total = con.execute(
+            "SELECT COALESCE(SUM(n), 0) c FROM scan_events"
+            " WHERE day >= ?", (since,)).fetchone()["c"]
+        per_day = {r["day"]: r["c"] for r in con.execute(
+            "SELECT day, SUM(n) c FROM scan_events WHERE day >= ?"
+            " GROUP BY day ORDER BY day", (since,))}
+        by_band = {r["band"]: r["c"] for r in con.execute(
+            "SELECT band, SUM(n) c FROM scan_events WHERE day >= ?"
+            " GROUP BY band", (since,))}
+        top = [{"nafdac": r["nafdac"], "product": r["product"],
+                "band": r["band"], "scans": r["c"]}
+               for r in con.execute(
+                   "SELECT nafdac, product, band, SUM(n) c FROM scan_events"
+                   " WHERE day >= ? GROUP BY nafdac, product, band"
+                   " ORDER BY c DESC LIMIT 20", (since,))]
+    finally:
+        con.close()
+    return {"total": total, "per_day": per_day, "by_band": by_band,
+            "top": top, "days": days}
 
 
 def analytics(days: int = 30) -> dict:

@@ -723,6 +723,11 @@ class Record:
     form: str
     marketing_category: str
     category: str = ""
+    atc: str = ""
+    route: str = ""
+    strength: str = ""
+    ingredients: str = ""
+    smpc: str = ""
     product_id: Any = None
 
     @staticmethod
@@ -739,6 +744,11 @@ class Record:
             form=clean(d.get("form_name")),
             marketing_category=clean(d.get("marketing_category_id")),
             category=clean(d.get("category_name")),
+            atc=clean(d.get("atc")),
+            route=clean(d.get("route_name")),
+            strength=clean(d.get("strength")),
+            ingredients=clean(d.get("ingredient_name")),
+            smpc=clean(d.get("smpc")),
             product_id=d.get("product_id"),
         )
 

@@ -122,5 +122,23 @@ ours = [mas.verify("", "")["detail"],
 check("no binary language in our templates",
       not any(w in " ".join(ours).lower() for w in banned), " | ".join(ours))
 
+print("reported shortcodes")
+check("photographed code named",
+      mas.describe_shortcode("34488") == "Sproxil")
+check("reported code named",
+      mas.describe_shortcode("38353") == "Sproxil"
+      and mas.describe_shortcode("38351") == "PharmaSecure",
+      repr(mas.REPORTED_SHORTCODES))
+check("unknown code unnamed", mas.describe_shortcode("00000") == "")
+check("reported stay out of photographed hints",
+      "38353" not in mas.SHORTCODE_HINTS.values())
+import agent as _agent
+_hint = _agent._provider_hint()
+check("photographed hint intact",
+      "Sproxil panels usually show 34488" in _hint, _hint[:200])
+check("reported hint labelled published",
+      "38353" in _hint and "not yet photographed" in _hint,
+      _hint[:300])
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

@@ -9,6 +9,8 @@ engine and guardrails. Keep it short; the planner pays per word.
 
 from __future__ import annotations
 
+import re
+
 KNOWLEDGE = """Project knowledge (Vouch, Nigeria):
 
 Mission. Vouch helps people verify medicines and packaged goods against
@@ -43,3 +45,75 @@ plus a regulator report; seller disputes to a seller demand; consumer
 complaints to the FCCPC. Blurry photos: ask for one panel filling the
 frame, held still, glare off the print. End with the single most useful
 next action."""
+
+
+# --------------------------------------------------------------------------
+# Supplement — extra briefing the planner pulls per message. The core
+# KNOWLEDGE above stays frozen and lean; these sections join the briefing
+# only when the message overlaps their topic.
+# --------------------------------------------------------------------------
+
+SUPPLEMENT = (
+    ("report_routes",
+     "Complaint drafts. preview_document drafts nafdac_report, "
+     "fccpc_complaint, seller_demand or adr_note (adverse reactions) "
+     "from the checked pack. Ask only "
+     "for missing facts: seller, location, price, receipt. Never invent "
+     "incident details; cases open only on the user's confirmation."),
+    ("expiry_rules",
+     "Dates. A medicine EXP is a safety date; best-before and use-by "
+     "are quality dates. End-of-month rule: EXP 06/2028 runs out at "
+     "the end of June 2028. The open-jar symbol (12M) counts from "
+     "first opening."),
+    ("batch_brands",
+     "Batch codes. Verified made-date patterns cover the Nivea, P&G "
+     "and L'Oreal groups; other brands get printed-date guidance "
+     "and the brand directory. A batch code alone never identifies "
+     "a product."),
+    ("mas_routes",
+     "MAS routes. Sproxil panels: text the PIN to 34488, or dial "
+     "*34488*1*PIN#. Quote the provider's reply as its statement "
+     "about the PIN — a pass speaks for the code, never for what "
+     "is inside the pack."),
+    ("registers",
+     "Registers. The Greenbook lists medicines, vaccines, devices, "
+     "herbals and veterinary products only. Food, water and cosmetics "
+     "live on NAPAMS (registration.nafdac.gov.ng) — their numbers "
+     "never appear here, and that absence is not a finding."),
+)
+
+_STOP = frozenset(
+    "a an the and or for with from that this what when which who how "
+    "are was were you your its it's its it of to in on is do does did "
+    "can could would should my me so as at by be have has had not no "
+    "if or but please here there".split())
+
+SECTIONS = tuple(
+    (f"core_{i}", chunk)
+    for i, chunk in enumerate(
+        c for c in KNOWLEDGE.split("\n\n") if c.strip()))
+
+
+def _tokens(text: str) -> set[str]:
+    return {t for t in re.findall(r"[a-z0-9]+", (text or "").lower())
+            if len(t) > 2 and t not in _STOP}
+
+
+def retrieve(query: str, limit: int = 2,
+             include_core: bool = True) -> list[str]:
+    """Best-matching knowledge sections for a message, best first.
+
+    The planner briefing uses ``include_core=False`` because the core
+    is already pasted in full; the default searches everything.
+    """
+    want = _tokens(query)
+    if not want:
+        return []
+    pool = (SECTIONS + SUPPLEMENT) if include_core else SUPPLEMENT
+    scored = []
+    for _name, text in pool:
+        overlap = len(want & _tokens(text))
+        if overlap:
+            scored.append((overlap, text))
+    scored.sort(key=lambda s: s[0], reverse=True)
+    return [text for _, text in scored[:max(limit, 0)]]

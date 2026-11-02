@@ -1250,6 +1250,9 @@
                 <input name="nafdac_number" placeholder="e.g. A11-0551 or 04-0271" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
               <label class="f"><span><span data-i18n="form.barcode">Barcode</span> <em style="font-style:normal;color:var(--ink-3);text-transform:none;letter-spacing:0" data-i18n="form.barcode_hint">— food, drink, cosmetics &amp; household</em></span>
                 <input name="barcode" placeholder="e.g. 5010162000164" inputmode="numeric" autocomplete="off" style="font-family:var(--mono);letter-spacing:0.05em" /></label>
+              <label class="f"><span>Pack code <em style="font-style:normal;color:var(--ink-3);text-transform:none;letter-spacing:0">— GS1 DataMatrix payload</em></span>
+                <span style="display:flex;gap:8px"><input id="gs1Box" placeholder="e.g. (01)0626…(17)281231(10)LOT1" autocomplete="off" style="flex:1;font-family:var(--mono);letter-spacing:0.05em" /><button class="btn ghost sm" id="gs1Go" type="button">Decode</button></span></label>
+              <div id="gs1Out"></div>
               <div class="row2">
                 <label class="f"><span data-i18n="form.product">Product Name on Pack</span>
                   <input name="product_name" placeholder="e.g. AC-Drex Tablet" /></label>
@@ -1534,8 +1537,20 @@
           </div>
           <input id="agentInput" placeholder="Ask about a pack, or attach a photo…" autocomplete="off" style="flex:1">
           <button class="btn sm" id="agentSend" type="button">Send</button>
+          <button class="btn ghost sm hidden" id="agentStop" type="button">Stop</button>
         </div>
         <p class="hint" style="margin:8px 0 0">Verdicts come from the check engine; the agent explains and proposes.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="bd">
+        <h2 style="margin:0 0 6px;font-size:18px">Check a forwarded list</h2>
+        <p style="margin:0 0 8px;color:var(--ink-3);font-size:14px">Paste a viral "fake products" list, one per line. Each line is checked against the register and NAFDAC warnings.</p>
+        <textarea id="debunkText" rows="4" style="width:100%" placeholder="1. Cowbell Our Milk&#10;2. A11-0551"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn sm" id="debunkGo" type="button">Check list</button>
+        </div>
+        <div id="debunkOut" style="margin-top:8px"></div>
       </div>
     </div>
   </section>
@@ -2002,6 +2017,12 @@ $('#btnNewChat').onclick = () => { agentHist.length = 0; $('#agentMsgs').innerHT
 /* ---------- agent ---------- */
 const agentHist = [];
 let agentBusy = false;
+let agentAbort = null;
+function agentStopUI(busy){
+  $('#agentStop').classList.toggle('hidden', !busy);
+  $('#agentSend').disabled = busy;
+}
+function agentStop(){ if (agentAbort) agentAbort.abort(); }
 function agentBubble(who, text){
   const d = document.createElement('div');
   d.className = 'vmsg ' + who;
@@ -2036,6 +2057,9 @@ async function agentSend(){
   const file = $('#agentPhoto').files[0];
   if (!text && !file) return;
   agentBusy = true;
+  agentStopUI(true);
+  const ctrl = new AbortController();
+  agentAbort = ctrl;
   if (text){ agentBubble('user', text); agentHist.push({role:'user', text}); }
   else agentBubble('user', '(photo)');
   input.value = '';
@@ -2050,8 +2074,7 @@ async function agentSend(){
         bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
       image_b64 = btoa(bin);
     }
-    const r = await api('/api/agent/chat', {method:'POST', body:JSON.stringify({message:text, history:agentHist.slice(-8), image_b64})});
-    agentClearPhoto();
+    const r = await api('/api/agent/chat', {method:'POST', signal:ctrl.signal, body:JSON.stringify({message:text, history:agentHist.slice(-8), image_b64})});
     thinking.className = 'vmsg bot';
     thinking.textContent = r.answer || '(no answer)';
     if (file && r.image_received === false)
@@ -2061,12 +2084,50 @@ async function agentSend(){
     if (r.proposal) agentProposalCard(r.proposal);
   } catch(e){
     thinking.className = 'vmsg bot';
-    thinking.textContent = e.message || 'The agent is unreachable.';
+    thinking.textContent = ctrl.signal.aborted ? 'Stopped.' : (e.message || 'The agent is unreachable.');
     agentVoiceReply = false;
   }
+  agentClearPhoto();
+  agentAbort = null;
   agentBusy = false;
+  agentStopUI(false);
+  input.focus();
 }
 $('#agentSend').onclick = agentSend;
+$('#agentStop').onclick = agentStop;
+$('#debunkGo').onclick = async () => {
+  const out = $('#debunkOut'), btn = $('#debunkGo');
+  btn.disabled = true;
+  out.innerHTML = '<p class="scan-note">Checking…</p>';
+  try {
+    const r = await api('/api/debunk', {method:'POST', body:JSON.stringify({text:$('#debunkText').value})});
+    if (!r.ok){ out.innerHTML = `<p class="scan-note">${esc(r.message || 'Could not check this list.')}</p>`; return; }
+    const c = r.counts || {};
+    out.innerHTML = `<p class="scan-note"><b>${c.in_register || 0}</b> in the register · <b>${c.with_alerts || 0}</b> with warnings · <b>${c.unmatched || 0}</b> unmatched, of ${c.checked || 0}.</p>`
+      + (r.items || []).map(it => {
+        const mark = it.alerts && it.alerts.length ? 'warning' : (it.register || it.name_hits ? 'register' : 'unmatched');
+        const sub = (it.alerts && it.alerts.length ? esc(it.alerts[0].reason || '') : it.registered_name ? esc(it.registered_name) : 'no register or warning entry');
+        return `<p class="scan-note" style="margin:0 0 2px">· ${esc(it.text)} — <b>${mark}</b>: ${sub}</p>`;
+      }).join('')
+      + `<p class="hint" style="margin:8px 0 0">${esc(r.note || '')}</p>`;
+  } catch(e){ out.innerHTML = `<p class="scan-note">${esc(e.message || 'Could not check this list.')}</p>`; }
+  finally { btn.disabled = false; }
+};
+$('#gs1Go').onclick = async () => {
+  const out = $('#gs1Out');
+  out.innerHTML = '<p class="scan-note">Decoding…</p>';
+  try {
+    const r = await api('/api/gs1/decode', {method:'POST', body:JSON.stringify({payload:$('#gs1Box').value})});
+    const rows = [];
+    if (r.gtin) rows.push(['GTIN', r.gtin + (r.gtin_valid === true ? ' (check ok)' : r.gtin_valid === false ? ' (CHECK FAILED)' : '')]);
+    if (r.batch) rows.push(['Batch', r.batch]);
+    if (r.expiry) rows.push(['Expiry', r.expiry]);
+    if (r.serial) rows.push(['Serial', r.serial]);
+    if (r.production) rows.push(['Made', r.production]);
+    (r.issues || []).forEach(i => rows.push(['Note', i]));
+    out.innerHTML = rows.length ? rows.map(([k, v]) => `<p class="scan-note" style="margin:0 0 2px"><b>${esc(k)}</b> ${esc(v)}</p>`).join('') : '<p class="scan-note">Nothing readable in that code.</p>';
+  } catch(e){ out.innerHTML = `<p class="scan-note">${esc(e.message || 'Could not decode.')}</p>`; }
+};
 $('#agentInput').addEventListener('keydown', e => { if (e.key === 'Enter') agentSend(); });
 let agentPhotoURL = '';
 function agentClearPhoto(){
@@ -5328,7 +5389,7 @@ async function loadAnalytics(){
   try {
     const a = await api('/api/analytics?days=30');
     card.classList.remove('hidden');
-    const c = a.cases || {}, s = a.safety || {}, au = (a.audit || {}).events || {};
+    const c = a.cases || {}, s = a.safety || {}, au = (a.audit || {}).events || {}, sc = a.scans || {};
     $('#analyticsWindow').textContent = 'last 30 days';
     const bar = (label, n, max) => `
       <div style="display:flex;align-items:center;gap:8px;margin:4px 0">
@@ -5350,6 +5411,9 @@ async function loadAnalytics(){
       <p class="scan-note" style="margin:0 0 4px">Pending ${s.pending || 0} · approved ${s.approved || 0} · dismissed ${s.dismissed || 0} · published alerts ${s.published_alerts || 0} · patterns ${(s.patterns || []).length}.</p>
       <div class="lbl2" style="margin:12px 0 6px">Top batches</div>
       ${(c.top_batches || []).slice(0, 5).map(t => `<p class="scan-note" style="margin:0 0 2px">${esc(t.nafdac || '—')} · ${esc(t.batch)} — ${t.reports} report${t.reports === 1 ? '' : 's'}</p>`).join('') || '<p class="scan-note" style="margin:0">None yet.</p>'}
+      <div class="lbl2" style="margin:12px 0 6px">Checks</div>
+      <p class="scan-note" style="margin:0 0 4px">${sc.total || 0} packs checked.</p>
+      ${(sc.top || []).slice(0, 5).map(t => `<p class="scan-note" style="margin:0 0 2px">${esc(t.nafdac || 'no number')} · ${esc(t.product || '—')} — ${t.scans} check${t.scans === 1 ? '' : 's'}</p>`).join('') || '<p class="scan-note" style="margin:0">None yet.</p>'}
       <div class="lbl2" style="margin:12px 0 6px">Recent activity</div>
       <p class="scan-note" style="margin:0">${Object.entries(au).sort((x, y) => y[1] - x[1]).slice(0, 6).map(([k, v]) => esc(k) + ' ×' + v).join(' · ') || 'No events yet.'}</p>`;
   } catch(e){ card.classList.add('hidden'); }
@@ -5600,9 +5664,9 @@ async function showCase(id){
 
           <h3 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">Generated documents</h3>
           <div class="docbtns">
-            ${['seller_demand','nafdac_report','fccpc_complaint'].map(k=>{
+            ${['seller_demand','nafdac_report','fccpc_complaint','adr_note'].map(k=>{
               const has = (c.documents||[]).some(d=>d.kind===k);
-              const label = {seller_demand:'Refund demand',nafdac_report:'NAFDAC report',fccpc_complaint:'FCCPC complaint'}[k];
+              const label = {seller_demand:'Refund demand',nafdac_report:'NAFDAC report',fccpc_complaint:'FCCPC complaint',adr_note:'Reaction note'}[k];
               return has
                 ? `<button class="btn ghost sm" data-doc="${k}">View ${label}</button>`
                 : `<button class="btn ghost sm" data-make="${k}">${label}</button>`;

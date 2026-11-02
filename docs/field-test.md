@@ -51,13 +51,48 @@ strings still await native-speaker review — note anything odd.)
 ## E. Cases
 
 Run a high-risk demo pack, approve the case proposal, open the
-case, read all three documents, then close it with an outcome.
+case, read all three documents, make the ADR (reaction) note from
+the document buttons, then close it with an outcome.
 
 ## F. Message channels (if configured)
 
 Text a NAFDAC number to the SMS/WhatsApp number and expect the
 registry answer. Send a label photo on WhatsApp and expect the
 photo read or an honest note.
+
+## G. Water and NAPAMS (Agent tab)
+
+1. Send a bare water number, e.g. `01-3892`. Expect a finding plus a
+   pointer at NAFDAC's NAPAMS portal — never a bare accusation.
+2. Send `CWAY water 01-3892`. Expect review ("a reason to check,
+   not a conclusion"), a Verify-on-NAPAMS action, and no finding.
+3. Open registration.nafdac.gov.ng on the phone, verify the number,
+   paste the portal's reply word-for-word. Expect it read back as
+   the portal's statement, with the number confirmed.
+
+## H. Forwarded lists and pack codes
+
+1. In the Agent tab, paste a 3-line list into "Check a forwarded
+   list" (one real number, one real name, one invented line).
+   Expect per-line marks plus honest counts.
+2. In Verify, paste `(01)06260001146105(17)281231(10)LOT42`
+   into Pack code and Decode. Expect GTIN, batch, and expiry read
+   back. Change one GTIN digit; expect CHECK FAILED.
+3. Paste the same code to the agent. Expect the same decode.
+
+## I. Stop button (Agent tab)
+
+1. Send a question, then press Stop before the answer lands.
+   Expect "Stopped.", the input focused, Send live again.
+2. Send the follow-up immediately. Expect a normal answer; the
+   stopped turn must not leak a half answer into history.
+
+## J. Reaction notes and inspector view
+
+1. In the agent, say "the syrup gave my son a rash". Expect care
+   first, no medical advice, and the Med Safety App handoff.
+2. As staff, open analytics. Expect the Checks section to count
+   today's checks and top products.
 
 ## After the run
 

@@ -74,6 +74,10 @@ def _registry_block(a: Assessment) -> str:
         f"  Approved          : {r.get('approval_date')}",
         f"  Registration expiry: {r.get('registration_expiry')}",
         f"  Composition       : {_n(r.get('composition'))}",
+        f"  Ingredients       : {_n(r.get('ingredients'))}",
+        f"  Strength          : {_n(r.get('strength'))}",
+        f"  Route             : {_n(r.get('route'))}",
+        f"  ATC               : {_n(r.get('atc'))}",
         f"  Pack size         : {_n(r.get('pack_size'))}",
         "  Source            : NAFDAC Greenbook, greenbook.nafdac.gov.ng",
     ])
@@ -163,6 +167,7 @@ SUMMARY
             "Submit through NAFDAC's official channels and keep the reference number.",
             "Confirm the current channel and office on nafdac.gov.ng before sending.",
             "NAFDAC care line: 0700-1-NAFDAC.",
+            "NAFDAC complaints line: 0800-1-NAFDAC (0800-1-623322).",
             "Do not post the seller's name publicly; the regulator decides culpability.",
         ],
     )
@@ -288,6 +293,69 @@ Phone: ______________________
             "Send this before filing with the FCCPC; it usually resolves the matter.",
             "Keep proof of sending (screenshot, SMS, or a signed copy).",
             "Stay factual. Do not accuse the seller of a crime in writing.",
+        ],
+    )
+
+
+HOTLINES = ("NAFDAC enquiries: 0700-1-NAFDAC (0700-1-623322). "
+            "NAFDAC complaints: 0800-1-NAFDAC (0800-1-623322).")
+
+
+# --------------------------------------------------------------------------
+# Adverse reactions — a note, not one of the three case documents
+# --------------------------------------------------------------------------
+
+def adr_note(p: PackInput, a: Assessment) -> Document:
+    """An adverse-reaction note for NAFDAC pharmacovigilance.
+
+    Deliberately outside all_documents(): it belongs to a bad reaction,
+    not to every case. It describes an experience and points at the
+    Med Safety App; it never claims the product caused anything and it
+    never touches anyone's dose.
+    """
+    body = f"""ADVERSE REACTION NOTE
+Prepared with Vouch on {date.today().isoformat()}
+
+WHAT HAPPENED (fill in)
+  Who was affected : ______________________ (initials or "myself")
+  Reaction observed: ______________________ (what happened, plain words)
+  When it started  : ______________________
+  Dose taken       : ______________________ (as printed on the pack)
+
+Do not change or stop a prescribed dose because of this note. If someone
+is seriously unwell, seek medical care first, then report.
+
+1. PRODUCT AS TAKEN
+{_product_block(p)}
+
+2. REGISTRY RECORD FOR THE PRINTED NUMBER
+{_registry_block(a)}
+
+3. WHAT THE CHECK OBSERVED
+{_check_lines(a)}
+
+4. WHERE TO SEND THIS
+  - Med Safety App (Google Play Store and Apple App Store): NAFDAC's
+    channel for adverse reactions to medicines, vaccines and devices.
+  - Email: pharmacovigilance@nafdac.gov.ng
+  - NAFDAC e-reporting platform: nafdac.gov.ng
+  - {HOTLINES}
+
+This note describes an experience. It does not claim the product caused
+the reaction — only a clinician and the regulator can assess that.
+
+{DISCLOSURE}
+"""
+    return Document(
+        kind="adr_note",
+        title="Adverse reaction note (NAFDAC / MedSafety)",
+        filename=f"adr-note-{_slug(p.nafdac_number or 'product')}.txt",
+        body=body,
+        channel="NAFDAC pharmacovigilance (Med Safety App)",
+        notes=[
+            "Report through the Med Safety App and keep the reference.",
+            "Serious or worsening symptoms need care first, paperwork second.",
+            "Do not change or stop a prescribed dose without a clinician.",
         ],
     )
 

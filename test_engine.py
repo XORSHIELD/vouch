@@ -80,6 +80,22 @@ a = G.assess(nf, today=TODAY)
 check("band is high risk", a.band == G.BAND_HIGH, f"got {a.band}")
 kinds = [x.kind for x in a.actions]
 check("preserves evidence first", kinds[0] == "preserve", str(kinds))
+
+print("\nwater number the medicines register cannot hold")
+wf = G.PackInput(nafdac_number="01-3892", product_name="CWAY water",
+                 exp_date="EXP 06/2028")
+w = G.assess(wf, today=TODAY)
+wreg = [c for c in w.checks if c.id == "registry"]
+check("water miss is review, not a finding",
+      w.band == G.BAND_REVIEW and len(wreg) == 1
+      and wreg[0].state == "attention", f"got {w.band}")
+check("water miss names the right register",
+      "NAPAMS" in wreg[0].does_not_prove,
+      wreg[0].does_not_prove[:160])
+wkinds = [x.kind for x in w.actions]
+check("water miss points at NAPAMS, not a report",
+      "napams" in wkinds and "nafdac_report" not in wkinds,
+      str(wkinds))
 check("asks for a re-read before reporting",
       kinds.index("recheck") < kinds.index("nafdac_report"), str(kinds))
 check("mentions a misread digit somewhere in the evidence",

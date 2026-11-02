@@ -28,6 +28,24 @@ TIMEOUT = 15
 # and only ever add a provider seen on a real pack.
 SHORTCODE_HINTS = {"sproxil": "34488"}
 
+# Shortcodes published in NAFDAC guidance and press but NOT yet seen on
+# a photographed panel. Recognition only: they name a provider when the
+# user types the digits, but guidance never sends anyone to text them.
+REPORTED_SHORTCODES = {
+    "38353": "Sproxil",
+    "38351": "PharmaSecure",
+    "20831": "MAS service",
+}
+
+
+def describe_shortcode(shortcode: str) -> str:
+    """Provider name for a shortcode, or ''. Photographed codes first."""
+    sc = "".join((shortcode or "").split())
+    for name, code in SHORTCODE_HINTS.items():
+        if code == sc:
+            return name.title()
+    return REPORTED_SHORTCODES.get(sc, "")
+
 
 def verify(pin: str, shortcode: str = "") -> dict:
     """Ask the configured service about one scratch PIN. Never raises."""

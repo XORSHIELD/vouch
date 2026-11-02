@@ -75,5 +75,29 @@ check("routine plan skips day 1",
 check("every plan starts by preserving evidence",
       "evidence" in hi[0].action.lower() or "evidence" in hi[0].why.lower())
 
+print("adverse reaction note")
+adr = actions.adr_note(_p(), _a())
+check("adr body names the number", "A99-9999" in adr.body)
+check("adr points at MedSafety",
+      "Med Safety App" in adr.body
+      and "pharmacovigilance@nafdac.gov.ng" in adr.body
+      and "0800-1-NAFDAC" in adr.body, adr.body[:400])
+check("adr refuses dose changes",
+      "Do not change or stop a prescribed dose" in adr.body)
+check("adr claims no causation",
+      "does not claim the product caused" in adr.body)
+check("adr filename safe",
+      bool(re.fullmatch(r"[a-z0-9][a-z0-9._-]*\.txt", adr.filename)),
+      adr.filename)
+check("adr stays out of the case bundle",
+      "adr_note" not in actions.all_documents(_p(), _a()))
+check("no binary language in adr",
+      not banned.search(adr.body),
+      (banned.search(adr.body) or [None])[0] or "")
+check("hotlines shared", "0800-1-623322" in actions.HOTLINES)
+check("nafdac report carries the complaints line",
+      any("0800-1-NAFDAC" in n for n in docs["nafdac_report"].notes),
+      repr(docs["nafdac_report"].notes))
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
