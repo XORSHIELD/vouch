@@ -95,5 +95,21 @@ check("CI runs the deploy test", "python test_deploy.py" in _ci)
 check("CI runs the server unit test",
       "python test_server_unit.py" in _ci)
 
+print("provider doc")
+_ppath = os.path.join(HERE, "docs", "provider.md")
+check("provider doc exists", os.path.exists(_ppath), _ppath)
+_pdoc = open(_ppath, encoding="utf-8").read() if os.path.exists(_ppath) else ""
+check("provider doc names VOUCH_MAS_URL", "VOUCH_MAS_URL" in _pdoc)
+check("provider doc names VOUCH_MFR_URL", "VOUCH_MFR_URL" in _pdoc)
+check("provider doc shows the pin request shape", '"pin"' in _pdoc)
+check("provider doc shows the serial request shape", '"serial"' in _pdoc)
+
+print("field-test list")
+_fpath = os.path.join(HERE, "docs", "field-test.md")
+check("field-test list exists", os.path.exists(_fpath), _fpath)
+_fdoc = open(_fpath, encoding="utf-8").read() if os.path.exists(_fpath) else ""
+check("field-test covers the pin flow", "34488" in _fdoc)
+check("field-test starts from health", "/api/health" in _fdoc)
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

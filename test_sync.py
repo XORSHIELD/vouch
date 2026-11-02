@@ -18,6 +18,11 @@ os.environ["VOUCH_CACHE_DIR"] = TMP
 
 import registry as R
 
+import audit as _audit
+# Sync completion would otherwise land in the real audit log.
+_logged: list = []
+_audit.log = lambda *a, **k: _logged.append(a)
+
 # Fixture rows shaped exactly like Greenbook API records (field names as
 # served), so the mirror path parses them the way live data is parsed.
 ROWS = [
@@ -137,6 +142,63 @@ dt = time.time() - t0
 check("exact row found despite 10 loose lookalikes",
       res.verdict == R.REGISTERED, f"got {res.verdict}: {res.message}")
 check("indexed lookup answers fast", dt < 0.5, f"{dt:.2f}s")
+
+print("collapsed pass refused")
+_logged.clear()
+BIG = [{"product_id": 3000 + i, "NAFDAC": f"Z9-{3000 + i}",
+        "product_name": f"Bulk Pack {i}",
+        "applicant_name": "Bulk Maker Ltd",
+        "status": "Active"} for i in range(120)]
+con = R._mirror_db()
+for d in BIG:
+    R._mirror_upsert(con, d, 1)
+con.commit()
+con.close()
+R._sync_put(status="complete", finished_at=time.time(), total=132,
+            fetched=132, pass_no=1, error="")
+_before = R.sync_status()["finished_at"]
+R._fetch = lambda q, length, start: (
+    {"recordsTotal": 2, "data": []} if start >= 2
+    else {"recordsTotal": 2, "data": ROWS})
+try:
+    out = R.sync_run(page_size=25)
+finally:
+    R._fetch = _real_fetch
+check("collapsed pass refused",
+      "Refusing" in (out.get("error") or "")
+      and out["status"] == "complete",
+      str({k: out.get(k) for k in ("status", "error")}))
+check("mirror stays ready after refusal",
+      R.mirror_ready() is True)
+check("previous mirror kept",
+      R.sync_status()["records"] == 132,
+      str(R.sync_status()["records"]))
+check("freshness not faked",
+      R.sync_status()["finished_at"] == _before)
+check("refusal is logged",
+      any(e[0] == "sync_refused" for e in _logged), str(_logged))
+res = R.lookup("Z9-3005", offline=True)
+check("verdicts intact after refusal", res.verdict == R.REGISTERED,
+      f"got {res.verdict}: {res.message}")
+
+print("healthy big pass still completes")
+BIG2 = [{"product_id": 4000 + i, "NAFDAC": f"Z9-{4000 + i}",
+         "product_name": f"Fresh Pack {i}",
+         "applicant_name": "Fresh Maker Ltd",
+         "status": "Active"} for i in range(120)]
+def _big_fetch(q, length, start):
+    if start >= len(BIG2):
+        return {"recordsTotal": len(BIG2), "data": []}
+    return {"recordsTotal": len(BIG2), "data": BIG2[start:start + length]}
+R._fetch = _big_fetch
+try:
+    out = R.sync_run(page_size=25)
+finally:
+    R._fetch = _real_fetch
+check("near-whole pass completes",
+      out["status"] == "complete"
+      and R.sync_status()["records"] == 120,
+      str({k: out.get(k) for k in ("status", "error")}))
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

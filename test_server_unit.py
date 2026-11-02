@@ -28,6 +28,14 @@ from starlette.requests import Request
 import registry as R
 import server
 
+import agent as agent_mod
+import ai as ai_mod
+
+# Live model calls would make route tests nondeterministic; the agent
+# and composer stay keyless here (mirrors test_server.py).
+agent_mod.API_KEY = ""
+ai_mod.API_KEY = ""
+
 fails = 0
 
 

@@ -23,6 +23,11 @@ import urllib.request
 
 TIMEOUT = 15
 
+# Shortcodes confirmed from photographed panels. Hints only: guidance
+# still tells the person to go by what is printed beside their panel,
+# and only ever add a provider seen on a real pack.
+SHORTCODE_HINTS = {"sproxil": "34488"}
+
 
 def verify(pin: str, shortcode: str = "") -> dict:
     """Ask the configured service about one scratch PIN. Never raises."""

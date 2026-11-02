@@ -238,6 +238,9 @@ check("scratch question asks for the PIN",
       "scratch it off" in ask[0]["answer"]
       and "No. The checks" not in ask[0]["answer"],
       ask[0]["answer"][:200])
+seen = convo("the pin is on the image i uploaded")[0]["answer"]
+check("unseen photo pin asks scratch-state",
+      "silver" in seen and "close-up" in seen, seen[:250])
 typed = convo("my pin is 2062775840753, text it to 34488")[0]["answer"]
 check("typed PIN gets SMS guidance",
       "Text 2062775840753 to 34488" in typed, typed[:300])
@@ -385,11 +388,26 @@ try:
           r["answer"] == "Fenced ok", repr(r["answer"])[:120])
     check("fenced answer keeps model attribution",
           str(r["provider"]).startswith("meta:"), str(r["provider"]))
-    agent._chat = lambda msgs: "Sure, let me think about that pack."
+    _calls = []
+    def _prose(msgs):
+        _calls.append(1)
+        return "Sure, let me think about that pack."
+    agent._chat = _prose
     r = agent._plan("hello", [], None, "image/jpeg")
     check("prose still falls back cleanly",
           r["provider"] == "vouch-composer" and bool(r["answer"]),
           repr((r["provider"], r["answer"][:80])))
+    check("fallback costs a single retry",
+          len(_calls) == 2, str(len(_calls)))
+    _script = ["not json at all", '{"answer": "Recovered"}']
+    agent._chat = lambda msgs: _script.pop(0)
+    r = agent._plan("hello", [], None, "image/jpeg")
+    check("retry recovers the planner step",
+          r["answer"] == "Recovered"
+          and str(r["provider"]).startswith("meta:"),
+          repr((r["provider"], r["answer"][:80])))
+    check("envelope rule briefed",
+          "exactly one raw JSON object" in agent._system_prompt())
 finally:
     agent._chat = _real_chat
     agent.audit.log = _real_log
@@ -413,11 +431,19 @@ check("pin turn without history stays generic but short",
       "not enough to go on" not in r["answer"]
       and "printed beside the panel" in r["answer"],
       r["answer"][:300])
+check("generic guidance hints the known shortcode",
+      "Sproxil panels usually show 34488" in r["answer"],
+      r["answer"][:400])
 r = agent._final("", _ctx1, 1, "meta:test", "the shortcode is 34488",
                  history=[{"role": "user",
                            "text": "my pin is 2062775840753"}])
 check("shortcode turn reuses the pin from history",
       "Text 2062775840753 to 34488" in r["answer"], r["answer"][:300])
+r = agent._final("", _ctx1, 1, "meta:test",
+                 "the pin is on the image i uploaded")
+check("fallback asks scratch-state too",
+      "silver" in r["answer"] and "close-up" in r["answer"],
+      r["answer"][:250])
 
 print("vision tamper")
 _real_extract5 = _vision.extract_from_image

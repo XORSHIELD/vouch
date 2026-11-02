@@ -159,6 +159,8 @@ SYSTEM = """You help verify medicines and goods. You have tools; the engine
 behind them owns every verdict. You transcribe, explain, and propose —
 you never declare a product real, fake, genuine, safe, or counterfeit
 in your own words. Quote the engine's band and checks instead.
+Reply with exactly one raw JSON object on every step — no code
+fences, no prose, no extra text.
 
 Tools (call one per step, strict JSON, no other keys):
 {"thought": str, "tool": "check_pack", "args": {"pack": {nafdac_number, barcode, manufacturer, product_name, batch, serial, mfg_date, exp_date, seller, location}}}
@@ -198,6 +200,10 @@ def _chat(messages: list[dict]) -> str:
 def _system_prompt() -> str:
     """The planner briefing: operating rules plus project knowledge."""
     return SYSTEM + "\n\n" + KNOWLEDGE
+
+
+_JSON_NUDGE = ("Your last reply was not valid action JSON. Reply with "
+               "exactly one raw JSON object and nothing else.")
 
 
 def _parse_action(raw: str):
@@ -245,6 +251,10 @@ def _plan(message: str, history: list[dict],
         try:
             raw = _chat(messages)
             act = _parse_action(raw)
+            if act is None:
+                messages.append({"role": "user", "content": _JSON_NUDGE})
+                raw = _chat(messages)
+                act = _parse_action(raw)
             if act is None:
                 raise ValueError("planner output was not action JSON")
         except Exception as exc:
@@ -366,6 +376,7 @@ _PIN_HARD = re.compile(
     re.IGNORECASE)
 _SCRATCH = re.compile(r"\bscratch\b|\bpin\b|verification code",
                       re.IGNORECASE)
+_PHOTO_WORDS = re.compile(r"\b(image|photo|picture|pic)\b", re.IGNORECASE)
 
 _ASK_PIN = ("To check a scratch panel I need the PIN itself — scratch it "
             "off and type the number here, with the shortcode printed "
@@ -374,6 +385,12 @@ _ASK_PIN = ("To check a scratch panel I need the PIN itself — scratch it "
             "here either way; the SMS check asks the maker's own service.")
 
 _PIN_ACK = "Got it — I'll use that PIN for the scratch check."
+
+_PIN_NOT_SEEN = ("I looked at the photo but couldn't make out PIN digits "
+                 "on it. Is the silver scratch strip already off? If it "
+                 "is, type the digits here, or send a close-up that fills "
+                 "the frame with the panel. If the strip is still on, "
+                 "scratch it off first — no photo can read through it.")
 
 
 def _mask_runs(msg: str, values) -> str:
@@ -484,6 +501,16 @@ def _resolve_shortcode(field_sc: str, verify_text: str):
                       "printed beside the panel.)")
 
 
+def _provider_hint() -> str:
+    """Named shortcodes from photographed panels. Hints, never defaults."""
+    bits = [f"{name.title()} panels usually show {sc}"
+            for name, sc in sorted(mas.SHORTCODE_HINTS.items())]
+    if not bits:
+        return ""
+    return (" " + "; ".join(bits) + " — if yours matches, that is the "
+            "one; otherwise go by what is printed beside your panel.")
+
+
 def _mas_note(pin: str, shortcode: str, verify_text: str = "") -> str:
     """Deterministic scratch-PIN guidance. Empty when there is no PIN."""
     if not pin:
@@ -513,7 +540,7 @@ def _mas_note(pin: str, shortcode: str, verify_text: str = "") -> str:
         base = ("\n\nThat scratch panel is verifiable. Text the PIN to the "
                 "shortcode printed beside the panel — the maker's service "
                 "replies about that PIN. Paste its exact reply here and "
-                "I'll help you read it.")
+                "I'll help you read it." + _provider_hint())
     if res.get("connected") and res.get("detail"):
         base += f" (The connected service says: {res.get('detail')})"
     return base + qualifier
@@ -805,6 +832,8 @@ def _converse(pack: PackInput, fresh: dict, message: str,
                 "the dates after.")
     _hpin, _hsc = _history_pin(history)
     if _SCRATCH.search(message or "") and not (fresh.get("pin") or _hpin):
+        if _PHOTO_WORDS.search(message or ""):
+            return _PIN_NOT_SEEN
         return _ASK_PIN
     if fresh.get("shortcode") and not (fresh.get("pin") or _hpin):
         return (f"Got the shortcode — {fresh['shortcode']}. Now type "
@@ -864,7 +893,10 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
                          or _mf.get("shortcode")):
             _pin = _hpin
         if _SCRATCH.search(message or "") and not _pin:
-            answer, provider = _ASK_PIN, "vouch-composer"
+            if _PHOTO_WORDS.search(message or ""):
+                answer, provider = _PIN_NOT_SEEN, "vouch-composer"
+            else:
+                answer, provider = _ASK_PIN, "vouch-composer"
         else:
             _reply = _read_reply(message, bool(_mf.get("pin"))) if _pin else None
             if _reply == "pass":

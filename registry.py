@@ -666,6 +666,28 @@ def sync_run(page_size: int = 200, max_pages: int | None = None,
         if not max_pages or fetched >= (total or 0):
             con = _mirror_db()
             try:
+                old_rows = con.execute(
+                    "SELECT COUNT(*) FROM mirror WHERE pass <> ?",
+                    (pass_no,)).fetchone()[0]
+            finally:
+                con.close()
+            if old_rows > 100 and fetched * 2 < old_rows:
+                err = (f"Refusing to swap a {fetched}-record pass over a "
+                       f"{old_rows}-record mirror (source looks "
+                       f"truncated). Previous mirror kept.")
+                # Restore the pre-run state: the kept mirror is still
+                # the runnable one, so readiness and aging stay honest.
+                # Only the findings (fetched/total/error) are new.
+                _sync_put(status=st["status"], started_at=st["started_at"],
+                          fetched=fetched, total=total, error=err)
+                try:
+                    import audit
+                    audit.log("sync_refused", "", err)
+                except Exception:
+                    pass
+                return {**sync_status(), "started": True}
+            con = _mirror_db()
+            try:
                 con.execute("DELETE FROM mirror WHERE pass <> ?",
                             (pass_no,))
                 con.commit()
