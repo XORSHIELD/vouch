@@ -445,6 +445,55 @@ check("fallback asks scratch-state too",
       "silver" in r["answer"] and "close-up" in r["answer"],
       r["answer"][:250])
 
+print("fast path")
+_real_key2 = agent.API_KEY
+_real_chat2 = agent._chat
+_real_extract6 = _vision.extract_from_image
+_model_calls: list = []
+def _scripted(msgs):
+    _model_calls.append(1)
+    return '{"answer": "MODEL WROTE THIS"}'
+try:
+    agent.API_KEY = "k"
+    agent._chat = _scripted
+    del _model_calls[:]
+    r = agent.chat("are you hearing me?", [])
+    check("small-talk answers with zero model calls",
+          "hear" in r["answer"].lower()
+          and r["provider"] == "vouch-composer"
+          and not _model_calls,
+          repr((r["provider"], r["answer"][:120], len(_model_calls))))
+    del _model_calls[:]
+    r = agent.chat("the pin is on the image i uploaded", [])
+    check("scratch-state asks with zero model calls",
+          "silver" in r["answer"] and "close-up" in r["answer"]
+          and not _model_calls,
+          repr((r["answer"][:150], len(_model_calls))))
+    del _model_calls[:]
+    r = agent.chat("here is the pin: 2062775840753", history=_hist3)
+    check("pin turn answered with zero model calls",
+          "Text 2062775840753 to 34488" in r["answer"]
+          and "not enough to go on" not in r["answer"]
+          and not _model_calls,
+          repr((r["answer"][:200], len(_model_calls))))
+    r = agent.chat("NAFDAC A11-0551", [])
+    check("fresh checks still plan",
+          r["answer"] == "MODEL WROTE THIS"
+          and str(r["provider"]).startswith("meta:"),
+          repr((r["provider"], r["answer"][:80])))
+    r = agent.chat("open a case", [])
+    check("case words still plan",
+          r["answer"] == "MODEL WROTE THIS", r["answer"][:80])
+    _vision.extract_from_image = lambda *a, **k: _vision.Extraction(
+        product_name="X")
+    r = agent.chat("", [], b"fake-photo-bytes", "image/jpeg")
+    check("photos still plan",
+          r["answer"] == "MODEL WROTE THIS", r["answer"][:80])
+finally:
+    agent.API_KEY = _real_key2
+    agent._chat = _real_chat2
+    _vision.extract_from_image = _real_extract6
+
 print("vision tamper")
 _real_extract5 = _vision.extract_from_image
 try:

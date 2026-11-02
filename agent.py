@@ -911,12 +911,11 @@ def _final(answer: str, ctx: dict, steps: int, provider: str,
                 if not _sc and (_pin or _SCRATCH.search(message or "")):
                     _sc = _hsc
                 _pack0 = ctx.get("pack")
-                if (_pin and ctx["assessment"].band == "incomplete"
-                        and _pack0 is not None
-                        and not (_pack0.nafdac_number or _pack0.barcode)):
-                    answer = _PIN_ACK + _mas_note(
-                        _pin, _sc, _ex0.verify_text if _ex0 else "")
-                    provider = "vouch-composer"
+                _ack = _pin_ack_text(
+                    _pack0, ctx["assessment"], _pin, _sc,
+                    _ex0.verify_text if _ex0 else "")
+                if _ack is not None:
+                    answer, provider = _ack, "vouch-composer"
                 else:
                     answer, provider = ai.compose(ctx["assessment"], message)
                     if _ex0 is not None and _extraction_empty(_ex0):
@@ -1103,6 +1102,80 @@ def _extraction_empty(ex) -> bool:
     return not any(getattr(ex, f, "") for f in _PHOTO_FIELDS)
 
 
+def _recover_pin(message: str, fresh: dict, history) -> tuple[str, str]:
+    """PIN + shortcode for this turn: fresh first, history fills gaps."""
+    pin = fresh.get("pin") or ""
+    sc = fresh.get("shortcode") or ""
+    if not pin or not sc:
+        hpin, hsc = _history_pin(history)
+        if not pin and (_SCRATCH.search(message or "") or sc):
+            pin = hpin
+        if not sc and (pin or _SCRATCH.search(message or "")):
+            sc = hsc
+    return pin, sc
+
+
+def _pin_note(message: str, fresh: dict, history) -> str:
+    """Scratch-PIN guidance for this turn. Empty when there is no PIN,
+    or when the turn itself reads the service's reply."""
+    pin, sc = _recover_pin(message, fresh, history)
+    if pin and _read_reply(message, bool(fresh.get("pin"))):
+        return ""
+    return _mas_note(pin, sc)
+
+
+def _pin_ack_text(pack, assessment, pin: str, sc: str,
+                  verify_text: str = "") -> str | None:
+    """Short PIN acknowledgment when the assessment has nothing else
+    to say. None when a full check is wanted."""
+    if (pin and assessment.band == "incomplete"
+            and pack is not None
+            and not (pack.nafdac_number or pack.barcode)):
+        return _PIN_ACK + _mas_note(pin, sc, verify_text or "")
+    return None
+
+
+def _fast_answer(message: str, history=None) -> dict | None:
+    """Instant deterministic answer, or None when planning is needed.
+
+    Text-only turns the deterministic layer already answers well —
+    small talk, scratch protocol, corrections, pack questions — skip
+    the model entirely. Photos, fresh checks, and case words always
+    plan.
+    """
+    if CASE_WORDS.search(message or ""):
+        return None
+    pack, fresh, changed = _working_pack(history, message)
+    if fresh.get("nafdac_number"):
+        return None
+    assessment = _assess(pack)
+    said = _converse(pack, fresh, message, assessment, history)
+    if said is not None:
+        text = said
+    elif not changed and any(fresh.get(k) for k in
+                             ("nafdac_number", "barcode", "batch",
+                              "product_name")):
+        text = ("Already have that. "
+                f"{_tail(pack, assessment, history)}")
+    else:
+        ack = _fragment_ack(pack, fresh, assessment, history)
+        if ack is not None:
+            text = ack
+        else:
+            pin, sc = _recover_pin(message, fresh, history)
+            pin_text = _pin_ack_text(pack, assessment, pin, sc)
+            if pin_text is None:
+                return None
+            return {"answer": pin_text, "proposal": None,
+                    "extraction": None,
+                    "assessment": assessment.to_dict(),
+                    "provider": "vouch-composer", "steps": 0}
+    text += _pin_note(message, fresh, history)
+    return {"answer": text, "proposal": None, "extraction": None,
+            "assessment": assessment.to_dict(),
+            "provider": "vouch-composer", "steps": 0}
+
+
 def _pipeline(message: str, image_bytes: bytes | None,
               image_type: str, history=None) -> dict:
     pack, fresh, changed = _working_pack(history, message)
@@ -1169,16 +1242,7 @@ def _pipeline(message: str, image_bytes: bytes | None,
                              "the NAFDAC number, barcode, batch or a "
                              "photo — or say 'help' and I'll walk you "
                              "through it.", "vouch-composer")
-    _pin = fresh.get("pin") or ""
-    _sc = fresh.get("shortcode") or ""
-    if not _pin or not _sc:
-        _hpin, _hsc = _history_pin(history)
-        if not _pin and (_SCRATCH.search(message or "") or _sc):
-            _pin = _hpin
-        if not _sc and (_pin or _SCRATCH.search(message or "")):
-            _sc = _hsc
-    if not (_pin and _read_reply(message, bool(fresh.get("pin")))):
-        text += _mas_note(_pin, _sc)
+    text += _pin_note(message, fresh, history)
     proposal = None
     if (assessment.band == "high_risk"
             and (pack.nafdac_number or pack.barcode)
@@ -1191,7 +1255,15 @@ def _pipeline(message: str, image_bytes: bytes | None,
 
 def chat(message: str, history=None, image_bytes: bytes | None = None,
          image_type: str = "image/jpeg") -> dict:
-    """One chat turn. Planned with a key, deterministic without."""
+    """One chat turn. Planned with a key, deterministic without.
+
+    Simple turns answer instantly even with a key: anything the
+    deterministic layer settles never reaches the model.
+    """
+    if API_KEY and not image_bytes:
+        fast = _fast_answer(message or "", history)
+        if fast is not None:
+            return fast
     if API_KEY:
         try:
             return _plan(message or "", _clean_history(history),
