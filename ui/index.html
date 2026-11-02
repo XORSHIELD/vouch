@@ -166,6 +166,11 @@
   .chip.demo-row:disabled{opacity:.55;cursor:wait}
   @media (prefers-reduced-motion:reduce){.chip.demo-row{transition:none}}
 
+  /* results reveal after a scan */
+  #result.flash{animation:resultflash 1.6s ease}
+  @keyframes resultflash{0%{box-shadow:0 0 0 3px var(--ink-3)}100%{box-shadow:none}}
+  @media (prefers-reduced-motion:reduce){#result.flash{animation:none}}
+
   /* verdict */
   .band{border-radius:var(--radius);padding:22px 26px;border:1px solid;margin-bottom:22px;position:relative;overflow:hidden;background:var(--card)}
   .band::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%}
@@ -4018,6 +4023,18 @@ async function runMultiScan(frames, source){
   }
 }
 
+function revealResults(){
+  requestAnimationFrame(() => {
+    const el = $('#result');
+    if (!el) return;
+    try {
+      const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({behavior: smooth ? 'smooth' : 'auto', block:'start'});
+    } catch {}
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  });
+}
+
 async function applyScanResult(out){
   const merged = out.merged || {};
   state.scanEvidence = out;
@@ -4041,6 +4058,7 @@ async function applyScanResult(out){
     state.pendingScratch = null;
     renderAssessment(assessment, scratch ? {scratch} : undefined);
     goTab('check');
+    revealResults();
     const n = out.frames_read || 0;
     toast('Read ' + n + ' side' + (n === 1 ? '' : 's') + ' · ' + readerLabel(out));
   } catch (err){
@@ -4191,6 +4209,7 @@ async function lookupBarcode(code){
     resetScanSession();
     closeScanner();
     goTab('check');
+    revealResults();
     toast('Barcode ' + digits + ' checked');
   } catch (e){
     scanStatus(e.message || 'Barcode lookup failed.', 'err');
