@@ -19,6 +19,7 @@ import secrets
 
 import barcode as B
 import gs1
+import napams
 import registry as R
 import safety
 
@@ -50,7 +51,7 @@ def _answer(text: str) -> str:
     digits = re.sub(r"\D", "", text)
     if m and not (digits and len(digits) in (8, 12, 13, 14)
                   and len(digits) >= len(re.sub(r"\D", "", m.group(1)))):
-        return _nafdac_reply(m.group(1))
+        return _nafdac_reply(m.group(1).strip())
     if digits and len(digits) in (8, 12, 13, 14):
         return _barcode_reply(digits)
     return "Vouch: send NAFDAC <number>, V <barcode> or G <pack code>."
@@ -89,6 +90,12 @@ def _nafdac_reply(number: str) -> str:
         return (f"Vouch: {number} is registered but inactive."
                 " Ask the seller to confirm it." + extra)
     if res.verdict == R.NOT_FOUND:
+        hit = napams.known(number)
+        if hit:
+            return (f"Vouch: NAPAMS lists {number} as {hit['product']}"
+                    + (f" ({hit['maker']})" if hit.get("maker") else "")
+                    + f", shared {hit['first_seen']}. A record match is "
+                      f"not proof of this pack.")
         return (f"Vouch: no record for {number} in the medicines register."
                 " Do not use. Keep the pack and receipt."
                 " Food, water or cosmetics? Verify at"

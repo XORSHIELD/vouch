@@ -11,14 +11,23 @@ Run:  python test_agent.py
 from __future__ import annotations
 
 import os
+import tempfile
 
 os.environ.pop("MODEL_API_KEY", None)
 os.environ.pop("META_API_KEY", None)
 os.environ.pop("VOUCH_MAS_URL", None)
 
 import agent
+import napams
 
 agent.API_KEY = ""
+
+# Hermetic NAPAMS memory: the real cache must not sway these chats.
+_napams_real_cache = napams.CACHE_FILE
+_napams_tmp = tempfile.NamedTemporaryFile(
+    prefix="napams_test_", suffix=".json", delete=False)
+_napams_tmp.close()
+napams.CACHE_FILE = _napams_tmp.name
 
 fails = 0
 
@@ -494,6 +503,28 @@ finally:
     agent._chat = _real_chat2
     _vision.extract_from_image = _real_extract6
 
+print("leak fallback")
+_real_key3 = agent.API_KEY
+_real_chat3 = agent._chat
+try:
+    agent.API_KEY = "k"
+    agent._chat = lambda msgs: ('{"answer": "For NAFDAC 01-3892: '
+                                'engine band = high-risk, checks: '
+                                'NAFDAC registration = high_risk"}')
+    r = agent.chat("01-3892", [])
+    check("engine dump falls back to the composer",
+          "engine band" not in r["answer"]
+          and "high_risk" not in r["answer"]
+          and r["provider"] == "vouch-composer",
+          repr((r["provider"], r["answer"][:160])))
+    check("fallback still explains the finding",
+          "finding" in r["answer"].lower(), r["answer"][:200])
+    check("briefing teaches plain words",
+          "plain sentences" in agent._system_prompt())
+finally:
+    agent.API_KEY = _real_key3
+    agent._chat = _real_chat3
+
 print("vision tamper")
 _real_extract5 = _vision.extract_from_image
 try:
@@ -541,6 +572,8 @@ check("briefing stays lean", len(_know.KNOWLEDGE) < 4000,
       str(len(_know.KNOWLEDGE)))
 check("series shapes documented",
       "A4-0271" in _know.KNOWLEDGE and "04-0271" in _know.KNOWLEDGE)
+napams.CACHE_FILE = _napams_real_cache
+os.unlink(_napams_tmp.name)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

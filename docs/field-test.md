@@ -67,8 +67,9 @@ photo read or an honest note.
 2. Send `CWAY water 01-3892`. Expect review ("a reason to check,
    not a conclusion"), a Verify-on-NAPAMS action, and no finding.
 3. Open registration.nafdac.gov.ng on the phone, verify the number,
-   paste the portal's reply word-for-word. Expect it read back as
-   the portal's statement, with the number confirmed.
+   paste the portal's reply word-for-word. Expect the product details
+   read back — name, maker, dates, certificate status — with the
+   earlier no-record answer explicitly replaced.
 
 ## H. Forwarded lists and pack codes
 

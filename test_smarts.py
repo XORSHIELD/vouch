@@ -23,10 +23,18 @@ os.environ.pop("VOUCH_MAS_URL", None)
 import agent
 import cases
 import knowledge
+import napams
 import playbooks
 import recall
 import registry as R
 from engine import Assessment, PackInput
+
+# Hermetic NAPAMS memory: the real cache must not sway these chats.
+_napams_real_cache = napams.CACHE_FILE
+_napams_tmp = tempfile.NamedTemporaryFile(
+    prefix="napams_test_", suffix=".json", delete=False)
+_napams_tmp.close()
+napams.CACHE_FILE = _napams_tmp.name
 
 agent.API_KEY = ""
 
@@ -282,6 +290,8 @@ _s5 = _server.agent_chat(
     _server.AgentBody(message="hello", history=[]), _Request(_scope))
 check("chat without a case is unchanged",
       bool(_s5["answer"]) and _s5.get("image_received") is False)
+napams.CACHE_FILE = _napams_real_cache
+os.unlink(_napams_tmp.name)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

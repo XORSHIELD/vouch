@@ -24,6 +24,7 @@ import registry as R
 import barcode as B
 import batchdecode as BD
 import manufacturer as M
+import napams
 
 # --------------------------------------------------------------------------
 # Vocabulary
@@ -346,6 +347,14 @@ _REGISTRY_KIND = {
 _NON_GREENBOOK_KINDS = ("food", "beverage", "water", "cosmetic")
 
 
+def _napams_hit(pack: PackInput) -> dict | None:
+    """A previously shared NAPAMS listing for this number, or None."""
+    try:
+        return napams.known(pack.nafdac_number or "")
+    except Exception:
+        return None
+
+
 def _kind_of(pack: PackInput, reg: R.Result | None, bar: B.Result | None) -> str:
     """What kind of thing is this? It only chooses vocabulary — never a verdict."""
     if reg is not None and reg.matched is not None:
@@ -647,16 +656,39 @@ def assess(
             detail=reg.signals,
         ))
     elif reg.verdict == R.NOT_FOUND:
-        checks.append(Check(
-            id="registry", label="NAFDAC registration", state=HIGH, severity=3.0,
-            evidence="No registry record for this number in any known format.",
-            proves="The printed number does not match any registered product.",
-            does_not_prove="That the product is falsified. A misread digit "
-                           "produces the same result; confirm the number by eye "
-                           "first.",
-            source="greenbook.nafdac.gov.ng",
-            detail=reg.signals,
-        ))
+        hit = _napams_hit(pack)
+        if hit:
+            checks.append(Check(
+                id="registry", label="NAFDAC registration", state=ATTENTION,
+                severity=2.0,
+                evidence=f"No Greenbook record — but NAPAMS listed this "
+                         f"number when shared here on {hit['first_seen']}: "
+                         f"{hit['product']}"
+                         + (f" by {hit['maker']}" if hit.get("maker")
+                            else "")
+                         + (f", registration ends {hit['expiry']}"
+                            if hit.get("expiry") else "")
+                         + ".",
+                proves="Only that the number appeared on NAPAMS before.",
+                does_not_prove="That the listing is current — confirm on "
+                               "NAPAMS for anything important.",
+                source="greenbook.nafdac.gov.ng + shared NAPAMS reply",
+                detail=reg.signals,
+            ))
+        else:
+            checks.append(Check(
+                id="registry", label="NAFDAC registration", state=HIGH,
+                severity=3.0,
+                evidence="No registry record for this number in any known "
+                         "format.",
+                proves="The printed number does not match any registered "
+                       "product.",
+                does_not_prove="That the product is falsified. A misread "
+                               "digit produces the same result; confirm the "
+                               "number by eye first.",
+                source="greenbook.nafdac.gov.ng",
+                detail=reg.signals,
+            ))
     else:  # AMBIGUOUS / UNVERIFIABLE
         checks.append(Check(
             id="registry", label="NAFDAC registration", state=UNKNOWN, severity=0,
@@ -934,7 +966,7 @@ def _actions_for(
         out.append(Action("recheck", "Re-read the number by eye",
                           "One misread digit produces the same result as an "
                           "unregistered product.", 0, "you"))
-        if kind in _NON_GREENBOOK_KINDS:
+        if kind in _NON_GREENBOOK_KINDS or _napams_hit(pack):
             out.append(Action("napams", "Verify on NAPAMS",
                               "Food, water and cosmetics are listed on NAFDAC's "
                               "NAPAMS portal (registration.nafdac.gov.ng), "

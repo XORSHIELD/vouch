@@ -258,7 +258,14 @@ Tools (call one per step, strict JSON, no other keys):"""
 _SYSTEM_TAIL = """Finish with {"answer": str} or, only to open a case the user asked
 about or a high-risk pack needs, {"proposal": {"action": "open_case",
 "pack": {...}}. The user confirms proposals; you never execute them.
-A photo already read for you appears as the first tool note."""
+A photo already read for you appears as the first tool note.
+Write the answer the way a careful pharmacist speaks to a worried
+shopper: plain sentences, no engine jargon, no field names, no quoted
+state words. Say what was checked and what it showed, then the single
+most useful next step. A number with no record might be misread, or
+food or water (checked on NAFDAC's NAPAMS portal, not here), or
+unregistered — say so instead of accusing. Never paste the assessment
+JSON or its field names into the answer."""
 
 SYSTEM = _SYSTEM_HEAD + "\n" + _tool_docs() + "\n\n" + _SYSTEM_TAIL
 
@@ -982,7 +989,7 @@ def _converse(pack: PackInput, fresh: dict, message: str,
             return _REPLY_FAIL_TEXT
         if _reply == "unclear":
             return _REPLY_UNCLEAR_TEXT
-    _nap = _napams_answer(message, pack)
+    _nap = _napams_answer(message, pack, history)
     if _nap is not None:
         return _nap
     if _REACTION.search(message or ""):
@@ -1018,12 +1025,19 @@ def _converse(pack: PackInput, fresh: dict, message: str,
     return None
 
 
+_LEAK = re.compile(r"engine band\s*=|high_risk|\"checks\"|'checks':"
+                     r"|severity\s*[:=]")
+
+
 def _final(answer: str, ctx: dict, steps: int, provider: str,
            message: str, confirmed_pack: PackInput | None = None,
            history=None) -> dict:
     if ctx.get("assessment") is None:
         ctx["pack"] = _pack_from_text(message)
         ctx["assessment"] = _assess(ctx["pack"])
+    if answer and _LEAK.search(answer):
+        audit.log("agent_leak_fallback", "", answer[:120])
+        answer = ""
     if not answer:
         _ex0 = ctx.get("extraction")
         _mf = _extract_fields(message or "")
@@ -1405,14 +1419,16 @@ def _remember_turn(case_id: str, message: str,
     recall.remember(case_id, "assistant", (out or {}).get("answer", ""))
 
 
-def _napams_answer(message: str, pack: PackInput) -> str | None:
+def _napams_answer(message: str, pack: PackInput,
+                   history=None) -> str | None:
     """Read a pasted NAPAMS portal reply. None when this isn't one."""
     text = (message or "").strip()
     low = text.lower()
     if len(text) < 25:
         return None
     if "napams" not in low and "registration.nafdac" not in low \
-            and "certificate number" not in low:
+            and "certificate number" not in low \
+            and not ("product details" in low and "nafdac no" in low):
         return None
     res = napams.read_reply(text, pack.nafdac_number or "")
     if res["verdict"] == napams.UNCLEAR and not pack.nafdac_number \
@@ -1420,10 +1436,36 @@ def _napams_answer(message: str, pack: PackInput) -> str | None:
         return None
     num = res["about"] or pack.nafdac_number or "this number"
     quote = f"\n\n“{res['quote']}”" if res["quote"] else ""
+    said_before = any((h.get("role") == "assistant")
+                      for h in (history or []))
+    bridge = (" This replaces my earlier “no record” answer — that "
+              "search only covered the medicines register."
+              if res.get("matches") and said_before else "")
+    det = res.get("details") or {}
     if res["verdict"] == napams.WRONG_NUMBER:
         return (f"That reply is about {res['about']}, but we were "
                 f"checking {pack.nafdac_number}. Confirm which number "
                 f"you pasted.{quote}")
+    if det:
+        napams.file_details(res)
+        head = f"NAPAMS lists {num} as {det.get('product', 'a product')}"
+        if det.get("manufacturer"):
+            head += f" by {det['manufacturer']}"
+        bits = [b for b in (det.get("category"),
+                            f"approved {det['approved']}"
+                            if det.get("approved") else "",
+                            f"registration ends {det['expiry']}"
+                            if det.get("expiry") else "") if b]
+        if bits:
+            head += ". " + "; ".join(bits)
+        head += "."
+        if res["verdict"] == napams.EXPIRED:
+            return (head + bridge + " Its certificate has expired, "
+                    "though — stock may predate the lapse, but it is "
+                    "worth asking the seller about." + quote)
+        return (head + bridge + " That is the portal's statement "
+                "about the number — a record match is not proof of "
+                "the pack in your hand." + quote)
     if res["verdict"] == napams.REGISTERED:
         return (f"NAPAMS says {num} is registered. That is the portal's "
                 f"statement about the number — a record match is not "
@@ -1444,13 +1486,28 @@ def _napams_note(assessment: dict) -> str:
     """
     checks = (assessment or {}).get("checks", []) or []
     if not any(c.get("id") == "registry"
-               and (c.get("evidence") or "").startswith("No registry record")
+               and (c.get("evidence") or "").startswith(
+                   ("No registry record", "No Greenbook record"))
                for c in checks):
         return ""
     kind = (assessment or {}).get("kind", "")
     inp = (assessment or {}).get("input", {}) or {}
     known = bool(inp.get("product_name") or inp.get("manufacturer")
                  or inp.get("barcode"))
+    num = inp.get("nafdac_number") or ""
+    hit = napams.known(num) if num else None
+    if hit:
+        seen = (f"seen in {hit['hits']} pastes" if hit.get("hits", 0) != 1
+                else "seen in 1 paste")
+        line = (f"Someone checked this number on NAFDAC's NAPAMS portal "
+                f"on {hit['first_seen']}: {hit['product']}"
+                + (f" by {hit['maker']}" if hit.get("maker") else "")
+                + (f", registration ends {hit['expiry']}"
+                   if hit.get("expiry") else "")
+                + f" ({seen}).")
+        return ("\n\n" + line + " That shared reply — not a live lookup — "
+                "is the authority here; confirm on NAPAMS for anything "
+                "important.")
     if kind in ("food", "beverage", "water", "cosmetic") or not known:
         return ("\n\nIf this is food, water, a drink or cosmetics, check the "
                 "number on NAFDAC's NAPAMS portal "

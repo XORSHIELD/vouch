@@ -8,9 +8,17 @@ import tempfile
 
 import engine as G
 import manufacturer as MFR
+import napams
 
 TODAY = date(2026, 10, 27)
 fails = 0
+
+# Hermetic NAPAMS memory: the real cache must not sway verdicts.
+_napams_real_cache = napams.CACHE_FILE
+_napams_tmp = tempfile.NamedTemporaryFile(
+    prefix="napams_test_", suffix=".json", delete=False)
+_napams_tmp.close()
+napams.CACHE_FILE = _napams_tmp.name
 
 
 def check(label: str, cond: bool, detail: str = "") -> None:
@@ -229,6 +237,8 @@ bc = next(c for c in a.checks if c.id == "batch")
 check("open-dated brand guided, not decoded",
       bc.state == G.VERIFIED
       and any("openly" in d for d in (bc.detail or [])), str(bc.detail))
+napams.CACHE_FILE = _napams_real_cache
+os.unlink(_napams_tmp.name)
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)
