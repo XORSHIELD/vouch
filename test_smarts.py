@@ -35,6 +35,12 @@ _napams_tmp = tempfile.NamedTemporaryFile(
     prefix="napams_test_", suffix=".json", delete=False)
 _napams_tmp.close()
 napams.CACHE_FILE = _napams_tmp.name
+_napams_real_seed = napams.SEED_FILE
+_napams_noseed = os.path.join(tempfile.gettempdir(),
+                              "napams_seed_absent_76f3.json")
+if os.path.exists(_napams_noseed):
+    os.unlink(_napams_noseed)
+napams.SEED_FILE = _napams_noseed
 
 agent.API_KEY = ""
 
@@ -292,6 +298,7 @@ check("chat without a case is unchanged",
       bool(_s5["answer"]) and _s5.get("image_received") is False)
 napams.CACHE_FILE = _napams_real_cache
 os.unlink(_napams_tmp.name)
+napams.SEED_FILE = _napams_real_seed
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

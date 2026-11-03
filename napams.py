@@ -123,6 +123,8 @@ CACHE_DIR = (os.environ.get("VOUCH_CACHE_DIR")
              or os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              ".cache"))
 CACHE_FILE = os.path.join(CACHE_DIR, "napams_known.json")
+SEED_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "napams_seed.json")
 MAX_ENTRIES = 2000
 
 
@@ -183,12 +185,29 @@ def file_details(res: dict) -> dict | None:
         return None
 
 
+def _load_seed() -> dict:
+    """Committed listings, transcribed from portal replies. Never raises."""
+    try:
+        with open(SEED_FILE, encoding="utf-8") as fh:
+            body = json.load(fh)
+        return body if isinstance(body, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def known(number: str) -> dict | None:
-    """A previously filed NAPAMS entry, or None. Never raises."""
+    """A previously filed NAPAMS entry, or None. Never raises.
+
+    Fresh pastes win; the shipped seed answers numbers nobody on
+    this machine has pasted yet.
+    """
     try:
         key = _canon(number)
         if not key:
             return None
-        return _load().get(key)
+        hit = _load().get(key)
+        if hit is not None:
+            return hit
+        return _load_seed().get(key)
     except Exception:
         return None

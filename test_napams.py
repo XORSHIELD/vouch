@@ -27,6 +27,14 @@ _napams_tmp = tempfile.NamedTemporaryFile(
 _napams_tmp.close()
 napams.CACHE_FILE = _napams_tmp.name
 
+# Hermetic seed: the committed listings must not leak into unit checks.
+_napams_real_seed = napams.SEED_FILE
+_napams_noseed = os.path.join(tempfile.gettempdir(),
+                              "napams_seed_absent_76f3.json")
+if os.path.exists(_napams_noseed):
+    os.unlink(_napams_noseed)
+napams.SEED_FILE = _napams_noseed
+
 fails = 0
 
 REG = ("NAPAMS Product Verification. NAFDAC Reg No: 01-3892. "
@@ -214,6 +222,73 @@ finally:
     os.unlink(_tmp.name)
 napams.CACHE_FILE = _napams_real_cache
 os.unlink(_napams_tmp.name)
+
+print("seeded memory: known listings ship with the app")
+_seed_cache_tmp = tempfile.NamedTemporaryFile(
+    prefix="napams_seedcache_", suffix=".json", delete=False)
+_seed_cache_tmp.close()
+_seed_tmp = tempfile.NamedTemporaryFile(
+    prefix="napams_seed_", suffix=".json", delete=False)
+_seed_tmp.close()
+_real_cache_now = napams.CACHE_FILE
+napams.CACHE_FILE = _seed_cache_tmp.name
+napams.SEED_FILE = _seed_tmp.name
+try:
+    import json as _json
+    with open(_seed_tmp.name, "w", encoding="utf-8") as _fh:
+        _json.dump({"551234": {
+            "number": "55-1234", "product": "SEED TEST WATER",
+            "maker": "SEED WORKS LTD", "category": "Package Water",
+            "approved": "2024-05-01", "expiry": "2029-04-30",
+            "verdict": napams.REGISTERED,
+            "first_seen": "2026-11-03", "hits": 1}}, _fh)
+    check("seeded number recalled with empty cache",
+          (napams.known("55-1234") or {}).get("product")
+          == "SEED TEST WATER",
+          repr(napams.known("55-1234"))[:200])
+    _SEEDCLASH = """PRODUCT DETAILS
+Product Name: FRESHER SEED WATER (55-1234)
+Product Category: Package Water
+Product Source: Nigerian Products
+Manufacturer: SEED WORKS LTD
+Date Approved: 2024-05-01
+Expiry Date: 2029-04-30
+NAFDAC No: 55-1234
+Active Ingredient: WATER"""
+    napams.file_details(napams.read_reply(_SEEDCLASH, "55-1234"))
+    check("fresh paste overrides the seed",
+          (napams.known("55-1234") or {}).get("product")
+          == "FRESHER SEED WATER",
+          repr(napams.known("55-1234"))[:200])
+finally:
+    napams.CACHE_FILE = _real_cache_now
+    napams.SEED_FILE = _napams_noseed
+    os.unlink(_seed_cache_tmp.name)
+    os.unlink(_seed_tmp.name)
+
+print("committed seed: the two portal listings from the field")
+napams.SEED_FILE = _napams_real_seed
+try:
+    _hit = napams.known("C1-1876")
+    check("C1-1876 answered from the shipped seed",
+          bool(_hit) and _hit["product"] == "MR. V PREMIUM WATER"
+          and _hit["maker"] == "VIJU INDUSTRIES NIG LTD"
+          and _hit["verdict"] == napams.REGISTERED, repr(_hit)[:250])
+    _hit2 = napams.known("01-3892")
+    check("01-3892 answered from the shipped seed",
+          bool(_hit2) and _hit2["product"] == "CWAY DRINKING WATER"
+          and _hit2["verdict"] == napams.EXPIRED, repr(_hit2)[:250])
+    _ans = agent.chat("C1-1876", [])["answer"]
+    check("chat recalls the seeded listing",
+          "MR. V PREMIUM WATER" in _ans
+          and "not a live lookup" in _ans, _ans[:400])
+    import sms as _smsmod
+    _reply = _smsmod.handle_inbound("NAFDAC C1-1876")
+    check("sms recalls the seeded listing",
+          "MR. V PREMIUM WATER" in _reply, _reply[:250])
+finally:
+    napams.SEED_FILE = _napams_noseed
+napams.SEED_FILE = _napams_real_seed
 
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

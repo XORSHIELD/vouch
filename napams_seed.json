@@ -1,0 +1,24 @@
+{
+  "013892": {
+    "number": "01-3892",
+    "product": "CWAY DRINKING WATER",
+    "maker": "CWAY NIGERIA DRINKING WATER SCIENCE AND TECHNOLOGY CO. LIMITED",
+    "category": "Package Water",
+    "approved": "2021-10-28",
+    "expiry": "2026-10-27",
+    "verdict": "expired",
+    "first_seen": "2026-11-02",
+    "hits": 1
+  },
+  "C11876": {
+    "number": "C1-1876",
+    "product": "MR. V PREMIUM WATER",
+    "maker": "VIJU INDUSTRIES NIG LTD",
+    "category": "Package Water",
+    "approved": "2026-10-30",
+    "expiry": "2031-10-29",
+    "verdict": "registered",
+    "first_seen": "2026-11-02",
+    "hits": 1
+  }
+}
