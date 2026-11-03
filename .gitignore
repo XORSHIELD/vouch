@@ -9,3 +9,5 @@ data/
 backups/
 vouch-*/
 .venv/
+.agents/
+checkkey.py
