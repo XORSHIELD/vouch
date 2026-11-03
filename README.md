@@ -115,6 +115,11 @@ authentic.
   expiry and serial (`gs1.py`), also readable over SMS with `G <code>`.
 - NAFDAC recalls and safety alerts, imported into the safety layer
   (`alerts.py`) and matched automatically against every check.
+- A NAPAMS memory for food/water/cosmetic numbers: shared portal
+  replies are filed and recalled (`napams_seed.json`), and NAFDAC
+  published lists bulk-import with one command (`python lists.py
+  bulletin.csv --name "Registered Foods" --date 2026-10-01`), every
+  answer citing its list by name.
 - Adverse-reaction notes for NAFDAC pharmacovigilance, with a Med Safety
   App handoff; the chat routes symptom reports there on its own.
 - A forwarded-list checker (`POST /api/debunk`) that scores viral "fake
@@ -153,6 +158,7 @@ python test_debunk.py
 python test_scanlog.py
 python test_ui_stop.py
 python test_napams.py
+python test_lists.py
 python test_ui_tools.py
 python test_tour.py
 python test_i18n.py

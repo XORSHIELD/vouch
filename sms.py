@@ -91,6 +91,10 @@ def _nafdac_reply(number: str) -> str:
                 " Ask the seller to confirm it." + extra)
     if res.verdict == R.NOT_FOUND:
         hit = napams.known(number)
+        if hit and hit.get("source") == "list":
+            return (f"Vouch: NAFDAC's {hit.get('list', 'list')} names "
+                    f"{number} as {hit['product']}. A record match is "
+                    f"not proof of this pack.")
         if hit:
             return (f"Vouch: NAPAMS lists {number} as {hit['product']}"
                     + (f" ({hit['maker']})" if hit.get("maker") else "")

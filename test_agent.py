@@ -578,6 +578,22 @@ check("briefing stays lean", len(_know.KNOWLEDGE) < 4000,
       str(len(_know.KNOWLEDGE)))
 check("series shapes documented",
       "A4-0271" in _know.KNOWLEDGE and "04-0271" in _know.KNOWLEDGE)
+print("napams memory leads")
+check("memory-first briefed",
+      "NAPAMS memory" in agent._system_prompt()
+      and "open the answer with" in agent._system_prompt()
+      and "that listing" in agent._system_prompt())
+napams.SEED_FILE = _napams_real_seed
+try:
+    _tres = agent.TOOLS["check_pack"]["run"](
+        {"pack": {"nafdac_number": "B1-2160"}}, {})
+    _mem = _tres.get("napams_memory") or {}
+    check("check tool carries the memory listing",
+          _mem.get("product") == "Maltina Classic non-alcoholic malt drink"
+          and _mem.get("number") == "B1-2160", repr(_mem)[:200])
+finally:
+    napams.SEED_FILE = _napams_noseed
+
 napams.CACHE_FILE = _napams_real_cache
 os.unlink(_napams_tmp.name)
 napams.SEED_FILE = _napams_real_seed

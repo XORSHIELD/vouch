@@ -658,21 +658,37 @@ def assess(
     elif reg.verdict == R.NOT_FOUND:
         hit = _napams_hit(pack)
         if hit:
+            tail = (f"{hit['product']}"
+                    + (f" by {hit['maker']}" if hit.get("maker") else "")
+                    + (f", registration ends {hit['expiry']}"
+                       if hit.get("expiry") else "")
+                    + ".")
+            if hit.get("source") == "list":
+                evidence = (f"No Greenbook record — but NAFDAC's "
+                            f"published {hit.get('list', 'list')} names "
+                            f"this number: {tail}")
+                proves = ("Only that the number appeared on a NAFDAC "
+                          "published list.")
+                does_not = ("That the listing is current — lists go "
+                            "stale; confirm on NAPAMS for anything "
+                            "important.")
+                source = ("greenbook.nafdac.gov.ng + "
+                          "NAFDAC published list")
+            else:
+                evidence = (f"No Greenbook record — but NAPAMS listed "
+                            f"this number when shared here on "
+                            f"{hit['first_seen']}: {tail}")
+                proves = "Only that the number appeared on NAPAMS before."
+                does_not = ("That the listing is current — confirm on "
+                            "NAPAMS for anything important.")
+                source = "greenbook.nafdac.gov.ng + shared NAPAMS reply"
             checks.append(Check(
                 id="registry", label="NAFDAC registration", state=ATTENTION,
                 severity=2.0,
-                evidence=f"No Greenbook record — but NAPAMS listed this "
-                         f"number when shared here on {hit['first_seen']}: "
-                         f"{hit['product']}"
-                         + (f" by {hit['maker']}" if hit.get("maker")
-                            else "")
-                         + (f", registration ends {hit['expiry']}"
-                            if hit.get("expiry") else "")
-                         + ".",
-                proves="Only that the number appeared on NAPAMS before.",
-                does_not_prove="That the listing is current — confirm on "
-                               "NAPAMS for anything important.",
-                source="greenbook.nafdac.gov.ng + shared NAPAMS reply",
+                evidence=evidence,
+                proves=proves,
+                does_not_prove=does_not,
+                source=source,
                 detail=reg.signals,
             ))
         else:

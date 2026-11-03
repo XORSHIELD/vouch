@@ -165,7 +165,9 @@ def _tool_check(args: dict, ctx: dict) -> dict:
     pack = _pack_fields(args.get("pack") or {})
     assessment = _assess(pack)
     ctx["pack"], ctx["assessment"] = pack, assessment
-    return assessment.to_dict()
+    out = assessment.to_dict()
+    out["napams_memory"] = napams.known(pack.nafdac_number or "")
+    return out
 
 
 def _tool_lookup(args: dict, ctx: dict) -> dict:
@@ -264,8 +266,10 @@ shopper: plain sentences, no engine jargon, no field names, no quoted
 state words. Say what was checked and what it showed, then the single
 most useful next step. A number with no record might be misread, or
 food or water (checked on NAFDAC's NAPAMS portal, not here), or
-unregistered — say so instead of accusing. Never paste the assessment
-JSON or its field names into the answer."""
+unregistered — say so instead of accusing. When the check result
+carries a NAPAMS memory listing for the number, open the answer with
+that listing and do not ask for a photo to re-check the number.
+Never paste the assessment JSON or its field names into the answer."""
 
 SYSTEM = _SYSTEM_HEAD + "\n" + _tool_docs() + "\n\n" + _SYSTEM_TAIL
 
@@ -1478,6 +1482,13 @@ def _napams_answer(message: str, pack: PackInput,
             "part naming the number and its status.")
 
 
+def _napams_hit(assessment: dict) -> dict | None:
+    """Shared NAPAMS listing for this assessment's number, or None."""
+    inp = (assessment or {}).get("input", {}) or {}
+    num = inp.get("nafdac_number") or ""
+    return napams.known(num) if num else None
+
+
 def _napams_note(assessment: dict) -> str:
     """Point at NAPAMS when the medicines register drew a blank.
 
@@ -1494,8 +1505,17 @@ def _napams_note(assessment: dict) -> str:
     inp = (assessment or {}).get("input", {}) or {}
     known = bool(inp.get("product_name") or inp.get("manufacturer")
                  or inp.get("barcode"))
-    num = inp.get("nafdac_number") or ""
-    hit = napams.known(num) if num else None
+    hit = _napams_hit(assessment)
+    if hit and hit.get("source") == "list":
+        line = (f"NAFDAC's published {hit.get('list', 'list')} names "
+                f"this number as {hit['product']}"
+                + (f" by {hit['maker']}" if hit.get("maker") else "")
+                + (f", registration ends {hit['expiry']}"
+                   if hit.get("expiry") else "")
+                + ".")
+        return ("\n\n" + line + " That published list — not a live "
+                "lookup — is the authority here; confirm on NAPAMS "
+                "for anything important.")
     if hit:
         seen = (f"seen in {hit['hits']} pastes" if hit.get("hits", 0) != 1
                 else "seen in 1 paste")
@@ -1519,9 +1539,16 @@ def _napams_note(assessment: dict) -> str:
 
 def _noted(case_id: str, message: str,
            image_bytes: bytes | None, out: dict) -> dict:
-    """Attach the NAPAMS pointer, file the exchange, return it."""
-    out["answer"] = (out.get("answer") or "") + _napams_note(
-        out.get("assessment"))
+    """Attach the NAPAMS pointer, file the exchange, return it.
+
+    A remembered listing leads the answer; the plain portal pointer
+    still trails it.
+    """
+    note = _napams_note(out.get("assessment"))
+    if note and _napams_hit(out.get("assessment")):
+        out["answer"] = note.strip() + "\n\n" + (out.get("answer") or "")
+    else:
+        out["answer"] = (out.get("answer") or "") + note
     _remember_turn(case_id, message, image_bytes, out)
     return out
 

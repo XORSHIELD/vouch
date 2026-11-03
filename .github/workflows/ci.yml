@@ -37,6 +37,7 @@ jobs:
           python test_scanlog.py
           python test_ui_stop.py
           python test_napams.py
+          python test_lists.py
           python test_ui_tools.py
           python test_tour.py
           python test_i18n.py

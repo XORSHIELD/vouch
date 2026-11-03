@@ -289,6 +289,11 @@ try:
     check("chat recalls the seeded Maltina listing",
           "Maltina Classic" in _ans3
           and "not a live lookup" in _ans3, _ans3[:400])
+    check("seeded listing leads the answer",
+          _ans3.startswith("Someone checked")
+          and _ans3.index("Maltina Classic")
+          < _ans3.index("No Greenbook record"),
+          _ans3[:300])
     _ans = agent.chat("C1-1876", [])["answer"]
     check("chat recalls the seeded listing",
           "MR. V PREMIUM WATER" in _ans

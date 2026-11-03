@@ -29,7 +29,9 @@ I am asking for any partner route you offer:
 1. A verification API or endpoint we may query per number, or
 2. A bulk/redistributable extract of food/water/cosmetic
    registrations (number, product, holder, status), refreshed on
-   any schedule you choose, or
+   any schedule you choose — we already ingest CSV or JSON shaped
+   as number, product, maker, category, approved, expiry, status,
+   and will map whatever columns you send, or
 3. Guidance on the correct channel for this request.
 
 What we offer in return: every food/water check cites NAPAMS as the
@@ -46,6 +48,13 @@ to demo Vouch or meet any listing requirements.
 
 ---
 
-If they say yes, the build is small: a `napams_lookup()` beside
-`registry.lookup()`, cached like the mirror, consulted only for
-food-kind packs and bare unknown numbers.
+Before sending: fill the three placeholders, send on a weekday
+morning from your own name (not a noreply), and diary a one-line
+follow-up after 7 days with no reply.
+
+If they say yes to the API, the build is small: a `napams_lookup()`
+beside `registry.lookup()`, cached like the mirror, consulted only
+for food-kind packs and bare unknown numbers. If they say yes to
+the extract, there is no build at all: save the file and run
+`python lists.py extract.csv --name "<their title>" --date
+<their date>`, then commit `napams_seed.json`.
