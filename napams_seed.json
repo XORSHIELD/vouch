@@ -20,5 +20,16 @@
     "verdict": "registered",
     "first_seen": "2026-11-02",
     "hits": 1
+  },
+  "B12160": {
+    "number": "B1-2160",
+    "product": "Maltina Classic non-alcoholic malt drink",
+    "maker": "Nigerian Breweries Plc",
+    "category": "Food",
+    "approved": "2025-12-18",
+    "expiry": "2030-12-17",
+    "verdict": "registered",
+    "first_seen": "2026-11-03",
+    "hits": 1
   }
 }

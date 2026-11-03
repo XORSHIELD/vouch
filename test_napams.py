@@ -266,7 +266,7 @@ finally:
     os.unlink(_seed_cache_tmp.name)
     os.unlink(_seed_tmp.name)
 
-print("committed seed: the two portal listings from the field")
+print("committed seed: the portal listings from the field")
 napams.SEED_FILE = _napams_real_seed
 try:
     _hit = napams.known("C1-1876")
@@ -278,6 +278,17 @@ try:
     check("01-3892 answered from the shipped seed",
           bool(_hit2) and _hit2["product"] == "CWAY DRINKING WATER"
           and _hit2["verdict"] == napams.EXPIRED, repr(_hit2)[:250])
+    _hit3 = napams.known("B1-2160")
+    check("B1-2160 answered from the shipped seed",
+          bool(_hit3)
+          and _hit3["product"] == "Maltina Classic non-alcoholic malt drink"
+          and _hit3["maker"] == "Nigerian Breweries Plc"
+          and _hit3["verdict"] == napams.REGISTERED,
+          repr(_hit3)[:250])
+    _ans3 = agent.chat("B1-2160", [])["answer"]
+    check("chat recalls the seeded Maltina listing",
+          "Maltina Classic" in _ans3
+          and "not a live lookup" in _ans3, _ans3[:400])
     _ans = agent.chat("C1-1876", [])["answer"]
     check("chat recalls the seeded listing",
           "MR. V PREMIUM WATER" in _ans
