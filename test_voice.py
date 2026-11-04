@@ -52,6 +52,17 @@ check("manual stop exits", HTML.count("voiceHandsFree = false;") >= 3,
 check("vad-cut turns do not loop",
       "voiceHandsFree && !voiceVadCut && voiceRetries < 2" in HTML)
 
+print("microphone picker")
+check("mic picker exists", 'id="voiceMicPick"' in HTML)
+check("inputs enumerated", "enumerateDevices" in HTML)
+check("chosen device passed to capture",
+      "deviceId = { exact: voiceMicDevice }" in HTML)
+check("choice persisted", "vouch_mic_device" in HTML)
+check("dead saved device falls back", "OverconstrainedError" in HTML)
+check("silent test points at the picker", "Microphone list" in HTML)
+check("default-device rule explained",
+      "always listens on the default" in HTML)
+
 print("agent mic")
 check("agent speak-back defined", "function agentSpeak(" in HTML)
 check("final result triggers a voice reply",

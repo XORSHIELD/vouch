@@ -1862,6 +1862,10 @@
   <div class="voice-meter hidden" id="voiceMeter" aria-hidden="true">
     <span>Input</span><i><b id="voiceMeterBar"></b></i><em id="voiceMeterNum">–</em>
   </div>
+  <div class="voice-micpick hidden" id="voiceMicPickRow">
+    <label for="voiceMicPick">Microphone</label>
+    <select id="voiceMicPick"></select>
+  </div>
   <p class="voice-privacy">Speech recognition is provided by your browser and may send audio to the browser vendor. Vouch does not record or store audio. Answers come only from the checks shown here.</p>
 </div>
 
@@ -5761,6 +5765,8 @@ let voiceGotFinal = false;
 let voiceSeq = 0;
 let voiceInputError = false;
 let voiceStream = null;
+let voiceMicDevice = '';
+try { voiceMicDevice = localStorage.getItem('vouch_mic_device') || ''; } catch {}
 let voiceAudio = null;
 let voiceMeterTimer = 0;
 let voicePeak = 0;
@@ -6098,6 +6104,36 @@ function voiceStopAudio(){
   voiceShowMeter(false);
 }
 
+async function voiceListMics(){
+  const row = $('#voiceMicPickRow'), sel = $('#voiceMicPick');
+  if (!row || !sel) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  let devs = [];
+  try { devs = await navigator.mediaDevices.enumerateDevices(); }
+  catch { return; }
+  const mics = devs.filter(d => d.kind === 'audioinput');
+  if (!mics.length) return;
+  sel.innerHTML = '';
+  const def = document.createElement('option');
+  def.value = '';
+  def.textContent = 'Default microphone';
+  sel.appendChild(def);
+  mics.forEach((m, i) => {
+    const o = document.createElement('option');
+    o.value = m.deviceId || '';
+    o.textContent = m.label || ('Microphone ' + (i + 1));
+    sel.appendChild(o);
+  });
+  if (voiceMicDevice && [...sel.options].some(o => o.value === voiceMicDevice)) sel.value = voiceMicDevice;
+  row.classList.remove('hidden');
+  sel.onchange = () => {
+    voiceMicDevice = sel.value || '';
+    try { localStorage.setItem('vouch_mic_device', voiceMicDevice); } catch {}
+    voiceStopAudio();
+    if (voiceListening && voiceRec){ try { voiceRec.stop(); } catch {} }
+  };
+}
+
 async function voiceOpenMic(){
   if (voiceStream) return voiceStream;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -6105,9 +6141,22 @@ async function voiceOpenMic(){
     err.name = 'NotSupportedError';
     throw err;
   }
-  voiceStream = await navigator.mediaDevices.getUserMedia({
-    audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}
-  });
+  const wanted = {echoCancellation: true, noiseSuppression: true, autoGainControl: true};
+  if (voiceMicDevice) wanted.deviceId = { exact: voiceMicDevice };
+  try {
+    voiceStream = await navigator.mediaDevices.getUserMedia({ audio: wanted });
+  } catch (err){
+    if (voiceMicDevice && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError')){
+      voiceMicDevice = '';
+      try { localStorage.removeItem('vouch_mic_device'); } catch {}
+      const sel = $('#voiceMicPick');
+      if (sel) sel.value = '';
+      voiceStream = await navigator.mediaDevices.getUserMedia({
+        audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}
+      });
+    } else throw err;
+  }
+  voiceListMics();
   return voiceStream;
 }
 
@@ -6215,7 +6264,7 @@ async function voiceTestMic(){
     voiceStopAudio();
     const pct = Math.min(100, Math.round(peak * 620));
     if (peak < 0.01){
-      voiceHint.innerHTML = '<b>No sound reached the browser.</b> Windows may be blocking the microphone or another input device is selected. Allow desktop apps in Windows Settings → Privacy &amp; security → Microphone, pick the right device in Settings → System → Sound → Input, then try again. You can type below.';
+      voiceHint.innerHTML = '<b>No sound reached the browser.</b> Windows may be blocking the microphone or another input device is selected. Allow desktop apps in Windows Settings → Privacy &amp; security → Microphone, then try each input in the Microphone list above — the speech service always listens on the default, so set the working mic as Default in Settings → System → Sound → Input. You can type below.';
       voiceSetStatus('No input detected');
     } else if (peak < 0.05){
       voiceHint.innerHTML = 'The microphone is sending a very quiet signal (' + pct + '%). Move closer or raise the input level in Windows, then press the mic.';

@@ -69,9 +69,9 @@ Connect a Meta WhatsApp Cloud API app:
    answered nowhere — the endpoint reports `sent: false`.
 
 Send `NAFDAC <number>` or `V <barcode>` as a message; the reply uses
-the same vocabulary as the SMS seam. Photos are answered with a
-please-send-text note. `VOUCH_WA_TOKEN=demo` rehearses the flow
-without dialing Meta.
+the same vocabulary as the SMS seam. Pack photos are fetched from
+Meta and read for a NAFDAC number or scratch PIN. `VOUCH_WA_TOKEN=demo`
+rehearses the flow without dialing Meta.
 
 ## What Vouch never asks
 
