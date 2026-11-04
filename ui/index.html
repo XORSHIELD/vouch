@@ -40,6 +40,9 @@
   }
   a{color:inherit;text-decoration:none}
   button{font:inherit;cursor:pointer}
+  :focus-visible{outline:2.5px solid var(--green);outline-offset:2px;border-radius:8px}
+  .skip{position:absolute;left:-9999px;top:0;background:var(--green-deep);color:#fff;padding:10px 16px;border-radius:0 0 10px 0;font-weight:700;font-size:14px;z-index:200}
+  .skip:focus{left:0;color:#fff}
   .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
   #tab-agent{max-width:760px;margin:0 auto;min-height:62vh;display:flex;flex-direction:column}
   #tab-agent > .card:last-child{flex:1;display:flex;flex-direction:column}
@@ -61,7 +64,7 @@
   nav.tabs{display:flex;gap:4px;margin-left:auto;background:transparent;padding:0}
   nav.tabs button{
     background:transparent;border:0;color:var(--ink-3);padding:8px 16px;border-radius:999px;
-    font-size:14px;font-weight:600;letter-spacing:.01em;transition:all .18s ease
+    font-size:14px;font-weight:600;letter-spacing:.01em;transition:all .18s ease;min-height:44px
   }
   nav.tabs button:hover{color:var(--ink);background:var(--sage)}
   nav.tabs button[aria-selected="true"]{background:var(--green);color:#fff;box-shadow:none}
@@ -935,7 +938,7 @@
   }
 
   /* theme toggle */
-  .theme-toggle{margin-left:14px;width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;display:grid;place-items:center;transition:.15s}
+  .theme-toggle{margin-left:14px;width:44px;height:44px;flex:0 0 44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;display:grid;place-items:center;transition:.15s}
   .theme-toggle:hover{border-color:var(--green);color:var(--green)}
   .theme-toggle svg{width:18px;height:18px}
   .theme-toggle .moon{display:none}
@@ -1027,11 +1030,11 @@
   .app-shell{display:flex;align-items:stretch;min-height:calc(100vh - 69px)}
   aside.side{width:248px;flex:0 0 248px;background:var(--card);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:69px;height:calc(100vh - 69px);overflow:auto}
   aside.side nav.tabs{display:flex;flex-direction:column;gap:4px;margin:0;background:transparent;border:0;padding:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-  aside.side nav.tabs button{text-align:left;border-radius:10px;padding:10px 14px;font-size:15px}
+  aside.side nav.tabs button{text-align:left;border-radius:10px;padding:10px 14px;font-size:15px;min-height:44px}
   .side-foot{margin-top:auto;padding-top:14px}
   .app-main{flex:1;min-width:0}
   body.side-collapsed aside.side{display:none}
-  .side-toggle{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink-2);flex:0 0 40px}
+  .side-toggle{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink-2);flex:0 0 44px}
   .side-toggle:hover{background:var(--sage)}
   .side-toggle svg{width:20px;height:20px}
   .side-backdrop{display:none}
@@ -1042,10 +1045,36 @@
     body.side-open aside.side{transform:none}
     body.side-open .side-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(10,18,14,.45)}
   }
+  /* ---------- 2026 bar: touch floors, palette, thumb reach ---------- */
+  .btn,.cta,.chip,.scan-tabs button,.filters button{min-height:44px}
+  @media (pointer:coarse){
+    .iconbtn{width:44px;height:44px}
+    .voice-head .iconbtn{width:44px;height:44px}
+    .mini-btn{min-height:44px;padding:10px 14px}
+    .chip,.scan-tabs button,.filters button{min-height:44px;min-width:44px}
+    nav.tabs button{min-height:44px}
+  }
+  .cmd{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px 16px;background:rgba(10,18,14,.45)}
+  .cmd.hidden{display:none}
+  .cmd-box{width:min(560px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-hover);overflow:hidden}
+  .cmd-box input{border:0;border-radius:0}
+  .cmd-box input:focus{box-shadow:none}
+  .cmd-list{max-height:320px;overflow:auto;padding:8px}
+  .cmd-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;border-radius:10px;padding:11px 12px;min-height:44px;font-size:14.5px;font-weight:600;color:var(--ink)}
+  .cmd-item small{margin-left:auto;color:var(--ink-3);font-weight:600}
+  .cmd-item.on,.cmd-item:hover{background:var(--sage)}
+  .thumbbar{display:none}
+  @media (max-width:900px){
+    .thumbbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+    .thumbbar button{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700;font-size:14px}
+    .thumbbar button.primary{background:var(--green);border-color:var(--green);color:#fff}
+    main{padding-bottom:170px}
+  }
   @media (prefers-reduced-motion: reduce){ aside.side{transition:none} }
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
 <header class="top">
   <div class="wrap top-in">
@@ -1084,7 +1113,7 @@
     </div>
   </aside>
   <div class="app-main">
-<main class="wrap">
+<main class="wrap" id="main">
 
   <div class="hero hidden">
     <div class="hero-inner">
@@ -1870,6 +1899,19 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="cmd hidden" id="cmdPalette" role="dialog" aria-modal="true" aria-label="Quick actions">
+  <div class="cmd-box">
+    <input id="cmdInput" placeholder="Jump to… Verify, History, Scan, Theme" autocomplete="off" aria-label="Quick actions" />
+    <div class="cmd-list" id="cmdList" role="listbox" aria-label="Actions"></div>
+  </div>
+</div>
+
+<nav class="thumbbar" id="thumbBar" aria-label="Primary actions">
+  <button type="button" class="primary" data-thumb="scan">Scan</button>
+  <button type="button" data-thumb="ask">Ask</button>
+  <button type="button" data-thumb="reports">Reports</button>
+</nav>
 
 <script src="/ui/vendor/zxing.min.js" defer></script>
 <script>
@@ -6674,6 +6716,69 @@ document.addEventListener('keydown', (e) => {
   const _replay = $('#btnReplayTour');
   if (_replay) _replay.onclick = () => { tourWelcome(); };
 }
+
+/* ---------- command palette (Cmd/Ctrl+K) + thumb bar ---------- */
+const CMDS = [
+  {t:'Go to Agent', h:'tab', run:() => goTab('agent')},
+  {t:'Go to Verify', h:'tab', run:() => goTab('check')},
+  {t:'Go to History', h:'tab', run:() => goTab('history')},
+  {t:'Go to Product guide', h:'tab', run:() => goTab('guide')},
+  {t:'Go to Reports', h:'tab', run:() => goTab('cases')},
+  {t:'Go to Settings', h:'tab', run:() => goTab('settings')},
+  {t:'Scan product', h:'scan', run:() => openScanner('camera')},
+  {t:'New chat', h:'ask', run:() => { goTab('agent'); const b = $('#btnNewChat'); if (b) b.click(); }},
+  {t:'Toggle theme', h:'theme', run:() => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')},
+];
+let cmdOn = 0;
+function cmdRender(q){
+  const list = $('#cmdList'); if (!list) return;
+  const needle = (q || '').toLowerCase();
+  const rows = CMDS.filter(c => c.t.toLowerCase().includes(needle));
+  cmdOn = Math.min(cmdOn, Math.max(0, rows.length - 1));
+  list.innerHTML = rows.map((c) => {
+    const i = CMDS.indexOf(c);
+    const on = rows.indexOf(c) === cmdOn;
+    return `<button type="button" role="option" aria-selected="${on}" class="cmd-item${on ? ' on' : ''}" data-cmd="${i}">${esc(c.t)}<small>${esc(c.h)}</small></button>`;
+  }).join('') || '<p class="scan-note" style="padding:12px">No matching action.</p>';
+  $$('#cmdList .cmd-item').forEach(b => b.onclick = () => { const c = CMDS[+b.dataset.cmd]; cmdClose(); c.run(); });
+}
+function cmdOpen(){
+  const p = $('#cmdPalette'); if (!p) return;
+  p.classList.remove('hidden'); cmdOn = 0; cmdRender('');
+  const inp = $('#cmdInput');
+  if (inp){ inp.value = ''; setTimeout(() => inp.focus(), 30); }
+}
+function cmdClose(){ const p = $('#cmdPalette'); if (p) p.classList.add('hidden'); }
+{
+  const _pal = $('#cmdPalette');
+  if (_pal) _pal.onclick = (e) => { if (e.target.id === 'cmdPalette') cmdClose(); };
+  const _inp = $('#cmdInput');
+  if (_inp){
+    _inp.addEventListener('input', (e) => { cmdOn = 0; cmdRender(e.target.value); });
+    _inp.addEventListener('keydown', (e) => {
+      const items = $$('#cmdList .cmd-item');
+      if (e.key === 'ArrowDown'){ e.preventDefault(); cmdOn = Math.min(cmdOn + 1, items.length - 1); cmdRender(e.target.value); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); cmdOn = Math.max(cmdOn - 1, 0); cmdRender(e.target.value); }
+      else if (e.key === 'Enter'){ e.preventDefault(); const b = items[cmdOn] || items[0]; if (b) b.click(); }
+    });
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')){
+    e.preventDefault();
+    const p = $('#cmdPalette'); if (!p) return;
+    if (p.classList.contains('hidden')) cmdOpen(); else cmdClose();
+  } else if (e.key === 'Escape'){
+    const p = $('#cmdPalette');
+    if (p && !p.classList.contains('hidden')) cmdClose();
+  }
+});
+$$('#thumbBar button').forEach(b => b.onclick = () => {
+  const w = b.dataset.thumb;
+  if (w === 'scan') openScanner('camera');
+  else if (w === 'ask'){ goTab('agent'); setTimeout(() => { const i = $('#agentInput'); if (i) i.focus(); }, 60); }
+  else if (w === 'reports') goTab('cases');
+});
 
 /* ---------- boot ---------- */
 (async () => {
