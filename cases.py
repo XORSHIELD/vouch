@@ -353,6 +353,7 @@ def list_cases(limit: int = 50, status: str | None = None,
                username: str | None = None,
                role: str | None = None) -> list[dict]:
     init()
+    limit = max(1, min(500, int(limit)))
     clauses, args = [], []
     if status:
         clauses.append("status = ?")

@@ -190,5 +190,16 @@ _an2 = cases.analytics()
 check("outcomes counted",
       _an2["outcomes"].get("fixed") == 1, str(_an2["outcomes"]))
 
+print("limit clamp")
+check("negative limit cannot dump the store",
+      len(cases.list_cases(limit=-1)) == 1,
+      str(len(cases.list_cases(limit=-1))))
+check("zero limit reads one",
+      len(cases.list_cases(limit=0)) == 1)
+check("huge limit stays bounded",
+      len(cases.list_cases(limit=999999)) == 3,
+      str(len(cases.list_cases(limit=999999))))
+check("queue clamps too", len(cases.queue(limit=-1)) <= 1)
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

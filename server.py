@@ -247,7 +247,8 @@ def _clean_upload(data: bytes) -> bytes:
 
     Magic bytes are checked instead of trusting the filename or the declared
     content type. EXIF (which can carry GPS) is dropped on the way in, so a
-    stored evidence photo cannot leak where it was taken.
+    stored evidence photo cannot leak where it was taken. Anything Pillow
+    cannot decode is refused rather than passed through unscrubbed.
     """
     head = bytes(data[:12])
     webp = head[:4] == b"RIFF" and bytes(data[8:12]) == b"WEBP"
@@ -257,16 +258,23 @@ def _clean_upload(data: bytes) -> bytes:
     try:
         import io as _io
 
-        from PIL import Image
+        from PIL import Image, ImageOps
         img = Image.open(_io.BytesIO(bytes(data)))
         img.load()
+        img = ImageOps.exif_transpose(img)
         buf = _io.BytesIO()
-        img.save(buf, "PNG" if head[1:4] == b"PNG" else "JPEG")
+        if head[1:4] == b"PNG":
+            img.save(buf, "PNG")
+        else:
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img.save(buf, "JPEG")
         return buf.getvalue()
     except HTTPException:
         raise
     except Exception:
-        return data
+        raise HTTPException(
+            400, "That image could not be read. Try another photo.")
 
 
 @app.post("/api/extract/image")

@@ -297,5 +297,44 @@ try:
 finally:
     _vision2.extract_from_image = _real_ex
 
+print("upload scrubbing")
+import io as _io
+from PIL import Image as _Image
+_ex = _Image.new("RGB", (16, 12), (200, 30, 30))
+_tags = _ex.getexif()
+_tags[0x0112] = 6
+_tags[0x010F] = "TestCam"
+_ebuf = _io.BytesIO()
+_ex.save(_ebuf, "JPEG", exif=_tags)
+_back = _Image.open(_io.BytesIO(server._clean_upload(_ebuf.getvalue())))
+_back.load()
+check("exif stripped on upload", not dict(_back.getexif()),
+      str(dict(_back.getexif())))
+check("orientation applied before the strip", _back.size == (12, 16),
+      str(_back.size))
+_cmyk = _Image.new("CMYK", (8, 8))
+_cbuf = _io.BytesIO()
+_cmyk.save(_cbuf, "JPEG")
+check("non-rgb jpeg survives the scrub",
+      bool(server._clean_upload(_cbuf.getvalue())))
+_rgba = _Image.new("RGBA", (8, 8), (10, 20, 30, 128))
+_rbuf = _io.BytesIO()
+_rgba.save(_rbuf, "PNG")
+check("rgba png survives the scrub",
+      bool(server._clean_upload(_rbuf.getvalue())))
+try:
+    server._clean_upload(b"\xff\xd8\xff" + b"\x00" * 200)
+    _readable, _code = True, 0
+except server.HTTPException as _exc:
+    _readable, _code = False, _exc.status_code
+check("undecodable bytes refused, not passed through",
+      not _readable and _code == 400, str(_code))
+try:
+    server._clean_upload(b"not an image at all, just words....")
+    _words_ok = True
+except server.HTTPException:
+    _words_ok = False
+check("non-image refused", not _words_ok)
+
 print(f"\n{'FAILED' if fails else 'all checks passed'} ({fails} failures)")
 raise SystemExit(1 if fails else 0)

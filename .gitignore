@@ -8,6 +8,12 @@ Thumbs.db
 data/
 backups/
 vouch-*/
+napams_test_*.json
+napams_known_*.json
+napams_seedcache_*.json
+lists_cache_*.json
+lists_seed_*.json
+nk_*.json
 .venv/
 .agents/
 checkkey.py

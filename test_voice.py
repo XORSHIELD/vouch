@@ -62,6 +62,15 @@ check("dead saved device falls back", "OverconstrainedError" in HTML)
 check("silent test points at the picker", "Microphone list" in HTML)
 check("default-device rule explained",
       "always listens on the default" in HTML)
+check("silent test keeps a retest button",
+      "Sound → Input. You can type below.' + voiceTestLink()" in HTML)
+check("quiet test keeps a retest button",
+      "then press the mic.' + voiceTestLink()" in HTML)
+check("test timer armed before meter",
+      HTML.index("voiceTestTimer = setTimeout")
+      < HTML.index("await voiceStartMeter();"))
+check("late meter start stands down",
+      "if (!voiceTesting && !voiceListening){" in HTML)
 
 print("agent mic")
 check("agent speak-back defined", "function agentSpeak(" in HTML)

@@ -6209,6 +6209,7 @@ async function voiceStartMeter(){
     if (!Ctx) return;
     voiceAudio = new Ctx();
     if (voiceAudio.state === 'suspended') await voiceAudio.resume().catch(() => {});
+    if (!voiceTesting && !voiceListening){ try { voiceAudio.close(); } catch {} voiceAudio = null; return; }
     const source = voiceAudio.createMediaStreamSource(stream);
     const analyser = voiceAudio.createAnalyser();
     analyser.fftSize = 1024;
@@ -6292,7 +6293,6 @@ async function voiceTestMic(){
   voiceHint.textContent = 'Speak normally for four seconds — I am measuring the input level.';
   try {
     await voiceOpenMic();
-    await voiceStartMeter();
   } catch (err){
     voiceTesting = false;
     voiceHint.textContent = voiceMicError(err);
@@ -6306,16 +6306,17 @@ async function voiceTestMic(){
     voiceStopAudio();
     const pct = Math.min(100, Math.round(peak * 620));
     if (peak < 0.01){
-      voiceHint.innerHTML = '<b>No sound reached the browser.</b> Windows may be blocking the microphone or another input device is selected. Allow desktop apps in Windows Settings → Privacy &amp; security → Microphone, then try each input in the Microphone list above — the speech service always listens on the default, so set the working mic as Default in Settings → System → Sound → Input. You can type below.';
+      voiceHint.innerHTML = '<b>No sound reached the browser.</b> Windows may be blocking the microphone or another input device is selected. Allow desktop apps in Windows Settings → Privacy &amp; security → Microphone, then try each input in the Microphone list above — the speech service always listens on the default, so set the working mic as Default in Settings → System → Sound → Input. You can type below.' + voiceTestLink();
       voiceSetStatus('No input detected');
     } else if (peak < 0.05){
-      voiceHint.innerHTML = 'The microphone is sending a very quiet signal (' + pct + '%). Move closer or raise the input level in Windows, then press the mic.';
+      voiceHint.innerHTML = 'The microphone is sending a very quiet signal (' + pct + '%). Move closer or raise the input level in Windows, then press the mic.' + voiceTestLink();
       voiceSetStatus('Mic is very quiet');
     } else {
       voiceHint.innerHTML = 'The microphone is sending sound (' + pct + '%). If words still do not appear, the browser’s speech service is the problem, not your mic. Chrome or Edge handle it best; you can type below.';
       voiceSetStatus('Mic works');
     }
   }, 4000);
+  await voiceStartMeter();
 }
 
 voiceHint.addEventListener('click', (e) => {

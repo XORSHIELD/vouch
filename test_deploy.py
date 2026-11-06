@@ -77,7 +77,7 @@ _EVIDENCE = {"pillow": "from PIL import", "httpx": "TestClient",
              "winrt-Windows.Media.Ocr": "winrt.windows.media.ocr",
              "winrt-Windows.Storage": "winrt.windows.storage"}
 for _r in _reqs:
-    _name = re.split(r"[;\s<>=!~]", _r, 1)[0].strip()
+    _name = re.split(r"[;\s<>=!~]", _r, maxsplit=1)[0].strip()
     _ev = _EVIDENCE.get(_name, f"import {_name}")
     _found = _ev in PY or f"from {_name} import" in PY
     check(f"{_name} is used", _found, _r)
